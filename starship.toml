@@ -1,0 +1,14 @@
+# ~/.config/starship.toml
+
+# カスタムフォーマットを利用します
+format = """
+[┌───────────────────>](bold green)
+[│](bold green)$directory$rust$package
+[└─>](bold green) """
+
+# starshipが現在のディレクトリ下のファイルをチェックするまで10ミリ秒待ちます
+
+scan_timeout = 10
+
+# プロンプトの 先頭での改行を無効にする
+add_newline = false

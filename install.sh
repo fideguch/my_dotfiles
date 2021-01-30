@@ -1,12 +1,6 @@
 #!/bin/sh
 
 DOTPATH=~/dotfiles
-
-for f in .??*
-do
-    [[ "$f" == ".git" ]] && continue
-    [[ "$f" == ".DS_Store" ]] && continue
-
-    echo "$f"
-    ln -snfv "$DOTPATH/$f" "$HOME"/"$f"
-done
+ln -snfv "$DOTPATH/.vimrc" "$HOME"/".vimrc"
+ln -snfv "$DOTPATH/.zshrc" "$HOME"/".zshrc"
+ln -snfv "$DOTPATH/starship.toml" "$HOME"/".config"/"starship.toml"
