@@ -1,14 +1,67 @@
-# ~/.config/starship.toml
+# starship.rs/ja-JP/config/
 
+# プロンプトの設定
 # カスタムフォーマットを利用します
-format = """
-[┌───────────────────>](bold green)
-[│](bold green)$directory$rust$package
-[└─>](bold green) """
-
+#format = """
+#[┌─>](bold green) $git_status $docker_context $aws
+#[│](bold green)$directory
+#[└─](bold green)$character"""
 # starshipが現在のディレクトリ下のファイルをチェックするまで10ミリ秒待ちます
+#scan_timeout = 10
 
-scan_timeout = 10
+format = "[靈](fg:046) $all"
 
 # プロンプトの 先頭での改行を無効にする
-add_newline = false
+# add_newline = false
+
+# 時間
+[time]
+disabled = false
+style = "bold fg:086"
+
+# ユーザー名
+[username]
+format = "שּ($style) [$user]($style) in "
+style_root = "bold bg:255 fg:208"
+style_user = "bold fg:208"
+show_always = true
+
+# ディレクトリの設定
+[directory]
+style = "bold bg:023 fg:123"
+truncation_length = 8
+truncation_symbol = "…/"
+
+# コマンド入力前文字
+[character]
+success_symbol = "[切](bold fg:227) "
+error_symbol = "[](bold fg:201) "
+
+# Gitの状態
+[git_branch]
+symbol = ""
+style = "bold fg:077"
+[git_status]
+conflicted = "🏳 "
+ahead = "🏎💨 "
+behind = "😰 "
+diverged = "😵 "
+untracked = "🤷 "
+stashed = "📦 "
+modified = ""
+staged = '[++\($count\)](green)'
+renamed = "👅 "
+deleted = "🗑 "
+
+# awsの設定
+[aws]
+format = "on [$symbol$profile]($style) "
+style = "bold fg:208"
+symbol = ""
+displayed_items = "all"
+[aws.region_aliases]
+ap-northeast-1 = "jp"
+
+# dockerの設定
+[docker_context]
+format = "via [ $context](bold 069)"
