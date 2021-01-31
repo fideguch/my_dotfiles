@@ -9,12 +9,13 @@ noremap! <C-?> <C-h>
 """"""""""""""""""""""""""""""
 call plug#begin('~/.vim/plugged')
 
+
+" カレントディレクトリのtreeを表示
+Plug 'preservim/nerdtree'
 " ファイルオープンを便利に
 Plug 'Shougo/unite.vim'
 " Unite.vimで最近使ったファイルを表示できるようにする
 Plug 'Shougo/neomru.vim'
-" ファイルをtree表示してくれる
-Plug 'scrooloose/nerdtree'
 " Gitを便利に使う
 Plug 'tpope/vim-fugitive'
 
@@ -50,6 +51,11 @@ Plug 'mechatroner/rainbow_csv'
 " ブロック移動の拡張
 Plug 'andymass/vim-matchup'
 
+" treeのアイコン
+Plug 'ryanoasis/vim-devicons'
+" ステータスバーをいい感じにする
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
 " 余談: neocompleteは合わなかった。ctrl+pで補完するのが便利
 
 call plug#end()
@@ -140,10 +146,26 @@ set nostartofline
 set visualbell t_vb=
 "エラーメッセージの表示時にビープを鳴らさない
 set noerrorbells
+" UTF-8
+set encoding=UTF-8
 """"""""""""""""""""""""""""""
 
 " grep検索の実行後にQuickFix Listを表示する
 autocmd QuickFixCmdPost *grep* cwindow
+
+" クリップコードからのコピーを整頓する
+if &term =~ "xterm"
+    let &t_SI .= "\e[?2004h"
+    let &t_EI .= "\e[?2004l"
+    let &pastetoggle = "\e[201~"
+
+    function XTermPasteBegin(ret)
+        set paste
+        return a:ret
+    endfunction
+
+    inoremap <special> <expr> <Esc>[200~ XTermPasteBegin("")
+endif
 
 " http://blog.remora.cx/2010/12/vim-ref-with-unite.html
 """"""""""""""""""""""""""""""
@@ -151,6 +173,11 @@ autocmd QuickFixCmdPost *grep* cwindow
 """"""""""""""""""""""""""""""
 " 入力モードで開始する
 let g:unite_enable_start_insert=1
+" tabの表示
+let g:airline#extensions#tabline#enabled = 1
+" tabの切り替え
+" nerdtreeをctrl-eで起動
+nnoremap <silent><C-e> :NERDTreeToggle<CR>
 " バッファ一覧
 noremap <C-P> :Unite buffer<CR>
 " ファイル一覧
