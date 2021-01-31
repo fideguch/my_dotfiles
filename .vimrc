@@ -176,6 +176,8 @@ let g:unite_enable_start_insert=1
 " tabの表示
 let g:airline#extensions#tabline#enabled = 1
 " tabの切り替え
+nnoremap <Tab>l :+tabmove
+nnoremap <Tab>h :-tabmove
 " nerdtreeをctrl-eで起動
 nnoremap <silent><C-e> :NERDTreeToggle<CR>
 " バッファ一覧
