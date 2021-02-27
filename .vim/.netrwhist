@@ -1,0 +1,12 @@
+let g:netrw_dirhistmax  =10
+let g:netrw_dirhistcnt =5
+let g:netrw_dirhist_5='/Users/fideguch/Desktop/42Tokyo/42/Piscine/C/C00/clone_C00/ex00'
+let g:netrw_dirhist_4='/Users/fideguch/Desktop/42Tokyo/42/Piscine/C/C00/clone_C00'
+let g:netrw_dirhist_3='/Users/fideguch/Desktop/42Tokyo/42/Piscine/C/C00'
+let g:netrw_dirhist_2='/Users/fideguch/Desktop/42Tokyo/42/Piscine/C'
+let g:netrw_dirhist_1='/Users/fideguch/Desktop/42Tokyo/42/Piscine'
+let g:netrw_dirhist_0='/Users/fideguch/Desktop/42Tokyo/42/Piscine/C'
+let g:netrw_dirhist_9='/Users/fideguch/Desktop/42Tokyo/42/Piscine/C/C01'
+let g:netrw_dirhist_8='/Users/fideguch/Desktop/42Tokyo/42/Piscine/C/C01/C01_clone'
+let g:netrw_dirhist_7='/Users/fideguch/Desktop/42Tokyo/42/Piscine/C/C01/C01_clone/ex00'
+let g:netrw_dirhist_6='/Users/fideguch'

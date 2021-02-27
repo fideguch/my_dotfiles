@@ -130,7 +130,8 @@ set whichwrap=b,s,h,l,<,>,[,]
 " 構文毎に文字色を変化させる
 syntax on
 " カラースキーマの指定
-colorscheme desert
+colorscheme molokai
+set t_Co=256
 " 行番号の色
 highlight LineNr ctermfg=darkyellow
 " 勝手に改行するのを防ぐ
@@ -273,3 +274,6 @@ imap ( ()<LEFT>
 
 " filetypeの自動検出(最後の方に書いた方がいいらしい)
 filetype on
+
+" ターミナル起動時のnormalモード
+tnoremap <ESC> <C-\><C-n>
