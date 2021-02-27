@@ -1,8 +1,8 @@
 # バックスペースが文字化けするので殺しておく
 stty erase '^?'
 # Unicodeの絵文字共
-FIRE=$'\U1F525 ' #火
-HAPPA=$'\U1f33f '   #葉っぱ
+# EMOJI_1=$'\U1F525 '
+# EMOJI_2=$'\U1f33f '
 # colors関数を読み込む
 autoload -Uz colors
 colors
@@ -44,22 +44,31 @@ setopt pushd_ignore_dups
 # コマンドミスを修正
 setopt correct
 
-#エイリアス 
+#エイリアス
 # --colerオプションはlinux専用なので、macosでは-Gオプションに変更
 #alias lst='ls -ltr --color=auto'
 #alias l='ls -ltr --color=auto'
 #alias la='ls -la --color=auto'
 #alias ll='ls -l --color=auto'
+alias l='ls'
 alias la='ls -ltraG'
 alias ll='ls -ltrG'
 alias so='source'
+alias sovz='source ~/.zshrc'
 alias v='vim'
 alias vi='vim'
-alias vz='vim ~/.zshrc'
-alias vv='vim ~/.vimrc'
+alias vz='vim ~/dotfiles/.zshrc'
+alias vv='vim ~/dotfiles/.vimrc'
 alias c='cdr'
 alias ifcon='ifconfig'
 alias g='git'
+alias d='docker'
+alias dc='docker-compose'
+alias py='python'
+alias cdd='cd ~/Desktop/Folders'
+alias cdr='cd /'
+alias mkd='mkdir'
+alias tou='touch'
 # historyに日付を表示
 alias h='fc -lt '%F %T' 1'
 alias cp='cp -i'
@@ -68,7 +77,7 @@ alias mkdir='mkdir -p'
 alias ..='c ../'
 alias back='pushd'
 alias diff='diff -U1'
-alias co='for c in {000..255}; do echo -n "\e[38;5;${c}m $c" ; [ $(($c%16)) -eq 15 ] && echo;done;echo'
+alias colors='for c in {000..255}; do echo -n "\e[38;5;${c}m $c" ; [ $(($c%16)) -eq 15 ] && echo;done;echo'
 
 # backspace,deleteキーを使えるように
 stty erase ^H
@@ -136,18 +145,23 @@ function mkcd() {
 # lsに色をつける
 export LSCOLORS=exfxcxdxbxegedabagacad
 export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
-
 zstyle ':completion:*' list-colors 'di=34' 'ln=35' 'so=32' 'ex=31' 'bd=46;34' 'cd=43;34'
 
-
-# 以下昔の遺産
-
+# グロッピング（シェルが * ? {} [] ~ などの文字列を解釈し、ファイル名として展開すること）を防ぐ
 setopt nonomatch
 unsetopt nomatch
-export PATH="~/.rbenv/bin:$PATH"
+
+# 環境変数PATHの重複回避
+typeset -gU PATH
+
+# rbenv
+export PATH="$HOME/.rbenv/bin:$PATH"
 eval "$(rbenv init -)"
-export PATH="$PYENV_ROOT/bin:$PATH"
+# pyenv
+export PATH="$HOME/.pyenv/bin:$PATH"
 eval "$(pyenv init -)"
 eval "$(pyenv virtualenv-init -)"
 export PYTHONIOENCODING=utf-8
 
+# 自作コマンドのパス
+export PATH="$HOME/dotfiles/.my_commands:$PATH"
