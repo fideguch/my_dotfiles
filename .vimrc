@@ -149,6 +149,10 @@ set visualbell t_vb=
 set noerrorbells
 " UTF-8
 set encoding=UTF-8
+" クリップボード連携
+if has("clipboard")
+  set clipboard=unnamed
+endif
 """"""""""""""""""""""""""""""
 
 " grep検索の実行後にQuickFix Listを表示する
