@@ -50,9 +50,11 @@ setopt correct
 #alias l='ls -ltr --color=auto'
 #alias la='ls -la --color=auto'
 #alias ll='ls -l --color=auto'
-alias l='ls'
-alias la='ls -ltraG'
-alias ll='ls -ltrG'
+alias ls='ls -G'
+alias la='ls -laG'
+# alias la='ls -ltraG'
+alias ll='ls -lG'
+# alias ll='ls -ltrG'
 alias so='source'
 alias sovz='source ~/.zshrc'
 alias v='vim'
@@ -66,7 +68,6 @@ alias d='docker'
 alias dc='docker-compose'
 alias py='python'
 alias cdd='cd ~/Desktop/Folders'
-alias cdr='cd /'
 alias mkd='mkdir'
 alias tou='touch'
 # historyに日付を表示
@@ -77,7 +78,7 @@ alias mkdir='mkdir -p'
 alias ..='c ../'
 alias back='pushd'
 alias diff='diff -U1'
-alias colors='for c in {000..255}; do echo -n "\e[38;5;${c}m $c" ; [ $(($c%16)) -eq 15 ] && echo;done;echo'
+alias colorls='for c in {000..255}; do echo -n "\e[38;5;${c}m $c" ; [ $(($c%16)) -eq 15 ] && echo;done;echo'
 
 # backspace,deleteキーを使えるように
 stty erase ^H
@@ -143,7 +144,7 @@ function mkcd() {
                  }
 
 # lsに色をつける
-export LSCOLORS=exfxcxdxbxegedabagacad
+export LSCOLORS=gxfxcxdxbxegedabagacad
 export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
 zstyle ':completion:*' list-colors 'di=34' 'ln=35' 'so=32' 'ex=31' 'bd=46;34' 'cd=43;34'
 
@@ -153,6 +154,9 @@ unsetopt nomatch
 
 # 環境変数PATHの重複回避
 typeset -gU PATH
+
+# ヤンクのクリップボード連携
+set clipboard+=unnamed
 
 # rbenv
 export PATH="$HOME/.rbenv/bin:$PATH"
