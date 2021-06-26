@@ -61,7 +61,7 @@ alias v='vim'
 alias vi='vim'
 alias vz='vim ~/dotfiles/.zshrc'
 alias vv='vim ~/dotfiles/.vimrc'
-alias c='cdr'
+alias c='cat'
 alias ifcon='ifconfig'
 alias g='git'
 alias d='docker'
@@ -154,9 +154,6 @@ unsetopt nomatch
 
 # 環境変数PATHの重複回避
 typeset -gU PATH
-
-# ヤンクのクリップボード連携
-set clipboard+=unnamed
 
 # rbenv
 export PATH="$HOME/.rbenv/bin:$PATH"
