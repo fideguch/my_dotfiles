@@ -68,6 +68,8 @@ alias d='docker'
 alias dc='docker-compose'
 alias py='python'
 alias cdd='cd ~/Desktop/Folders'
+alias cdlearn='cd ~/Desktop/Folders/Learn'
+alias cddev='cd ~/Products'
 alias mkd='mkdir'
 alias tou='touch'
 # historyに日付を表示
