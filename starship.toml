@@ -21,7 +21,7 @@ style = "bold fg:086"
 
 # ユーザー名
 [username]
-format = "שּ($style) [$user]($style) in "
+format = "שּ ($style) [$user]($style) in "
 style_root = "bold bg:255 fg:208"
 style_user = "bold fg:208"
 show_always = true
@@ -39,7 +39,7 @@ error_symbol = "[](bold fg:201) "
 
 # Gitの状態
 [git_branch]
-symbol = ""
+symbol = " "
 style = "bold fg:077"
 [git_status]
 conflicted = "🏳 "
@@ -48,7 +48,7 @@ behind = "😰 "
 diverged = "😵 "
 untracked = "🤷 "
 stashed = "📦 "
-modified = ""
+modified = " "
 staged = '[++\($count\)](green)'
 renamed = "👅 "
 deleted = "🗑 "
@@ -57,11 +57,11 @@ deleted = "🗑 "
 [aws]
 format = "on [$symbol$profile]($style) "
 style = "bold fg:208"
-symbol = ""
+symbol = " "
 displayed_items = "all"
 [aws.region_aliases]
 ap-northeast-1 = "jp"
 
 # dockerの設定
 [docker_context]
-format = "via [ $context](bold 069)"
+format = "via [  $context](bold 069)"

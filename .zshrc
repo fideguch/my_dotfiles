@@ -59,8 +59,8 @@ alias so='source'
 alias sovz='source ~/.zshrc'
 alias v='vim'
 alias vi='vim'
-alias vz='vim ~/dotfiles/.zshrc'
-alias vv='vim ~/dotfiles/.vimrc'
+alias vz='vim ~/my_dotfiles/.zshrc'
+alias vv='vim ~/my_dotfiles/.vimrc'
 alias c='cat'
 alias ifcon='ifconfig'
 alias g='git'
@@ -142,9 +142,9 @@ function mkcd() {
       echo "$1 already exists!"
       cd $1
   else
-      mkdir -p $1 && cd $1
+    mkdir -p $1 && cd $1
   fi
-                 }
+}
 
 # lsに色をつける
 export LSCOLORS=gxfxcxdxbxegedabagacad
@@ -159,13 +159,7 @@ unsetopt nomatch
 typeset -gU PATH
 
 # rbenv
-export PATH="$HOME/.rbenv/bin:$PATH"
-eval "$(rbenv init -)"
 # pyenv
-export PATH="$HOME/.pyenv/bin:$PATH"
-eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"
-export PYTHONIOENCODING=utf-8
 
 # 自作コマンドのパス
 export PATH="$HOME/dotfiles/.my_commands:$PATH"
