@@ -163,3 +163,6 @@ typeset -gU PATH
 
 # 自作コマンドのパス
 export PATH="$HOME/dotfiles/.my_commands:$PATH"
+
+# MIXIの mitenecli コマンドのPASS
+export PATH="/opt/mitenecli/bin/mitenecli:$PATH"
