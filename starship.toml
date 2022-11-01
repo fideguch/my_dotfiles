@@ -58,7 +58,6 @@ deleted = "🗑 "
 format = "on [$symbol$profile]($style) "
 style = "bold fg:208"
 symbol = " "
-displayed_items = "all"
 [aws.region_aliases]
 ap-northeast-1 = "jp"
 
