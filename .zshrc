@@ -1,60 +1,149 @@
-# バックスペースが文字化けするので殺しておく
+# ==========================================================
+# .zshrc
+# ==========================================================
+
+# ── 基本設定 ──────────────────────────────────────────────
+
+# バックスペースの文字化け防止
 stty erase '^?'
-# Unicodeの絵文字共
-# EMOJI_1=$'\U1F525 '
-# EMOJI_2=$'\U1f33f '
-# colors関数を読み込む
-autoload -Uz colors
-colors
+
 # Ctrl+Dでログアウトしてしまうことを防ぐ
 setopt IGNOREEOF
 
 # 日本語を使用
 export LANG=ja_JP.UTF-8
 
-# パスを追加したい場合
-export PATH="$HOME/bin:$PATH"
+# colors関数を読み込む
+autoload -Uz colors
+colors
 
-# 補完
+# ── PATH管理 (重複自動排除) ──────────────────────────────
+typeset -gU PATH path
+
+# Homebrew (Apple Silicon)
+if [[ -f /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
+# pyenv
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d "$PYENV_ROOT/bin" ]] && path=("$PYENV_ROOT/bin" $path)
+command -v pyenv >/dev/null && eval "$(pyenv init -)"
+
+# nodebrew
+[[ -d "$HOME/.nodebrew/current/bin" ]] && path=("$HOME/.nodebrew/current/bin" $path)
+
+# その他のパス
+path=(
+  "$HOME/.local/bin"
+  "$HOME/my_dotfiles/.my_commands"
+  "$HOME/bin"
+  "/opt/homebrew/share/google-cloud-sdk/bin"
+  $path
+)
+
+# ── 補完 ──────────────────────────────────────────────────
 autoload -Uz compinit
-compinit
+# 補完キャッシュを1日1回だけ再構築 (起動高速化)
+if [[ -n "$HOME/.zcompdump"(#qN.mh+24) ]]; then
+  compinit
+else
+  compinit -C
+fi
+
+# 補完後、メニュー選択モードになり左右キーで移動が出来る
+zstyle ':completion:*:default' menu select=2
+# 補完で大文字にもマッチ
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}' 'r:|=*' 'l:|=* r:|=*'
+# 補完候補に色を付ける
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+# 補完をキャッシュ
+zstyle ':completion:*' use-cache yes
+zstyle ':completion:*' cache-path "$HOME/.zsh/cache"
+
+# ── キーバインド ──────────────────────────────────────────
 
 # emacsキーバインド
 bindkey -e
 
-# 他のターミナルとヒストリーを共有
-setopt share_history
+# backspace, deleteキーを使えるように
+bindkey "^[[3~" delete-char
 
-# ヒストリーに重複を表示しない
-setopt histignorealldups
+# Ctrl+rでヒストリーのインクリメンタルサーチ、Ctrl+sで逆順
+bindkey '^r' history-incremental-pattern-search-backward
+bindkey '^s' history-incremental-pattern-search-forward
 
+# コマンドを途中まで入力後、historyから絞り込み
+# 例: ls まで打ってCtrl+pでlsコマンドをさかのぼる、Ctrl+bで逆順
+autoload -Uz history-search-end
+zle -N history-beginning-search-backward-end history-search-end
+zle -N history-beginning-search-forward-end history-search-end
+bindkey "^p" history-beginning-search-backward-end
+bindkey "^b" history-beginning-search-forward-end
+
+# Ctrl+sのロック, Ctrl+qのロック解除を無効にする
+setopt NO_FLOW_CONTROL
+
+# ── ヒストリ ─────────────────────────────────────────────
 HISTFILE=~/.zsh_history
-HISTSIZE=10000
-SAVEHIST=10000
+HISTSIZE=100000
+SAVEHIST=100000
+
+# 他のターミナルとヒストリーを共有
+setopt SHARE_HISTORY
+# ヒストリーに重複を表示しない
+setopt HIST_IGNORE_ALL_DUPS
+# スペースで始まるコマンドは保存しない (一時的なコマンド用)
+setopt HIST_IGNORE_SPACE
+# 余分な空白を削除して保存
+setopt HIST_REDUCE_BLANKS
+# 履歴展開時に確認してから実行
+setopt HIST_VERIFY
+# タイムスタンプ付きで保存
+setopt EXTENDED_HISTORY
+
+# ── ディレクトリ移動 ─────────────────────────────────────
 
 # cdコマンドを省略して、ディレクトリ名のみの入力で移動
-setopt auto_cd
-
+setopt AUTO_CD
 # 自動でpushdを実行
-setopt auto_pushd
-
+setopt AUTO_PUSHD
 # pushdから重複を削除
-setopt pushd_ignore_dups
+setopt PUSHD_IGNORE_DUPS
+
+# cdrコマンドを有効 ログアウトしても有効なディレクトリ履歴
+# cdr タブでリストを表示
+autoload -Uz add-zsh-hook
+autoload -Uz chpwd_recent_dirs cdr
+add-zsh-hook chpwd chpwd_recent_dirs
+zstyle ":chpwd:*" recent-dirs-default true
+
+# cdの後にlsを実行
+chpwd() { ls -ltrG }
+
+# ── シェルオプション ─────────────────────────────────────
 
 # コマンドミスを修正
-setopt correct
+setopt CORRECT
+# インタラクティブシェルでコメントを許可
+setopt INTERACTIVE_COMMENTS
+# グロッピングでマッチしなくてもエラーにしない
+setopt NONOMATCH
+unsetopt NOMATCH
 
-#エイリアス
-# --colerオプションはlinux専用なので、macosでは-Gオプションに変更
-#alias lst='ls -ltr --color=auto'
-#alias l='ls -ltr --color=auto'
-#alias la='ls -la --color=auto'
-#alias ll='ls -l --color=auto'
+# ── エイリアス ────────────────────────────────────────────
+
+# ls (macOSでは -G でカラー表示)
 alias ls='ls -G'
 alias la='ls -laG'
-# alias la='ls -ltraG'
 alias ll='ls -lG'
-# alias ll='ls -ltrG'
+
+# ファイル操作 (安全装置)
+alias cp='cp -i'
+alias rm='rm -i'
+alias mkdir='mkdir -p'
+
+# ショートカット
 alias so='source'
 alias sovz='source ~/.zshrc'
 alias v='vim'
@@ -62,107 +151,75 @@ alias vi='vim'
 alias vz='vim ~/my_dotfiles/.zshrc'
 alias vv='vim ~/my_dotfiles/.vimrc'
 alias c='cat'
-alias ifcon='ifconfig'
 alias g='git'
 alias d='docker'
 alias dc='docker-compose'
 alias py='python'
+alias mkd='mkdir'
+alias tou='touch'
+
+# ディレクトリ移動
+alias ..='cd ..'
 alias cdd='cd ~/Desktop/start'
 alias cdlearn='cd ~/Desktop/Folders/Learn'
 alias cddev='cd ~/Products'
-alias mkd='mkdir'
-alias tou='touch'
-# historyに日付を表示
-alias h='fc -lt '%F %T' 1'
-alias cp='cp -i'
-alias rm='rm -i'
-alias mkdir='mkdir -p'
-alias ..='c ../'
 alias back='pushd'
-alias diff='diff -U1'
-alias colorls='for c in {000..255}; do echo -n "\e[38;5;${c}m $c" ; [ $(($c%16)) -eq 15 ] && echo;done;echo'
 alias cdtemp='cd $TEMPDIR'
 
-# backspace,deleteキーを使えるように
-stty erase ^H
-bindkey "^[[3~" delete-char
+# ネットワーク
+alias ifcon='ifconfig'
 
-# cdの後にlsを実行。ここもLinuxとMacOSでオプションが異なる
-#chpwd() { ls -ltr --color=auto }
-chpwd() { ls -ltrG }
+# historyに日付を表示
+alias h='fc -lt "%F %T" 1'
+alias diff='diff -U1'
 
-# どこからでも参照できるディレクトリパス
-# cdpath=(~)
+# 256色カラーパレット表示
+alias colorls='for c in {000..255}; do echo -n "\e[38;5;${c}m $c" ; [ $(($c%16)) -eq 15 ] && echo;done;echo'
 
-# 区切り文字の設定
+# Claude Code
+alias cc='claude'
+alias ccc='claude --continue'
+alias ccr='claude --resume'
+alias ccf='claude --dangerously-skip-permissions'
+alias ccfc='claude --continue --dangerously-skip-permissions'
+alias ccfr='claude --resume --dangerously-skip-permissions'
+alias ccp='claude --print'
+
+# ── 関数 ──────────────────────────────────────────────────
+
+# mkdirとcdを同時実行
+function mkcd() {
+  if [[ -d $1 ]]; then
+    echo "$1 already exists!"
+    cd $1
+  else
+    mkdir -p $1 && cd $1
+  fi
+}
+
+# 複数ファイルのmv 例: zmv *.txt *.txt.bk
+autoload -Uz zmv
+alias zmv='noglob zmv -W'
+
+# ── 区切り文字 ────────────────────────────────────────────
 autoload -Uz select-word-style
 select-word-style default
 zstyle ':zle:*' word-chars "_-./;@"
 zstyle ':zle:*' word-style unspecified
 
-# Ctrl+sのロック, Ctrl+qのロック解除を無効にする
-setopt no_flow_control
-
-# プロンプト
-eval "$(starship init zsh)"
-
-# 補完後、メニュー選択モードになり左右キーで移動が出来る
-zstyle ':completion:*:default' menu select=2
-
-# 補完で大文字にもマッチ
-zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
-
-# Ctrl+rでヒストリーのインクリメンタルサーチ、Ctrl+sで逆順
-bindkey '^r' history-incremental-pattern-search-backward
-bindkey '^s' history-incremental-pattern-search-forward
-
-# コマンドを途中まで入力後、historyから絞り込み
-# 例 ls まで打ってCtrl+pでlsコマンドをさかのぼる、Ctrl+bで逆順
-autoload -Uz history-search-end
-zle -N history-beginning-search-backward-end history-search-end
-zle -N history-beginning-search-forward-end history-search-end
-bindkey "^p" history-beginning-search-backward-end
-bindkey "^b" history-beginning-search-forward-end
-
-# cdrコマンドを有効 ログアウトしても有効なディレクトリ履歴
-# cdr タブでリストを表示
-autoload -Uz add-zsh-hook
-autoload -Uz chpwd_recent_dirs cdr
-add-zsh-hook chpwd chpwd_recent_dirs
-# cdrコマンドで履歴にないディレクトリにも移動可能に
-zstyle ":chpwd:*" recent-dirs-default true
-
-# 複数ファイルのmv 例　zmv *.txt *.txt.bk
-autoload -Uz zmv
-alias zmv='noglob zmv -W'
-
-# mkdirとcdを同時実行
-function mkcd() {
-  if [[ -d $1 ]]; then
-      echo "$1 already exists!"
-      cd $1
-  else
-    mkdir -p $1 && cd $1
-  fi
-}
+# ── 見た目 ────────────────────────────────────────────────
 
 # lsに色をつける
 export LSCOLORS=gxfxcxdxbxegedabagacad
 export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
 zstyle ':completion:*' list-colors 'di=34' 'ln=35' 'so=32' 'ex=31' 'bd=46;34' 'cd=43;34'
 
-# グロッピング（シェルが * ? {} [] ~ などの文字列を解釈し、ファイル名として展開すること）を防ぐ
-setopt nonomatch
-unsetopt nomatch
+# プロンプト (Starship)
+eval "$(starship init zsh)"
 
-# 環境変数PATHの重複回避
-typeset -gU PATH
-
-# rbenv
-# pyenv
-
-# 自作コマンドのパス
-export PATH="$HOME/dotfiles/.my_commands:$PATH"
-
-# MIXIの mitenecli コマンドのPASS
-export PATH="/opt/mitenecli/bin/mitenecli:$PATH"
+# ── fzf ───────────────────────────────────────────────────
+# fzfがインストール済みならキーバインドと補完を有効化
+if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
+  source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
+  source /opt/homebrew/opt/fzf/shell/completion.zsh
+fi
