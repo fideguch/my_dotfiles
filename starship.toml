@@ -1,74 +1,118 @@
 # ==========================================================
 # Starship プロンプト設定
-# https://starship.rs/ja-JP/config/
+# Pikachu背景 + wholespace inspired デザイン
+# Powerlineセグメント × 高コントラスト暗色背景
 # ==========================================================
 
 "$schema" = "https://starship.rs/config-schema.json"
 
-format = "[靈](fg:046) $all"
+# ── レイアウト ────────────────────────────────────────────
+# Line 1: [OS+User] [Directory] [Git] ... [Time]
+# Line 2: [Path prompt ❯]
 
-# 時間
-[time]
+format = """
+[](bg:#1B1F36)\
+$os\
+$username\
+[](fg:#1B1F36 bg:#2D1B69)\
+$directory\
+[](fg:#2D1B69 bg:#0D5B4F)\
+$git_branch\
+$git_status\
+[](fg:#0D5B4F bg:#4A1942)\
+$python\
+$nodejs\
+$aws\
+$docker_context\
+[](fg:#4A1942 bg:#1B1F36)\
+$cmd_duration\
+$time\
+[](fg:#1B1F36)\
+$line_break\
+$character"""
+
+# ── OS アイコン ───────────────────────────────────────────
+[os]
 disabled = false
-style = "bold fg:086"
-format = "[$time]($style) "
-time_format = "%H:%M"
+format = "[ $symbol]($style)"
+style = "fg:#E8C84A bg:#1B1F36"
 
-# ユーザー名
+[os.symbols]
+Macos = ""
+
+# ── ユーザー名 ───────────────────────────────────────────
 [username]
-format = "שּ ($style) [$user]($style) in "
-style_root = "bold bg:255 fg:208"
-style_user = "bold fg:208"
+format = "[ $user ]($style)"
+style_user = "bold fg:#FFFFFF bg:#1B1F36"
+style_root = "bold fg:#FF6B6B bg:#1B1F36"
 show_always = true
 
-# ディレクトリ
+# ── ディレクトリ ─────────────────────────────────────────
 [directory]
-style = "bold bg:023 fg:123"
-truncation_length = 8
+format = "[  $path ]($style)[$read_only]($read_only_style)"
+style = "bold fg:#E0CCFF bg:#2D1B69"
+read_only_style = "fg:#FF6B6B bg:#2D1B69"
+truncation_length = 4
 truncation_symbol = "…/"
-read_only = " 󰌾"
+read_only = " "
 
-# コマンド入力前文字
-[character]
-success_symbol = "[切](bold fg:227) "
-error_symbol = "[](bold fg:201) "
-
-# Git ブランチ
+# ── Git ブランチ ─────────────────────────────────────────
 [git_branch]
 symbol = " "
-style = "bold fg:077"
+format = "[ $symbol$branch ]($style)"
+style = "bold fg:#7DFFC1 bg:#0D5B4F"
 
-# Git ステータス
+# ── Git ステータス ───────────────────────────────────────
 [git_status]
-conflicted = "🏳 "
-ahead = "🏎💨 "
-behind = "😰 "
-diverged = "😵 "
-untracked = "🤷 "
-stashed = "📦 "
-modified = " "
-staged = '[++\($count\)](green)'
-renamed = "👅 "
-deleted = "🗑 "
+format = '([$all_status$ahead_behind ]($style))'
+style = "bold fg:#FFFFFF bg:#0D5B4F"
+conflicted = "= "
+ahead = "⇡${count} "
+behind = "⇣${count} "
+diverged = "⇕ "
+untracked = "? "
+stashed = "$ "
+modified = "! "
+staged = "[+${count}](bold fg:#7DFFC1 bg:#0D5B4F) "
+renamed = "» "
+deleted = "✘ "
 
-# AWS
+# ── コマンド実行時間 ─────────────────────────────────────
+[cmd_duration]
+format = "[ 󰔟 $duration ]($style)"
+style = "fg:#AAAAAA bg:#1B1F36"
+min_time = 2000
+
+# ── 時間 ─────────────────────────────────────────────────
+[time]
+disabled = false
+format = "[ $time ]($style)"
+style = "bold fg:#E8C84A bg:#1B1F36"
+time_format = "%H:%M"
+
+# ── プロンプト文字 ───────────────────────────────────────
+[character]
+success_symbol = "[](bold fg:#7DFFC1)[  ](bold fg:#1B1F36 bg:#7DFFC1)[](bold fg:#7DFFC1)"
+error_symbol = "[](bold fg:#FF6B6B)[  ](bold fg:#1B1F36 bg:#FF6B6B)[](bold fg:#FF6B6B)"
+
+# ── Python ───────────────────────────────────────────────
+[python]
+format = "[  ${version} ]($style)"
+style = "fg:#6EC8DB bg:#4A1942"
+
+# ── Node.js ──────────────────────────────────────────────
+[nodejs]
+format = "[  $version ]($style)"
+style = "fg:#7DFFC1 bg:#4A1942"
+
+# ── AWS ──────────────────────────────────────────────────
 [aws]
-format = "on [$symbol$profile]($style) "
-style = "bold fg:208"
-symbol = " "
+format = "[  $profile ]($style)"
+style = "bold fg:#E8C84A bg:#4A1942"
 [aws.region_aliases]
 ap-northeast-1 = "jp"
 
-# Docker
+# ── Docker ───────────────────────────────────────────────
 [docker_context]
-format = "via [  $context](bold 069)"
-
-# Python (pyenvバージョン表示)
-[python]
-format = "via [${symbol}${pyenv_prefix}(${version})]($style) "
-symbol = " "
-
-# Node.js
-[nodejs]
-format = "via [$symbol($version)]($style) "
-symbol = " "
+format = "[  $context ]($style)"
+style = "fg:#6EC8DB bg:#4A1942"
