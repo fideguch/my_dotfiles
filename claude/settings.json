@@ -1,0 +1,7 @@
+{
+  "enabledPlugins": {
+    "find-skills@local": true,
+    "skill-creator@claude-plugins-official": true
+  },
+  "skipDangerousModePermissionPrompt": true
+}
