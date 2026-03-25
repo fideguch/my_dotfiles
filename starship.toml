@@ -1,6 +1,6 @@
 # ==========================================================
 # Starship プロンプト設定
-# ピカチュウ背景対応: 暗色帯 + 白テキスト / 黄色上は暗色テキスト
+# ピカチュウテーマ: 暗色帯 + 白テキスト + ⚡プロンプト
 # ==========================================================
 
 "$schema" = "https://starship.rs/config-schema.json"
@@ -11,23 +11,30 @@ $username\
 $directory\
 $git_branch\
 $git_status\
+$python\
+$nodejs\
+$aws\
+$docker_context\
 $time\
 [](fg:#1A1200)\
 $line_break\
 $character"""
 
+# ── ユーザー ─────────────────────────────────────────────
 [username]
 format = "[ $user ](bold fg:#FFFFFF bg:#1A1200)"
 show_always = true
 
+# ── ディレクトリ ─────────────────────────────────────────
 [directory]
 format = "[ $path ](bold fg:#FFFFFF bg:#1A1200)"
 truncation_length = 4
 truncation_symbol = "…/"
 
+# ── Git ──────────────────────────────────────────────────
 [git_branch]
-symbol = ""
-format = "[ $symbol $branch ](bold fg:#FFFFFF bg:#1A1200)"
+symbol = " "
+format = "[  $symbol$branch ](bold fg:#FFFFFF bg:#1A1200)"
 
 [git_status]
 format = '([$all_status$ahead_behind](bold fg:#FFFFFF bg:#1A1200))'
@@ -39,25 +46,32 @@ modified = "! "
 staged = "+ "
 deleted = "✘ "
 
+# ── サービスアイコン ─────────────────────────────────────
+[python]
+symbol = " "
+format = "[ $symbol$version ](fg:#FFFFFF bg:#1A1200)"
+
+[nodejs]
+symbol = " "
+format = "[ $symbol$version ](fg:#FFFFFF bg:#1A1200)"
+
+[aws]
+symbol = " "
+format = "[ $symbol$profile ](fg:#FFFFFF bg:#1A1200)"
+[aws.region_aliases]
+ap-northeast-1 = "jp"
+
+[docker_context]
+symbol = " "
+format = "[ $symbol$context ](fg:#FFFFFF bg:#1A1200)"
+
+# ── 時間 ─────────────────────────────────────────────────
 [time]
 disabled = false
 format = "[ $time ](bold fg:#FFFFFF bg:#1A1200)"
 time_format = "%H:%M"
 
+# ── プロンプト (⚡ 10まんボルト) ─────────────────────────
 [character]
-success_symbol = "[](fg:#1A1200)[  ](bold fg:#FFFFFF bg:#1A1200)[](fg:#1A1200)"
-error_symbol = "[](fg:#8B0000)[  ](bold fg:#FFFFFF bg:#8B0000)[](fg:#8B0000)"
-
-[python]
-format = "[ py $version ](fg:#FFFFFF bg:#1A1200)"
-
-[nodejs]
-format = "[ node $version ](fg:#FFFFFF bg:#1A1200)"
-
-[aws]
-format = "[ aws:$profile ](fg:#FFFFFF bg:#1A1200)"
-[aws.region_aliases]
-ap-northeast-1 = "jp"
-
-[docker_context]
-format = "[ docker:$context ](fg:#FFFFFF bg:#1A1200)"
+success_symbol = "[](fg:#1A1200)[ ⚡](bold fg:#FFD700 bg:#1A1200)[](fg:#1A1200)"
+error_symbol = "[](fg:#8B0000)[ ⚡](bold fg:#FF4444 bg:#8B0000)[](fg:#8B0000)"
