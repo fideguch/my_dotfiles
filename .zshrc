@@ -240,7 +240,7 @@ if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v pokemon &>/dev/null; then
   }
   _pokemon_precmd() {
     if [[ -n "$_POKEMON_CLAUDE_PID" ]]; then
-      if pgrep -P $$ -f 'claude' &>/dev/null; then
+      if ps -eo ppid,comm 2>/dev/null | awk -v p=$$ '$1==p && $2~/claude/{f=1; exit} END{exit !f}'; then
         return
       fi
       unset _POKEMON_CLAUDE_PID
