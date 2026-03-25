@@ -231,6 +231,9 @@ if [[ "$TERM_PROGRAM" == "iTerm.app" ]]; then
   # ピカチュウ背景を設定
   command -v pokemon &>/dev/null && pokemon -n pikachu 2>/dev/null
 
-  # Minimum Contrast を上げてテキスト視認性を確保 (iTerm2 escape sequence)
-  printf '\033]1337;MinimumContrast=0.85\007'
+  # 背景色をピカチュウの黄色に合わせる (Minimum Contrastが正しく機能するため)
+  # iTerm2は背景"色"に対してコントラストを計算するので、
+  # 背景色を画像の主要色に揃えることで全テキストが黄色に対して暗く調整される
+  printf '\033]11;#D4B84A\007'
+  printf '\033]1337;MinimumContrast=0.9\007'
 fi
