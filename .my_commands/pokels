@@ -95,6 +95,9 @@ def main():
         print("該当するポケモンが見つかりません")
         sys.exit(1)
 
+    # 図鑑番号順にソート (extraの --- は末尾)
+    pokemon_list.sort(key=lambda p: (p.get_id() == "---", p.get_id()))
+
     # テーブル表示
     header = (
         f"{'ID':>5}  {'名前':<10} {'Name':<22}"
