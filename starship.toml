@@ -1,40 +1,36 @@
 # ==========================================================
 # Starship プロンプト設定
-# ピカチュウ背景対応: 暗色帯 + 白テキストで高コントラスト
+# ピカチュウ背景対応: 暗色帯 + 白テキスト / 黄色上は暗色テキスト
 # ==========================================================
 
 "$schema" = "https://starship.rs/config-schema.json"
 
 format = """
-[](fg:#1B1F36)\
+[](fg:#1A1200)\
 $username\
 $directory\
 $git_branch\
 $git_status\
 $time\
-[](fg:#1B1F36)\
+[](fg:#1A1200)\
 $line_break\
 $character"""
 
-# ── ユーザー名 ───────────────────────────────────────────
 [username]
-format = "[ $user ](bold fg:#FFFFFF bg:#1B1F36)"
+format = "[ $user ](bold fg:#FFFFFF bg:#1A1200)"
 show_always = true
 
-# ── ディレクトリ ─────────────────────────────────────────
 [directory]
-format = "[ $path ](bold fg:#FFFFFF bg:#1B1F36)"
+format = "[ $path ](bold fg:#FFFFFF bg:#1A1200)"
 truncation_length = 4
 truncation_symbol = "…/"
 
-# ── Git ブランチ ─────────────────────────────────────────
 [git_branch]
 symbol = ""
-format = "[ $symbol $branch ](bold fg:#FFFFFF bg:#1B1F36)"
+format = "[ $symbol $branch ](bold fg:#FFFFFF bg:#1A1200)"
 
-# ── Git ステータス ───────────────────────────────────────
 [git_status]
-format = '([$all_status$ahead_behind](bold fg:#FFFFFF bg:#1B1F36))'
+format = '([$all_status$ahead_behind](bold fg:#FFFFFF bg:#1A1200))'
 conflicted = "= "
 ahead = "⇡ "
 behind = "⇣ "
@@ -43,28 +39,25 @@ modified = "! "
 staged = "+ "
 deleted = "✘ "
 
-# ── 時間 ─────────────────────────────────────────────────
 [time]
 disabled = false
-format = "[ $time ](bold fg:#FFFFFF bg:#1B1F36)"
+format = "[ $time ](bold fg:#FFFFFF bg:#1A1200)"
 time_format = "%H:%M"
 
-# ── プロンプト文字 ───────────────────────────────────────
 [character]
-success_symbol = "[](fg:#1B1F36)[  ](bold fg:#FFFFFF bg:#1B1F36)[](fg:#1B1F36)"
+success_symbol = "[](fg:#1A1200)[  ](bold fg:#FFFFFF bg:#1A1200)[](fg:#1A1200)"
 error_symbol = "[](fg:#8B0000)[  ](bold fg:#FFFFFF bg:#8B0000)[](fg:#8B0000)"
 
-# ── 以下は表示される時だけ (帯の中に統合) ────────────────
 [python]
-format = "[ py $version ](fg:#FFFFFF bg:#1B1F36)"
+format = "[ py $version ](fg:#FFFFFF bg:#1A1200)"
 
 [nodejs]
-format = "[ node $version ](fg:#FFFFFF bg:#1B1F36)"
+format = "[ node $version ](fg:#FFFFFF bg:#1A1200)"
 
 [aws]
-format = "[ aws:$profile ](fg:#FFFFFF bg:#1B1F36)"
+format = "[ aws:$profile ](fg:#FFFFFF bg:#1A1200)"
 [aws.region_aliases]
 ap-northeast-1 = "jp"
 
 [docker_context]
-format = "[ docker:$context ](fg:#FFFFFF bg:#1B1F36)"
+format = "[ docker:$context ](fg:#FFFFFF bg:#1A1200)"
