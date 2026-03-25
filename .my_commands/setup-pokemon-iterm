@@ -1,0 +1,19 @@
+#!/bin/zsh
+# iTerm2 に Pokemon プロファイルをセットアップする
+# Usage: setup-pokemon-iterm
+
+set -euo pipefail
+
+DOTPATH="$HOME/my_dotfiles"
+PROFILE_SRC="$DOTPATH/iterm2/PokemonProfile.json"
+PROFILE_DST="$HOME/Library/Application Support/iTerm2/DynamicProfiles/PokemonProfile.json"
+
+mkdir -p "$(dirname "$PROFILE_DST")"
+cp "$PROFILE_SRC" "$PROFILE_DST"
+
+echo "✅ iTerm2 Dynamic Profile 'Pokemon' をインストールしました"
+echo ""
+echo "次のステップ:"
+echo "  1. iTerm2 > Settings > Profiles で 'Pokemon' プロファイルを選択"
+echo "  2. Other Actions... > Set as Default"
+echo "  3. 新しいタブを開いて確認"

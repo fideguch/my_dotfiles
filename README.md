@@ -67,6 +67,24 @@ $(brew --prefix)/opt/fzf/install --key-bindings --completion --no-update-rc
 | `cc` | claude (Claude Code) |
 | `mkcd <dir>` | mkdir + cd を同時実行 |
 
+## ポケモン背景 (iTerm2)
+
+[Pokemon-Terminal](https://github.com/LazoCoder/Pokemon-Terminal) を使ってiTerm2の背景にポケモンを表示。
+
+| 状態 | ポケモン | 背景色 |
+|---|---|---|
+| 通常 | ゲンガー | ダークパープル |
+| Claude Code起動中 | ミュウツー | 薄紫 |
+
+`cc` 等のClaude Codeエイリアスで自動切替。手動で変更する場合:
+
+```bash
+pokemon -n gengar     # ゲンガーに変更
+pokemon -n umbreon    # ブラッキーに変更
+pokemon -t ghost      # ゴーストタイプからランダム
+pokemon               # 全768匹からランダム
+```
+
 ## 更新
 
 ```bash
