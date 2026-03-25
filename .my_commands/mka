@@ -1,0 +1,40 @@
+#!/bin/zsh
+# エイリアスを .zshrc に追加するコマンド
+# Usage: mka <alias_name> <command>
+# Example: mka gs 'git status'
+
+if [[ $# -lt 2 ]]; then
+  echo "Usage: mka <alias_name> <command>"
+  echo "Example: mka gs 'git status'"
+  return 1 2>/dev/null || exit 1
+fi
+
+local alias_name="$1"
+shift
+local alias_cmd="$*"
+local zshrc="$HOME/my_dotfiles/.zshrc"
+
+# 既存チェック
+if grep -q "^alias ${alias_name}=" "$zshrc" 2>/dev/null; then
+  echo "⚠ alias '${alias_name}' は既に存在します:"
+  grep "^alias ${alias_name}=" "$zshrc"
+  echo ""
+  printf "上書きしますか? [y/N] "
+  read -r yn
+  if [[ "$yn" != [yY] ]]; then
+    echo "キャンセルしました"
+    return 0 2>/dev/null || exit 0
+  fi
+  sed -i '' "s|^alias ${alias_name}=.*|alias ${alias_name}='${alias_cmd}'|" "$zshrc"
+  echo "✅ alias ${alias_name}='${alias_cmd}' に更新しました"
+else
+  # エイリアスセクションの末尾に追加
+  sed -i '' "/^# ── ディレクトリ移動/i\\
+alias ${alias_name}='${alias_cmd}'
+" "$zshrc"
+  echo "✅ alias ${alias_name}='${alias_cmd}' を追加しました"
+fi
+
+# 即時反映
+alias "${alias_name}=${alias_cmd}"
+echo "現在のシェルにも反映済み"

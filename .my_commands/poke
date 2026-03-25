@@ -1,0 +1,8 @@
+#!/bin/zsh
+# pokemon コマンドの短縮版
+# Usage: poke [args...]
+# Examples:
+#   poke 150         # ミュウツー
+#   poke -n gengar   # ゲンガー
+#   poke              # ランダム
+pokemon "$@"
