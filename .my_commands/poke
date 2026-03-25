@@ -1,8 +1,92 @@
-#!/bin/zsh
-# pokemon コマンドの短縮版
-# Usage: poke [args...]
-# Examples:
-#   poke 150         # ミュウツー
-#   poke -n gengar   # ゲンガー
-#   poke              # ランダム
-pokemon "$@"
+#!/usr/bin/env python3
+"""pokemon コマンドの短縮版 (図鑑番号・日本語名を表示)
+Usage:
+  poke 150         # ミュウツー
+  poke -n gengar   # ゲンガー
+  poke             # ランダム
+"""
+import json
+import os
+import subprocess
+import sys
+
+from pokemonterminal.database import Database
+
+_DATA_DIR = os.path.dirname(os.path.abspath(__file__))
+_JA_NAMES_FILE = os.path.join(_DATA_DIR, "pokemon_ja.json")
+
+TYPE_JA = {
+    "normal": "ノーマル", "fire": "ほのお", "fighting": "かくとう",
+    "water": "みず", "flying": "ひこう", "grass": "くさ",
+    "poison": "どく", "electric": "でんき", "ground": "じめん",
+    "psychic": "エスパー", "rock": "いわ", "ice": "こおり",
+    "bug": "むし", "dragon": "ドラゴン", "ghost": "ゴースト",
+    "dark": "あく", "steel": "はがね", "fairy": "フェアリー",
+}
+
+
+def load_ja_names():
+    if os.path.exists(_JA_NAMES_FILE):
+        with open(_JA_NAMES_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+def find_chosen_pokemon(args):
+    """dry-run で選ばれるポケモンを特定し、DB上のオブジェクトを返す"""
+    result = subprocess.run(
+        ["pokemon"] + args + ["-dr"],
+        capture_output=True, text=True,
+    )
+    output = result.stdout + result.stderr
+    chosen_name = None
+    for line in output.splitlines():
+        if "Chose" in line:
+            chosen_name = line.split("Chose")[-1].strip()
+            break
+    if not chosen_name:
+        return None
+    db = Database()
+    for p in db.get_all():
+        if p.get_name().lower() == chosen_name.lower():
+            return p
+    return None
+
+
+def set_and_show(pokemon_obj):
+    """IDで確実に背景設定し、図鑑情報を表示"""
+    ja_names = load_ja_names()
+    pid = pokemon_obj.get_id()
+    en_name = pokemon_obj.get_name()
+
+    # IDがあればIDで指定、ExtraはNameで指定（確実に同じポケモンを設定）
+    if pid != "---":
+        subprocess.run(["pokemon", pid], stdout=subprocess.DEVNULL)
+    else:
+        subprocess.run(["pokemon", "-n", en_name], stdout=subprocess.DEVNULL)
+
+    ja_name = ja_names.get(en_name, ja_names.get(en_name.lower(), "?"))
+    t1 = pokemon_obj.get_pkmn_type()
+    t2 = pokemon_obj.get_pkmn_type_secondary()
+    t1_ja = TYPE_JA.get(t1, t1)
+    types = f"{t1_ja}({t1})"
+    if t2:
+        t2_ja = TYPE_JA.get(t2, t2)
+        types += f" / {t2_ja}({t2})"
+    print(f"#{pid} {ja_name} ({en_name})  {types}")
+
+
+def main():
+    args = sys.argv[1:]
+
+    # dry-run でポケモンを特定し、IDで確実に同じポケモンを設定
+    chosen = find_chosen_pokemon(args)
+    if chosen:
+        set_and_show(chosen)
+    else:
+        # フォールバック: そのまま実行
+        subprocess.run(["pokemon"] + args)
+
+
+if __name__ == "__main__":
+    main()
