@@ -74,11 +74,11 @@ Claude Code起動時に `preexec` フックで自動切替。
 
 | 状態 | ポケモン |
 |---|---|
-| 通常 | ゲンガー |
-| Claude Code中 | メタモン |
+| 通常 | ダークライ |
+| Claude Code中 | ゾロアーク |
 
 ```bash
-poke -n gengar   # ゲンガーに変更
+poke -n darkrai  # ダークライに変更
 poke 150         # ミュウツー
 poke             # 全ポケモンからランダム
 ```
