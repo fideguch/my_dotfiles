@@ -1,60 +1,60 @@
-# Hooks
+# フック
 
-Hooks are event-driven automations that fire before or after Claude Code tool executions. They enforce code quality, catch mistakes early, and automate repetitive checks.
+フックは Claude Code のツール実行前後に発火するイベント駆動型の自動化機能です。コード品質の担保、ミスの早期検出、定型チェックの自動化を行います。
 
-## How Hooks Work
+## フックの仕組み
 
 ```
-User request → Claude picks a tool → PreToolUse hook runs → Tool executes → PostToolUse hook runs
+ユーザーリクエスト → Claude がツールを選択 → PreToolUse フック実行 → ツール実行 → PostToolUse フック実行
 ```
 
-- **PreToolUse** hooks run before the tool executes. They can **block** (exit code 2) or **warn** (stderr without blocking).
-- **PostToolUse** hooks run after the tool completes. They can analyze output but cannot block.
-- **Stop** hooks run after each Claude response.
-- **SessionStart/SessionEnd** hooks run at session lifecycle boundaries.
-- **PreCompact** hooks run before context compaction, useful for saving state.
+- **PreToolUse** フック: ツール実行前に動作。ブロック（終了コード 2）または警告（stderr 出力）が可能
+- **PostToolUse** フック: ツール実行後に動作。出力の分析は可能だがブロックはできない
+- **Stop** フック: Claude の各レスポンス後に動作
+- **SessionStart/SessionEnd** フック: セッションのライフサイクル境界で動作
+- **PreCompact** フック: コンテキスト圧縮前に動作。状態の保存に使用
 
-## Hooks in This Plugin
+## このプラグインのフック
 
-### PreToolUse Hooks
+### PreToolUse フック
 
-| Hook | Matcher | Behavior | Exit Code |
-|------|---------|----------|-----------|
-| **Dev server blocker** | `Bash` | Blocks `npm run dev` etc. outside tmux — ensures log access | 2 (blocks) |
-| **Tmux reminder** | `Bash` | Suggests tmux for long-running commands (npm test, cargo build, docker) | 0 (warns) |
-| **Git push reminder** | `Bash` | Reminds to review changes before `git push` | 0 (warns) |
-| **Doc file warning** | `Write` | Warns about non-standard `.md`/`.txt` files (allows README, CLAUDE, CONTRIBUTING, CHANGELOG, LICENSE, SKILL, docs/, skills/); cross-platform path handling | 0 (warns) |
-| **Strategic compact** | `Edit\|Write` | Suggests manual `/compact` at logical intervals (every ~50 tool calls) | 0 (warns) |
-| **InsAIts security monitor (opt-in)** | `Bash\|Write\|Edit\|MultiEdit` | Optional security scan for high-signal tool inputs. Disabled unless `ECC_ENABLE_INSAITS=1`. Blocks on critical findings, warns on non-critical, and writes audit log to `.insaits_audit_session.jsonl`. Requires `pip install insa-its`. [Details](../scripts/hooks/insaits-security-monitor.py) | 2 (blocks critical) / 0 (warns) |
+| フック | マッチャー | 動作 | 終了コード |
+|--------|-----------|------|-----------|
+| **開発サーバーブロッカー** | `Bash` | tmux 外での `npm run dev` 等をブロック — ログアクセスを確保 | 2 (ブロック) |
+| **tmux リマインダー** | `Bash` | 長時間コマンド（npm test, cargo build, docker）に tmux を提案 | 0 (警告) |
+| **Git push リマインダー** | `Bash` | `git push` 前に変更のレビューをリマインド | 0 (警告) |
+| **ドキュメントファイル警告** | `Write` | 非標準の `.md`/`.txt` ファイルについて警告（README, CLAUDE, CONTRIBUTING, CHANGELOG, LICENSE, SKILL, docs/, skills/ は許可） | 0 (警告) |
+| **戦略的コンパクト** | `Edit\|Write` | 約50ツールコールごとに手動 `/compact` を提案 | 0 (警告) |
+| **InsAIts セキュリティ監視 (オプトイン)** | `Bash\|Write\|Edit\|MultiEdit` | 高シグナルなツール入力のセキュリティスキャン。`ECC_ENABLE_INSAITS=1` 設定時のみ有効。`pip install insa-its` が必要 | 2 (重大時ブロック) / 0 (警告) |
 
-### PostToolUse Hooks
+### PostToolUse フック
 
-| Hook | Matcher | What It Does |
-|------|---------|-------------|
-| **PR logger** | `Bash` | Logs PR URL and review command after `gh pr create` |
-| **Build analysis** | `Bash` | Background analysis after build commands (async, non-blocking) |
-| **Quality gate** | `Edit\|Write\|MultiEdit` | Runs fast quality checks after edits |
-| **Prettier format** | `Edit` | Auto-formats JS/TS files with Prettier after edits |
-| **TypeScript check** | `Edit` | Runs `tsc --noEmit` after editing `.ts`/`.tsx` files |
-| **console.log warning** | `Edit` | Warns about `console.log` statements in edited files |
+| フック | マッチャー | 動作 |
+|--------|-----------|------|
+| **PR ロガー** | `Bash` | `gh pr create` 後に PR URL とレビューコマンドをログ |
+| **ビルド分析** | `Bash` | ビルドコマンド後のバックグラウンド分析（非同期、非ブロック） |
+| **品質ゲート** | `Edit\|Write\|MultiEdit` | 編集後の高速品質チェック |
+| **Prettier フォーマット** | `Edit` | 編集後に JS/TS ファイルを Prettier で自動フォーマット |
+| **TypeScript チェック** | `Edit` | `.ts`/`.tsx` ファイル編集後に `tsc --noEmit` を実行 |
+| **console.log 警告** | `Edit` | 編集ファイル内の `console.log` について警告 |
 
-### Lifecycle Hooks
+### ライフサイクルフック
 
-| Hook | Event | What It Does |
-|------|-------|-------------|
-| **Session start** | `SessionStart` | Loads previous context and detects package manager |
-| **Pre-compact** | `PreCompact` | Saves state before context compaction |
-| **Console.log audit** | `Stop` | Checks all modified files for `console.log` after each response |
-| **Session summary** | `Stop` | Persists session state when transcript path is available |
-| **Pattern extraction** | `Stop` | Evaluates session for extractable patterns (continuous learning) |
-| **Cost tracker** | `Stop` | Emits lightweight run-cost telemetry markers |
-| **Session end marker** | `SessionEnd` | Lifecycle marker and cleanup log |
+| フック | イベント | 動作 |
+|--------|---------|------|
+| **セッション開始** | `SessionStart` | 前回のコンテキスト読み込みとパッケージマネージャー検出 |
+| **プリコンパクト** | `PreCompact` | コンテキスト圧縮前に状態を保存 |
+| **console.log 監査** | `Stop` | 各レスポンス後に変更ファイルの `console.log` をチェック |
+| **セッションサマリー** | `Stop` | トランスクリプトパスが利用可能な場合にセッション状態を永続化 |
+| **パターン抽出** | `Stop` | セッションから抽出可能なパターンを評価（継続学習） |
+| **コストトラッカー** | `Stop` | 軽量な実行コストのテレメトリマーカーを出力 |
+| **セッション終了マーカー** | `SessionEnd` | ライフサイクルマーカーとクリーンアップログ |
 
-## Customizing Hooks
+## フックのカスタマイズ
 
-### Disabling a Hook
+### フックの無効化
 
-Remove or comment out the hook entry in `hooks.json`. If installed as a plugin, override in your `~/.claude/settings.json`:
+`hooks.json` のフックエントリを削除またはコメントアウトしてください。プラグインとしてインストールされている場合は、`~/.claude/settings.json` でオーバーライドできます:
 
 ```json
 {
@@ -63,35 +63,35 @@ Remove or comment out the hook entry in `hooks.json`. If installed as a plugin, 
       {
         "matcher": "Write",
         "hooks": [],
-        "description": "Override: allow all .md file creation"
+        "description": "オーバーライド: すべての .md ファイル作成を許可"
       }
     ]
   }
 }
 ```
 
-### Runtime Hook Controls (Recommended)
+### ランタイムフック制御（推奨）
 
-Use environment variables to control hook behavior without editing `hooks.json`:
+`hooks.json` を編集せずに環境変数でフックの動作を制御できます:
 
 ```bash
-# minimal | standard | strict (default: standard)
+# minimal | standard | strict (デフォルト: standard)
 export ECC_HOOK_PROFILE=standard
 
-# Disable specific hook IDs (comma-separated)
+# 特定のフック ID を無効化（カンマ区切り）
 export ECC_DISABLED_HOOKS="pre:bash:tmux-reminder,post:edit:typecheck"
 ```
 
-Profiles:
-- `minimal` — keep essential lifecycle and safety hooks only.
-- `standard` — default; balanced quality + safety checks.
-- `strict` — enables additional reminders and stricter guardrails.
+プロファイル:
+- `minimal` — 必須のライフサイクルと安全フックのみ
+- `standard` — デフォルト。品質と安全のバランス型チェック
+- `strict` — 追加のリマインダーと厳格なガードレールを有効化
 
-### Writing Your Own Hook
+### 独自フックの作成
 
-Hooks are shell commands that receive tool input as JSON on stdin and must output JSON on stdout.
+フックはツール入力を JSON として stdin で受け取り、JSON を stdout に出力するシェルコマンドです。
 
-**Basic structure:**
+**基本構造:**
 
 ```javascript
 // my-hook.js
@@ -100,48 +100,48 @@ process.stdin.on('data', chunk => data += chunk);
 process.stdin.on('end', () => {
   const input = JSON.parse(data);
 
-  // Access tool info
-  const toolName = input.tool_name;        // "Edit", "Bash", "Write", etc.
-  const toolInput = input.tool_input;      // Tool-specific parameters
-  const toolOutput = input.tool_output;    // Only available in PostToolUse
+  // ツール情報へのアクセス
+  const toolName = input.tool_name;        // "Edit", "Bash", "Write" 等
+  const toolInput = input.tool_input;      // ツール固有のパラメータ
+  const toolOutput = input.tool_output;    // PostToolUse でのみ利用可能
 
-  // Warn (non-blocking): write to stderr
-  console.error('[Hook] Warning message shown to Claude');
+  // 警告（非ブロック）: stderr に出力
+  console.error('[Hook] 警告メッセージ');
 
-  // Block (PreToolUse only): exit with code 2
+  // ブロック（PreToolUse のみ）: 終了コード 2
   // process.exit(2);
 
-  // Always output the original data to stdout
+  // 常にオリジナルデータを stdout に出力
   console.log(data);
 });
 ```
 
-**Exit codes:**
-- `0` — Success (continue execution)
-- `2` — Block the tool call (PreToolUse only)
-- Other non-zero — Error (logged but does not block)
+**終了コード:**
+- `0` — 成功（実行を継続）
+- `2` — ツールコールをブロック（PreToolUse のみ）
+- その他の非ゼロ — エラー（ログに記録されるがブロックしない）
 
-### Hook Input Schema
+### フック入力スキーマ
 
 ```typescript
 interface HookInput {
-  tool_name: string;          // "Bash", "Edit", "Write", "Read", etc.
+  tool_name: string;          // "Bash", "Edit", "Write", "Read" 等
   tool_input: {
-    command?: string;         // Bash: the command being run
-    file_path?: string;       // Edit/Write/Read: target file
-    old_string?: string;      // Edit: text being replaced
-    new_string?: string;      // Edit: replacement text
-    content?: string;         // Write: file content
+    command?: string;         // Bash: 実行されるコマンド
+    file_path?: string;       // Edit/Write/Read: 対象ファイル
+    old_string?: string;      // Edit: 置換元テキスト
+    new_string?: string;      // Edit: 置換先テキスト
+    content?: string;         // Write: ファイル内容
   };
-  tool_output?: {             // PostToolUse only
-    output?: string;          // Command/tool output
+  tool_output?: {             // PostToolUse のみ
+    output?: string;          // コマンド/ツールの出力
   };
 }
 ```
 
-### Async Hooks
+### 非同期フック
 
-For hooks that should not block the main flow (e.g., background analysis):
+メインフローをブロックすべきでないフック（バックグラウンド分析など）:
 
 ```json
 {
@@ -152,37 +152,37 @@ For hooks that should not block the main flow (e.g., background analysis):
 }
 ```
 
-Async hooks run in the background. They cannot block tool execution.
+非同期フックはバックグラウンドで実行されます。ツール実行をブロックすることはできません。
 
-## Common Hook Recipes
+## よくあるフックレシピ
 
-### Warn about TODO comments
+### TODO コメントの警告
 
 ```json
 {
   "matcher": "Edit",
   "hooks": [{
     "type": "command",
-    "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const ns=i.tool_input?.new_string||'';if(/TODO|FIXME|HACK/.test(ns)){console.error('[Hook] New TODO/FIXME added - consider creating an issue')}console.log(d)})\""
+    "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const ns=i.tool_input?.new_string||'';if(/TODO|FIXME|HACK/.test(ns)){console.error('[Hook] TODO/FIXME が追加されました - Issue の作成を検討してください')}console.log(d)})\""
   }],
-  "description": "Warn when adding TODO/FIXME comments"
+  "description": "TODO/FIXME コメント追加時に警告"
 }
 ```
 
-### Block large file creation
+### 大きなファイルの作成をブロック
 
 ```json
 {
   "matcher": "Write",
   "hooks": [{
     "type": "command",
-    "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const c=i.tool_input?.content||'';const lines=c.split('\\n').length;if(lines>800){console.error('[Hook] BLOCKED: File exceeds 800 lines ('+lines+' lines)');console.error('[Hook] Split into smaller, focused modules');process.exit(2)}console.log(d)})\""
+    "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const c=i.tool_input?.content||'';const lines=c.split('\\n').length;if(lines>800){console.error('[Hook] ブロック: ファイルが800行を超えています ('+lines+'行)');console.error('[Hook] より小さく焦点を絞ったモジュールに分割してください');process.exit(2)}console.log(d)})\""
   }],
-  "description": "Block creation of files larger than 800 lines"
+  "description": "800行を超えるファイルの作成をブロック"
 }
 ```
 
-### Auto-format Python files with ruff
+### Python ファイルを ruff で自動フォーマット
 
 ```json
 {
@@ -191,29 +191,29 @@ Async hooks run in the background. They cannot block tool execution.
     "type": "command",
     "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const p=i.tool_input?.file_path||'';if(/\\.py$/.test(p)){const{execFileSync}=require('child_process');try{execFileSync('ruff',['format',p],{stdio:'pipe'})}catch(e){}}console.log(d)})\""
   }],
-  "description": "Auto-format Python files with ruff after edits"
+  "description": "編集後に Python ファイルを ruff でフォーマット"
 }
 ```
 
-### Require test files alongside new source files
+### 新しいソースファイルにテストファイルを要求
 
 ```json
 {
   "matcher": "Write",
   "hooks": [{
     "type": "command",
-    "command": "node -e \"const fs=require('fs');let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const p=i.tool_input?.file_path||'';if(/src\\/.*\\.(ts|js)$/.test(p)&&!/\\.test\\.|\\.spec\\./.test(p)){const testPath=p.replace(/\\.(ts|js)$/,'.test.$1');if(!fs.existsSync(testPath)){console.error('[Hook] No test file found for: '+p);console.error('[Hook] Expected: '+testPath);console.error('[Hook] Consider writing tests first (/tdd)')}}console.log(d)})\""
+    "command": "node -e \"const fs=require('fs');let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const p=i.tool_input?.file_path||'';if(/src\\/.*\\.(ts|js)$/.test(p)&&!/\\.test\\.|\\.spec\\./.test(p)){const testPath=p.replace(/\\.(ts|js)$/,'.test.$1');if(!fs.existsSync(testPath)){console.error('[Hook] テストファイルが見つかりません: '+p);console.error('[Hook] 期待されるパス: '+testPath);console.error('[Hook] 先にテストを書くことを検討してください (/tdd)')}}console.log(d)})\""
   }],
-  "description": "Remind to create tests when adding new source files"
+  "description": "新しいソースファイル追加時にテスト作成をリマインド"
 }
 ```
 
-## Cross-Platform Notes
+## クロスプラットフォームについて
 
-Hook logic is implemented in Node.js scripts for cross-platform behavior on Windows, macOS, and Linux. A small number of shell wrappers are retained for continuous-learning observer hooks; those wrappers are profile-gated and have Windows-safe fallback behavior.
+フックロジックは Windows, macOS, Linux で動作するよう Node.js スクリプトで実装されています。一部のシェルラッパーは継続学習オブザーバーフック用に残されていますが、プロファイルゲートされており Windows セーフなフォールバック動作があります。
 
-## Related
+## 関連ファイル
 
-- [rules/common/hooks.md](../rules/common/hooks.md) — Hook architecture guidelines
-- [skills/strategic-compact/](../skills/strategic-compact/) — Strategic compaction skill
-- [scripts/hooks/](../scripts/hooks/) — Hook script implementations
+- [rules/common/hooks.md](../rules/common/hooks.md) — フックアーキテクチャガイドライン
+- [skills/strategic-compact/](../skills/strategic-compact/) — 戦略的コンパクションスキル
+- [scripts/hooks/](../scripts/hooks/) — フックスクリプトの実装

@@ -83,6 +83,21 @@ poke 150         # ミュウツー
 poke             # 全ポケモンからランダム
 ```
 
+## Claude Code (`claude/`)
+
+Claude Code の設定一式。`set_up.sh` で `~/.claude/` にシンボリンクが張られる。
+
+| ディレクトリ | 説明 |
+|---|---|
+| `claude/CLAUDE.md` | グローバル設定（言語・スタック・ワークフロー） |
+| `claude/rules/` | コーディング規約（共通 + 10言語） |
+| `claude/agents/` | 専門サブエージェント (28個) |
+| `claude/skills/` | タスク別リファレンス (48個) |
+| `claude/hooks/` | 自動化フック (pre/post-tool) |
+| `claude/commands/` | カスタムコマンド |
+
+> 機密ファイル (`settings.local.json`, `mcp-configs/`) は `.gitignore` で除外済み。
+
 ## 更新
 
 ```bash

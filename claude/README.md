@@ -1,14 +1,14 @@
-### Plugin Manifest Gotchas
+### プラグインマニフェストの注意点
 
-If you plan to edit `.claude-plugin/plugin.json`, be aware that the Claude plugin validator enforces several **undocumented but strict constraints** that can cause installs to fail with vague errors (for example, `agents: Invalid input`). In particular, component fields must be arrays, `agents` must use explicit file paths rather than directories, and a `version` field is required for reliable validation and installation.
+`.claude-plugin/plugin.json` を編集する場合、Claude プラグインバリデータには**ドキュメント化されていない厳密な制約**がいくつかあり、曖昧なエラー（例: `agents: Invalid input`）でインストールが失敗することがあります。特に、コンポーネントフィールドは配列でなければならず、`agents` はディレクトリではなく明示的なファイルパスを使用する必要があり、`version` フィールドが必須です。
 
-These constraints are not obvious from public examples and have caused repeated installation failures in the past. They are documented in detail in `.claude-plugin/PLUGIN_SCHEMA_NOTES.md`, which should be reviewed before making any changes to the plugin manifest.
+これらの制約は公開サンプルからは分かりにくく、過去に繰り返しインストール失敗の原因となりました。詳細は `.claude-plugin/PLUGIN_SCHEMA_NOTES.md` に記載されていますので、プラグインマニフェストを変更する前に確認してください。
 
-### Custom Endpoints and Gateways
+### カスタムエンドポイントとゲートウェイ
 
-ECC does not override Claude Code transport settings. If Claude Code is configured to run through an official LLM gateway or a compatible custom endpoint, the plugin continues to work because hooks, commands, and skills execute locally after the CLI starts successfully.
+ECC は Claude Code のトランスポート設定を上書きしません。Claude Code が公式 LLM ゲートウェイや互換カスタムエンドポイントを通じて実行されるよう設定されている場合、フック・コマンド・スキルは CLI 起動後にローカルで実行されるため、プラグインは正常に動作します。
 
-Use Claude Code's own environment/configuration for transport selection, for example:
+トランスポート設定には Claude Code 自体の環境変数/設定を使用してください:
 
 ```bash
 export ANTHROPIC_BASE_URL=https://your-gateway.example.com
