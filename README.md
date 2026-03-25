@@ -35,8 +35,9 @@ $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 
 | コマンド | 説明 |
 |---|---|
-| `pokels [-n name] [-t type] [-r region] [-e]` | ポケモン一覧テーブル表示 |
-| `poke [args]` | `pokemon` の短縮版。`poke 150` `poke -n gengar` 等 |
+| `pokels [-n name] [-t type] [-r region] [-e]` | ポケモン一覧 (種族値付き) |
+| `pokefind <name> [-t type] [-r region] [-s stats]` | ポケモン逆引き検索 (日本語/英語, 種族値) |
+| `poke [args]` | 壁紙変更+図鑑情報表示。`poke 150` `poke -n gengar` 等 |
 | `mka <name> <cmd>` | エイリアスを .zshrc に追加。`mka gs 'git status'` |
 | `gccw <file>` | `gcc -Wall -Wextra -Werror` のラッパー |
 

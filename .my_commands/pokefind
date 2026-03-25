@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""ポケモン一覧をテーブル表示するコマンド。
+"""ポケモン逆引き検索。名前(日本語/英語)、タイプ、地方、種族値で検索。
 Usage:
-  pokels                    # 全ポケモン一覧
-  pokels -n pikachu         # 名前で検索 (部分一致, 日本語/英語)
-  pokels -t ghost           # タイプで絞込
-  pokels -t ghost fire      # 複数タイプ (OR)
-  pokels -r kanto           # 地方で絞込
-  pokels -r kanto -t fire   # 地方+タイプ
-  pokels -e                 # Extra (メガ進化等) のみ
+  pokefind ミュウツー          # 日本語名で検索
+  pokefind gengar             # 英語名で検索
+  pokefind mewtwo             # 部分一致OK
+  pokefind -t ghost           # タイプで絞込
+  pokefind -r kanto           # 地方で絞込
+  pokefind -s 500             # 合計種族値500以上
+  pokefind ゲンガー -s 400     # 名前+種族値の組合せ
 """
 import argparse
 import sys
@@ -19,27 +19,34 @@ from pokeutil import (
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ポケモン一覧テーブル")
-    parser.add_argument("-n", "--name", help="名前で検索 (部分一致, 日本語/英語)")
+    parser = argparse.ArgumentParser(description="ポケモン逆引き検索")
+    parser.add_argument("query", nargs="?", default="",
+                        help="名前で検索 (日本語/英語, 部分一致)")
     parser.add_argument("-t", "--type", nargs="+", dest="types",
-                        help="タイプで絞込 (複数指定可)")
+                        help="タイプで絞込")
     parser.add_argument("-r", "--region", help="地方で絞込")
-    parser.add_argument("-e", "--extra", action="store_true",
-                        help="Extra (メガ進化等) のみ表示")
+    parser.add_argument("-s", "--stats", type=int,
+                        help="合計種族値がこの値以上")
     args = parser.parse_args()
+
+    if not args.query and not args.types and not args.region and not args.stats:
+        parser.print_help()
+        sys.exit(1)
 
     db = Database()
     pokemon_list = db.get_all()
     data = load_data()
 
-    # フィルタ適用
-    if args.name:
-        query = args.name.lower()
+    # 名前フィルタ (日本語/英語 部分一致)
+    if args.query:
+        query = args.query.lower()
         pokemon_list = [
             p for p in pokemon_list
             if query in p.get_name().lower()
             or query in get_ja_name(data, p.get_name()).lower()
         ]
+
+    # タイプフィルタ
     if args.types:
         types = {t.lower() for t in args.types}
         pokemon_list = [
@@ -47,20 +54,28 @@ def main():
             if p.get_pkmn_type().lower() in types
             or (p.get_pkmn_type_secondary() or "").lower() in types
         ]
+
+    # 地方フィルタ
     if args.region:
         region = args.region.lower()
         pokemon_list = [p for p in pokemon_list if p.get_region().lower() == region]
-    if args.extra:
-        pokemon_list = [p for p in pokemon_list if p.is_extra()]
+
+    # 種族値フィルタ
+    if args.stats:
+        min_total = args.stats
+        pokemon_list = [
+            p for p in pokemon_list
+            if sum(get_stats(data, p.get_name()) or [0]) >= min_total
+        ]
 
     if not pokemon_list:
         print("該当するポケモンが見つかりません")
         sys.exit(1)
 
-    # 図鑑番号順にソート (extraの --- は末尾)
+    # 図鑑番号順にソート
     pokemon_list.sort(key=lambda p: (p.get_id() == "---", p.get_id()))
 
-    # テーブル表示
+    # 表示
     header = (
         f"{'ID':>5}  {'名前':<10} {'Name':<16}"
         f"{'地方':<14} {'タイプ':<24} {'種族値'}"
@@ -75,11 +90,7 @@ def main():
         region = fmt_region(p.get_region())
         t1 = fmt_type(p.get_pkmn_type())
         t2 = p.get_pkmn_type_secondary()
-        types = t1
-        if t2:
-            types += f"/{fmt_type(t2)}"
-        else:
-            types += ""
+        types = t1 + (f"/{fmt_type(t2)}" if t2 else "")
         stats = fmt_stats(get_stats(data, en_name))
         print(
             f"{pid:>5}  {ja_name:<10} {en_name:<16}"
