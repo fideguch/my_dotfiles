@@ -176,23 +176,13 @@ alias diff='diff -U1'
 # 256色カラーパレット表示
 alias colorls='for c in {000..255}; do echo -n "\e[38;5;${c}m $c" ; [ $(($c%16)) -eq 15 ] && echo;done;echo'
 
-# Claude Code (iTerm2ではミュウツーに切替 → 終了後ゲンガーに戻す)
-_claude_with_pokemon() {
-  if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v pokemon &>/dev/null; then
-    pokemon -n mewtwo 2>/dev/null
-  fi
-  command claude "$@"
-  if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v pokemon &>/dev/null; then
-    pokemon -n gengar 2>/dev/null
-  fi
-}
-
-alias cc='_claude_with_pokemon'
-alias ccc='_claude_with_pokemon --continue'
-alias ccr='_claude_with_pokemon --resume'
-alias ccf='_claude_with_pokemon --dangerously-skip-permissions'
-alias ccfc='_claude_with_pokemon --continue --dangerously-skip-permissions'
-alias ccfr='_claude_with_pokemon --resume --dangerously-skip-permissions'
+# Claude Code
+alias cc='claude'
+alias ccc='claude --continue'
+alias ccr='claude --resume'
+alias ccf='claude --dangerously-skip-permissions'
+alias ccfc='claude --continue --dangerously-skip-permissions'
+alias ccfr='claude --resume --dangerously-skip-permissions'
 alias ccp='claude --print'
 
 # ── 関数 ──────────────────────────────────────────────────
@@ -235,7 +225,11 @@ if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
 fi
 
 # ── iTerm2 ポケモン背景 ───────────────────────────────────
-# デフォルト: ゲンガー / Claude Code起動時: ミュウツー
+# デフォルト: ゲンガー / Claude Codeセッション中: メガミュウツーY
 if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v pokemon &>/dev/null; then
-  pokemon -n gengar 2>/dev/null
+  if [[ -n "$CLAUDECODE" ]]; then
+    pokemon -n mewtwo-megay 2>/dev/null
+  else
+    pokemon -n gengar 2>/dev/null
+  fi
 fi
