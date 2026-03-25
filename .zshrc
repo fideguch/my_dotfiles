@@ -228,19 +228,22 @@ fi
 # ── iTerm2 ポケモン背景 ───────────────────────────────────
 # デフォルト: ダークライ / Claude Code実行中: ゾロアーク
 # preexec: コマンド実行前にエイリアスを解決し、claude なら切替
-# precmd:  コマンド終了後にダークライへ戻す
+# precmd:  claude プロセスが子にいる間はゾロアークを維持、終了したらダークライに戻す
 if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v pokemon &>/dev/null; then
   _pokemon_preexec() {
     local resolved
     resolved="$(whence "${1%% *}" 2>/dev/null)"
     if [[ "$resolved" == claude* || "$resolved" == */claude ]]; then
       poke -n zoroark
-      _POKEMON_CLAUDE=1
+      _POKEMON_CLAUDE_PID=$$
     fi
   }
   _pokemon_precmd() {
-    if [[ -n "$_POKEMON_CLAUDE" ]]; then
-      unset _POKEMON_CLAUDE
+    if [[ -n "$_POKEMON_CLAUDE_PID" ]]; then
+      if pgrep -P $$ -f 'claude' &>/dev/null; then
+        return
+      fi
+      unset _POKEMON_CLAUDE_PID
       poke -n darkrai
     fi
   }
