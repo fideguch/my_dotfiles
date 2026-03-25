@@ -225,10 +225,10 @@ if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
 fi
 
 # ── iTerm2 ポケモン背景 ───────────────────────────────────
-# デフォルト: ゲンガー / Claude Codeセッション中: メガミュウツーY
+# デフォルト: ゲンガー / Claude Codeセッション中: ミュウツー
 if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v pokemon &>/dev/null; then
   if [[ -n "$CLAUDECODE" ]]; then
-    pokemon -n mewtwo-megay 2>/dev/null
+    pokemon 150 2>/dev/null
   else
     pokemon -n gengar 2>/dev/null
   fi
