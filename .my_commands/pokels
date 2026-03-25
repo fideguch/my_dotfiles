@@ -2,7 +2,7 @@
 """ポケモン一覧をテーブル表示するコマンド。
 Usage:
   pokels                    # 全ポケモン一覧
-  pokels -n pikachu         # 名前で検索 (部分一致)
+  pokels -n pikachu         # 名前で検索 (部分一致, 日本語名も対応)
   pokels -t ghost           # タイプで絞込
   pokels -t ghost fire      # 複数タイプ (OR)
   pokels -r kanto           # 地方で絞込
@@ -10,14 +10,55 @@ Usage:
   pokels -e                 # Extra (メガ進化等) のみ
 """
 import argparse
+import json
+import os
 import sys
 
 from pokemonterminal.database import Database
 
+# 日本語名データファイル (同ディレクトリ)
+_DATA_DIR = os.path.dirname(os.path.abspath(__file__))
+_JA_NAMES_FILE = os.path.join(_DATA_DIR, "pokemon_ja.json")
+
+TYPE_JA = {
+    "normal": "ノーマル", "fire": "ほのお", "fighting": "かくとう",
+    "water": "みず", "flying": "ひこう", "grass": "くさ",
+    "poison": "どく", "electric": "でんき", "ground": "じめん",
+    "psychic": "エスパー", "rock": "いわ", "ice": "こおり",
+    "bug": "むし", "dragon": "ドラゴン", "ghost": "ゴースト",
+    "dark": "あく", "steel": "はがね", "fairy": "フェアリー",
+}
+
+REGION_JA = {
+    "kanto": "カントー", "johto": "ジョウト", "hoenn": "ホウエン",
+    "sinnoh": "シンオウ", "unova": "イッシュ", "kalos": "カロス",
+}
+
+
+def load_ja_names():
+    if os.path.exists(_JA_NAMES_FILE):
+        with open(_JA_NAMES_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+def fmt_type(en_type):
+    """タイプを 日本語(英語) 形式で返す"""
+    if not en_type:
+        return "-"
+    ja = TYPE_JA.get(en_type.lower(), "")
+    return f"{ja}({en_type})" if ja else en_type
+
+
+def fmt_region(en_region):
+    """地方を 日本語(英語) 形式で返す"""
+    ja = REGION_JA.get(en_region.lower(), "")
+    return f"{ja}({en_region})" if ja else en_region
+
 
 def main():
     parser = argparse.ArgumentParser(description="ポケモン一覧テーブル")
-    parser.add_argument("-n", "--name", help="名前で検索 (部分一致)")
+    parser.add_argument("-n", "--name", help="名前で検索 (部分一致, 日本語名も対応)")
     parser.add_argument("-t", "--type", nargs="+", dest="types",
                         help="タイプで絞込 (複数指定可)")
     parser.add_argument("-r", "--region", help="地方で絞込")
@@ -27,11 +68,16 @@ def main():
 
     db = Database()
     pokemon_list = db.get_all()
+    ja_names = load_ja_names()
 
     # フィルタ適用
     if args.name:
         query = args.name.lower()
-        pokemon_list = [p for p in pokemon_list if query in p.get_name().lower()]
+        pokemon_list = [
+            p for p in pokemon_list
+            if query in p.get_name().lower()
+            or query in ja_names.get(p.get_name().lower(), "")
+        ]
     if args.types:
         types = {t.lower() for t in args.types}
         pokemon_list = [
@@ -50,17 +96,24 @@ def main():
         sys.exit(1)
 
     # テーブル表示
-    header = f"{'ID':>5}  {'Name':<22} {'Region':<8} {'Type1':<10} {'Type2':<10}"
-    sep = "-" * len(header)
+    header = (
+        f"{'ID':>5}  {'名前':<10} {'Name':<22}"
+        f"{'地方':<16} {'タイプ1':<18} {'タイプ2':<18}"
+    )
+    sep = "-" * 92
     print(header)
     print(sep)
     for p in pokemon_list:
         pid = p.get_id()
-        name = p.get_name()
-        region = p.get_region()
-        type1 = p.get_pkmn_type()
-        type2 = p.get_pkmn_type_secondary() or "-"
-        print(f"{pid:>5}  {name:<22} {region:<8} {type1:<10} {type2:<10}")
+        en_name = p.get_name()
+        ja_name = ja_names.get(en_name.lower(), "?")
+        region = fmt_region(p.get_region())
+        type1 = fmt_type(p.get_pkmn_type())
+        type2 = fmt_type(p.get_pkmn_type_secondary())
+        print(
+            f"{pid:>5}  {ja_name:<10} {en_name:<22}"
+            f"{region:<16} {type1:<18} {type2:<18}"
+        )
     print(sep)
     print(f"{len(pokemon_list)} 匹")
 
