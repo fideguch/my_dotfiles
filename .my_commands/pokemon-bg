@@ -1,0 +1,10 @@
+#!/bin/zsh
+# iTerm2 にピカチュウ背景を設定する
+# Usage: pokemon-bg [pokemon_name]
+# Default: pikachu
+
+POKEMON="${1:-pikachu}"
+
+if [[ "$TERM_PROGRAM" == "iTerm.app" ]]; then
+  pokemon -n "$POKEMON" 2>/dev/null
+fi

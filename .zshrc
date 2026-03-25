@@ -223,3 +223,10 @@ if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
   source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
   source /opt/homebrew/opt/fzf/shell/completion.zsh
 fi
+
+# ── Pokemon Terminal (iTerm2 背景) ────────────────────────
+# iTerm2 起動時にピカチュウ背景を設定
+# 変更: pokemon-bg eevee, pokemon-bg charizard 等
+if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v pokemon &>/dev/null; then
+  pokemon -n pikachu 2>/dev/null
+fi
