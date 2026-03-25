@@ -1,46 +1,44 @@
-# starship.rs/ja-JP/config/
+# ==========================================================
+# Starship プロンプト設定
+# https://starship.rs/ja-JP/config/
+# ==========================================================
 
-# プロンプトの設定
-# カスタムフォーマットを利用します
-#format = """
-#[┌─>](bold green) $git_status $docker_context $aws
-#[│](bold green)$directory
-#[└─](bold green)$character"""
-# starshipが現在のディレクトリ下のファイルをチェックするまで10ミリ秒待ちます
-#scan_timeout = 10
+"$schema" = "https://starship.rs/config-schema.json"
 
-format = "[靈](fg:046) $all"
-
-# プロンプトの 先頭での改行を無効にする
-# add_newline = false
+format = "[靈](fg:046) $all"
 
 # 時間
 [time]
 disabled = false
 style = "bold fg:086"
+format = "[$time]($style) "
+time_format = "%H:%M"
 
 # ユーザー名
 [username]
-format = "שּ ($style) [$user]($style) in "
+format = "שּ ($style) [$user]($style) in "
 style_root = "bold bg:255 fg:208"
 style_user = "bold fg:208"
 show_always = true
 
-# ディレクトリの設定
+# ディレクトリ
 [directory]
 style = "bold bg:023 fg:123"
 truncation_length = 8
 truncation_symbol = "…/"
+read_only = " 󰌾"
 
 # コマンド入力前文字
 [character]
-success_symbol = "[切](bold fg:227) "
-error_symbol = "[](bold fg:201) "
+success_symbol = "[切](bold fg:227) "
+error_symbol = "[](bold fg:201) "
 
-# Gitの状態
+# Git ブランチ
 [git_branch]
-symbol = " "
+symbol = " "
 style = "bold fg:077"
+
+# Git ステータス
 [git_status]
 conflicted = "🏳 "
 ahead = "🏎💨 "
@@ -48,19 +46,29 @@ behind = "😰 "
 diverged = "😵 "
 untracked = "🤷 "
 stashed = "📦 "
-modified = " "
+modified = " "
 staged = '[++\($count\)](green)'
 renamed = "👅 "
 deleted = "🗑 "
 
-# awsの設定
+# AWS
 [aws]
 format = "on [$symbol$profile]($style) "
 style = "bold fg:208"
-symbol = " "
+symbol = " "
 [aws.region_aliases]
 ap-northeast-1 = "jp"
 
-# dockerの設定
+# Docker
 [docker_context]
-format = "via [  $context](bold 069)"
+format = "via [  $context](bold 069)"
+
+# Python (pyenvバージョン表示)
+[python]
+format = "via [${symbol}${pyenv_prefix}(${version})]($style) "
+symbol = " "
+
+# Node.js
+[nodejs]
+format = "via [$symbol($version)]($style) "
+symbol = " "
