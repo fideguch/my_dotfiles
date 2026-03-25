@@ -224,30 +224,7 @@ if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
   source /opt/homebrew/opt/fzf/shell/completion.zsh
 fi
 
-# ── iTerm2 設定 (ピカチュウ背景対応) ─────────────────────
-# AppleScript で現在のセッションに直接設定を適用
-# プロファイル切り替え不要で即反映
+# ── iTerm2 ピカチュウ背景 ─────────────────────────────────
 if [[ "$TERM_PROGRAM" == "iTerm.app" ]]; then
-  # ピカチュウ背景を設定
   command -v pokemon &>/dev/null && pokemon -n pikachu 2>/dev/null
-
-  # 黄色背景に対して全テキストを暗色に直接設定
-  # (Minimum Contrastは背景画像に非対応なので使わない)
-  printf '\033]10;#1A1200\007'           # 前景色: ほぼ黒 (通常テキスト)
-  printf '\033]4;0;#1A1200\007'          # ANSI black
-  printf '\033]4;1;#8B0000\007'          # ANSI red → 暗い赤
-  printf '\033]4;2;#1B5E20\007'          # ANSI green → 暗い緑
-  printf '\033]4;3;#4A3000\007'          # ANSI yellow → 暗い茶 (黄色回避)
-  printf '\033]4;4;#0D2B6B\007'          # ANSI blue → 暗い青
-  printf '\033]4;5;#5B1A6B\007'          # ANSI magenta → 暗いマゼンタ
-  printf '\033]4;6;#004D5B\007'          # ANSI cyan → 暗いシアン
-  printf '\033]4;7;#2A2000\007'          # ANSI white → 暗い茶
-  printf '\033]4;8;#3D3000\007'          # bright black
-  printf '\033]4;9;#B71C1C\007'          # bright red
-  printf '\033]4;10;#2E7D32\007'         # bright green
-  printf '\033]4;11;#5D4000\007'         # bright yellow → 茶
-  printf '\033]4;12;#1A3A8B\007'         # bright blue
-  printf '\033]4;13;#7B1FA2\007'         # bright magenta
-  printf '\033]4;14;#006978\007'         # bright cyan
-  printf '\033]4;15;#1A1200\007'         # bright white → ほぼ黒
 fi
