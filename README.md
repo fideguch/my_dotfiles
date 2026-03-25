@@ -2,7 +2,7 @@
 
 macOS (Apple Silicon) 用の個人dotfiles。zsh, Vim, Starship を中心としたターミナル環境。
 
-## クイックインストール
+## セットアップ
 
 ```bash
 git clone https://github.com/fideguch/my_dotfiles.git ~/my_dotfiles
@@ -11,85 +11,80 @@ chmod +x set_up.sh
 ./set_up.sh
 ```
 
-セットアップスクリプトが以下を自動で行います:
+スクリプトが Homebrew, Brewfile パッケージ, シンボリックリンク, vim-plug を自動セットアップ。
 
-1. Homebrew のインストール (未導入の場合)
-2. Brewfile に記載されたパッケージのインストール
-3. 各設定ファイルのシンボリックリンク作成
-4. vim-plug のインストール (未導入の場合)
-
-## セットアップ後の手動ステップ
-
+セットアップ後:
 ```bash
-# Vimプラグインをインストール
-vim +PlugInstall +qall
-
-# Starship を最新に更新
-brew upgrade starship
-
-# fzf のキーバインドを有効化 (初回のみ)
-$(brew --prefix)/opt/fzf/install --key-bindings --completion --no-update-rc
+vim +PlugInstall +qall                    # Vimプラグイン
+$(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 ```
 
-## 含まれるファイル
+## ファイル構成
 
 | ファイル | 説明 |
 |---|---|
-| `.zshrc` | Zsh設定 — ヒストリ、補完、エイリアス、PATH管理 |
-| `.vimrc` | Vim設定 — プラグイン、キーマップ、エディタ設定 |
-| `starship.toml` | Starshipプロンプト設定 |
+| `.zshrc` | Zsh設定 (ヒストリ, 補完, エイリアス, PATH) |
+| `.vimrc` | Vim設定 (プラグイン, キーマップ) |
+| `starship.toml` | Starshipプロンプト |
 | `Brewfile` | Homebrewパッケージ一覧 |
-| `.my_commands/` | 自作シェルスクリプト |
-| `.vim/` | Vimカラースキーム、vim-plug |
+| `.my_commands/` | 自作コマンド |
+| `.vim/` | Vimカラースキーム, vim-plug |
 | `set_up.sh` | セットアップスクリプト |
 
-## 主なVimキーマップ
+## 自作コマンド (.my_commands/)
+
+| コマンド | 説明 |
+|---|---|
+| `poke [args]` | `pokemon` の短縮版。`poke 150` `poke -n gengar` 等 |
+| `mka <name> <cmd>` | エイリアスを .zshrc に追加。`mka gs 'git status'` |
+| `gccw <file>` | `gcc -Wall -Wextra -Werror` のラッパー |
+
+## 主なエイリアス
+
+| エイリアス | コマンド | 備考 |
+|---|---|---|
+| `v`, `vi` | vim | |
+| `vz` | vim ~/.zshrc | 設定編集用 |
+| `vv` | vim ~/.vimrc | 設定編集用 |
+| `sovz` | source ~/.zshrc | 設定反映 |
+| `g` | git | |
+| `d` / `dc` | docker / docker-compose | |
+| `cc` | claude | Claude Code |
+| `ccc` | claude --continue | 前回セッション継続 |
+| `ccr` | claude --resume | セッション再開 |
+| `mkcd <dir>` | mkdir + cd | ディレクトリ作成&移動 |
+
+## Vimキーマップ
 
 | キー | 動作 |
 |---|---|
-| `Ctrl+e` | NERDTree (ファイルツリー) の開閉 |
+| `Ctrl+e` | NERDTree開閉 |
 | `Ctrl+n` | ファイル検索 (fzf) |
 | `Ctrl+p` | バッファ一覧 (fzf) |
 | `Ctrl+z` | 最近開いたファイル (fzf) |
-| `Ctrl+g` | ファイル内容をgrep検索 (ripgrep) |
+| `Ctrl+g` | grep検索 (ripgrep) |
 | `Tab+l/h` | タブ移動 |
-
-## 主なzshエイリアス
-
-| エイリアス | コマンド |
-|---|---|
-| `v`, `vi` | vim |
-| `vz` | vim ~/my_dotfiles/.zshrc |
-| `vv` | vim ~/my_dotfiles/.vimrc |
-| `g` | git |
-| `d` | docker |
-| `dc` | docker-compose |
-| `cc` | claude (Claude Code) |
-| `mkcd <dir>` | mkdir + cd を同時実行 |
 
 ## ポケモン背景 (iTerm2)
 
-[Pokemon-Terminal](https://github.com/LazoCoder/Pokemon-Terminal) を使ってiTerm2の背景にポケモンを表示。
+[Pokemon-Terminal](https://github.com/LazoCoder/Pokemon-Terminal) でiTerm2の背景にポケモンを表示。
+Claude Code起動時に `preexec` フックで自動切替。
 
-| 状態 | ポケモン | 背景色 |
-|---|---|---|
-| 通常 | ゲンガー | ダークパープル |
-| Claude Code起動中 | ミュウツー | 薄紫 |
-
-`cc` 等のClaude Codeエイリアスで自動切替。手動で変更する場合:
+| 状態 | ポケモン |
+|---|---|
+| 通常 | ゲンガー |
+| Claude Code中 | ミュウツー |
 
 ```bash
-pokemon -n gengar     # ゲンガーに変更
-pokemon -n umbreon    # ブラッキーに変更
-pokemon -t ghost      # ゴーストタイプからランダム
-pokemon               # 全768匹からランダム
+poke -n gengar   # ゲンガーに変更
+poke 150         # ミュウツー
+poke             # 全ポケモンからランダム
 ```
 
 ## 更新
 
 ```bash
-cd ~/my_dotfiles
-git pull
+cd ~/my_dotfiles && git pull
 brew bundle install --file=Brewfile
 vim +PlugUpdate +qall
 ```
@@ -97,4 +92,4 @@ vim +PlugUpdate +qall
 ## 必要環境
 
 - macOS (Apple Silicon)
-- [Nerd Font](https://www.nerdfonts.com) がターミナルに設定済みであること (アイコン表示用)
+- [Nerd Font](https://www.nerdfonts.com) (アイコン表示用)
