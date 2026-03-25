@@ -233,17 +233,17 @@ if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v pokemon &>/dev/null; then
     local resolved
     resolved="$(whence "${1%% *}" 2>/dev/null)"
     if [[ "$resolved" == claude* || "$resolved" == */claude ]]; then
-      pokemon 150 2>/dev/null
+      poke 150
       _POKEMON_CLAUDE=1
     fi
   }
   _pokemon_precmd() {
     if [[ -n "$_POKEMON_CLAUDE" ]]; then
       unset _POKEMON_CLAUDE
-      pokemon -n gengar 2>/dev/null
+      poke -n gengar
     fi
   }
   add-zsh-hook preexec _pokemon_preexec
   add-zsh-hook precmd _pokemon_precmd
-  pokemon -n gengar 2>/dev/null
+  poke -n gengar
 fi
