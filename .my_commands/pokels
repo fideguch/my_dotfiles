@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""ポケモン一覧をテーブル表示するコマンド。
+Usage:
+  pokels                    # 全ポケモン一覧
+  pokels -n pikachu         # 名前で検索 (部分一致)
+  pokels -t ghost           # タイプで絞込
+  pokels -t ghost fire      # 複数タイプ (OR)
+  pokels -r kanto           # 地方で絞込
+  pokels -r kanto -t fire   # 地方+タイプ
+  pokels -e                 # Extra (メガ進化等) のみ
+"""
+import argparse
+import sys
+
+from pokemonterminal.database import Database
+
+
+def main():
+    parser = argparse.ArgumentParser(description="ポケモン一覧テーブル")
+    parser.add_argument("-n", "--name", help="名前で検索 (部分一致)")
+    parser.add_argument("-t", "--type", nargs="+", dest="types",
+                        help="タイプで絞込 (複数指定可)")
+    parser.add_argument("-r", "--region", help="地方で絞込")
+    parser.add_argument("-e", "--extra", action="store_true",
+                        help="Extra (メガ進化等) のみ表示")
+    args = parser.parse_args()
+
+    db = Database()
+    pokemon_list = db.get_all()
+
+    # フィルタ適用
+    if args.name:
+        query = args.name.lower()
+        pokemon_list = [p for p in pokemon_list if query in p.get_name().lower()]
+    if args.types:
+        types = {t.lower() for t in args.types}
+        pokemon_list = [
+            p for p in pokemon_list
+            if p.get_pkmn_type().lower() in types
+            or (p.get_pkmn_type_secondary() or "").lower() in types
+        ]
+    if args.region:
+        region = args.region.lower()
+        pokemon_list = [p for p in pokemon_list if p.get_region().lower() == region]
+    if args.extra:
+        pokemon_list = [p for p in pokemon_list if p.is_extra()]
+
+    if not pokemon_list:
+        print("該当するポケモンが見つかりません")
+        sys.exit(1)
+
+    # テーブル表示
+    header = f"{'ID':>5}  {'Name':<22} {'Region':<8} {'Type1':<10} {'Type2':<10}"
+    sep = "-" * len(header)
+    print(header)
+    print(sep)
+    for p in pokemon_list:
+        pid = p.get_id()
+        name = p.get_name()
+        region = p.get_region()
+        type1 = p.get_pkmn_type()
+        type2 = p.get_pkmn_type_secondary() or "-"
+        print(f"{pid:>5}  {name:<22} {region:<8} {type1:<10} {type2:<10}")
+    print(sep)
+    print(f"{len(pokemon_list)} 匹")
+
+
+if __name__ == "__main__":
+    main()
