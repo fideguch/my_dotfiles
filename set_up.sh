@@ -45,14 +45,15 @@ mkdir -p "$HOME/.zsh/cache"
 link_file() {
   local src="$1" dst="$2"
   if [[ -L "$dst" ]]; then
-    # 既にシンボリックリンクなら張り直し
-    ln -snfv "$src" "$dst"
+    # 既にシンボリックリンクなら削除して再作成（macOS ln -snf のディレクトリ入れ子バグ回避）
+    rm "$dst"
+    ln -sv "$src" "$dst"
   elif [[ -e "$dst" ]]; then
     warn "$dst は既に存在します (シンボリックリンクではありません)。バックアップを作成します。"
     mv "$dst" "${dst}.backup.$(date +%Y%m%d%H%M%S)"
-    ln -snfv "$src" "$dst"
+    ln -sv "$src" "$dst"
   else
-    ln -snfv "$src" "$dst"
+    ln -sv "$src" "$dst"
   fi
 }
 
@@ -64,7 +65,45 @@ link_file "$DOTPATH/.vim"           "$HOME/.vim"
 
 info "シンボリックリンク作成完了"
 
-# ── 5. Vim プラグインのインストール ──────────────────────
+# ── 5. Claude Code 設定 ───────────────────────────────────
+CLAUDE_SRC="$DOTPATH/claude"
+CLAUDE_DST="$HOME/.claude"
+
+if [[ -d "$CLAUDE_SRC" ]]; then
+  echo "Claude Code 設定をセットアップします..."
+  mkdir -p "$CLAUDE_DST"
+
+  # ファイル単位でシンボリックリンク（既存の動的ファイルを壊さない）
+  for item in CLAUDE.md AGENTS.md settings.json plugin.json marketplace.json \
+              README.md PLUGIN_SCHEMA_NOTES.md .gitignore; do
+    if [[ -f "$CLAUDE_SRC/$item" ]]; then
+      link_file "$CLAUDE_SRC/$item" "$CLAUDE_DST/$item"
+    fi
+  done
+
+  # ディレクトリ単位でシンボリックリンク（skills は除外: ランタイムで追加されるスキルがあるため）
+  for dir in rules agents hooks commands scripts; do
+    if [[ -d "$CLAUDE_SRC/$dir" ]]; then
+      link_file "$CLAUDE_SRC/$dir" "$CLAUDE_DST/$dir"
+    fi
+  done
+
+  # skills はファイル単位でマージ（既存のシンボリンクスキルを壊さない）
+  if [[ -d "$CLAUDE_SRC/skills" ]]; then
+    mkdir -p "$CLAUDE_DST/skills"
+    for skill_dir in "$CLAUDE_SRC/skills"/*/; do
+      local skill_name
+      skill_name=$(basename "$skill_dir")
+      link_file "$skill_dir" "$CLAUDE_DST/skills/$skill_name"
+    done
+  fi
+
+  info "Claude Code 設定完了"
+else
+  warn "claude/ ディレクトリが見つかりません。Claude Code セットアップをスキップします。"
+fi
+
+# ── 6. Vim プラグインのインストール ──────────────────────
 if [[ -f "$HOME/.vim/autoload/plug.vim" ]]; then
   info "vim-plug は既にインストール済み"
 else
@@ -74,7 +113,7 @@ else
   info "vim-plug インストール完了"
 fi
 
-# ── 6. iTerm2 Pokemon プロファイル ─────────────────────────
+# ── 7. iTerm2 Pokemon プロファイル ─────────────────────────
 if [[ -d "/Applications/iTerm.app" ]]; then
   echo "iTerm2 Pokemon プロファイルをセットアップします..."
   "$DOTPATH/.my_commands/setup-pokemon-iterm"

@@ -1,0 +1,29 @@
+# === Secrets & credentials ===
+settings.local.json
+mcp-configs/
+
+# === Session data (personal, large, ephemeral) ===
+projects/
+sessions/
+session-env/
+history.jsonl
+paste-cache/
+file-history/
+shell-snapshots/
+backups/
+
+# === Generated / dependencies ===
+**/node_modules/
+
+# === Cache & runtime ===
+cache/
+downloads/
+tasks/
+telemetry/
+
+# === Plugin runtime (regenerated) ===
+plugins/
+ecc/install-state.json
+
+# === Plans (session-specific) ===
+plans/
