@@ -74,8 +74,23 @@ else
   info "vim-plug インストール完了"
 fi
 
+# ── 6. iTerm2 Pikachu プロファイル ────────────────────────
+if [[ -d "/Applications/iTerm.app" ]]; then
+  echo "iTerm2 Pikachu プロファイルをセットアップします..."
+  if command -v pokemon &>/dev/null; then
+    "$DOTPATH/.my_commands/setup-pikachu-iterm"
+  else
+    warn "pokemon-terminal が未インストール。先にインストールしてください:"
+    warn "  pip3 install --user git+https://github.com/LazoCoder/Pokemon-Terminal.git"
+    warn "  その後: setup-pikachu-iterm"
+  fi
+else
+  warn "iTerm2 が見つかりません。Pikachu プロファイルのセットアップをスキップします。"
+fi
+
 echo ""
 echo "セットアップ完了！ 以下を実行してください:"
 echo "  1. ターミナルを再起動するか: source ~/.zshrc"
 echo "  2. Vimを開いて :PlugInstall を実行"
+echo "  3. iTerm2 で Pikachu プロファイルをデフォルトに設定"
 echo ""
