@@ -226,25 +226,25 @@ if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
 fi
 
 # ── iTerm2 ポケモン背景 ───────────────────────────────────
-# デフォルト: ゲンガー / Claude Code実行中: メタモン
+# デフォルト: ダークライ / Claude Code実行中: ゾロアーク
 # preexec: コマンド実行前にエイリアスを解決し、claude なら切替
-# precmd:  コマンド終了後にゲンガーへ戻す
+# precmd:  コマンド終了後にダークライへ戻す
 if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v pokemon &>/dev/null; then
   _pokemon_preexec() {
     local resolved
     resolved="$(whence "${1%% *}" 2>/dev/null)"
     if [[ "$resolved" == claude* || "$resolved" == */claude ]]; then
-      poke 132
+      poke -n zoroark
       _POKEMON_CLAUDE=1
     fi
   }
   _pokemon_precmd() {
     if [[ -n "$_POKEMON_CLAUDE" ]]; then
       unset _POKEMON_CLAUDE
-      poke -n gengar
+      poke -n darkrai
     fi
   }
   add-zsh-hook preexec _pokemon_preexec
   add-zsh-hook precmd _pokemon_precmd
-  poke -n gengar
+  poke -n darkrai
 fi
