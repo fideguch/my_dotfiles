@@ -75,7 +75,7 @@ Claude Code起動時に `preexec` フックで自動切替。
 | 状態 | ポケモン |
 |---|---|
 | 通常 | ゲンガー |
-| Claude Code中 | ミュウツー |
+| Claude Code中 | メタモン |
 
 ```bash
 poke -n gengar   # ゲンガーに変更
