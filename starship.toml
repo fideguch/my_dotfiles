@@ -1,118 +1,70 @@
 # ==========================================================
 # Starship プロンプト設定
-# Pikachu背景 + wholespace inspired デザイン
-# Powerlineセグメント × 高コントラスト暗色背景
+# ピカチュウ背景対応: 暗色帯 + 白テキストで高コントラスト
 # ==========================================================
 
 "$schema" = "https://starship.rs/config-schema.json"
 
-# ── レイアウト ────────────────────────────────────────────
-# Line 1: [OS+User] [Directory] [Git] ... [Time]
-# Line 2: [Path prompt ❯]
-
 format = """
-[](bg:#1B1F36)\
-$os\
+[](fg:#1B1F36)\
 $username\
-[](fg:#1B1F36 bg:#2D1B69)\
 $directory\
-[](fg:#2D1B69 bg:#0D5B4F)\
 $git_branch\
 $git_status\
-[](fg:#0D5B4F bg:#4A1942)\
-$python\
-$nodejs\
-$aws\
-$docker_context\
-[](fg:#4A1942 bg:#1B1F36)\
-$cmd_duration\
 $time\
 [](fg:#1B1F36)\
 $line_break\
 $character"""
 
-# ── OS アイコン ───────────────────────────────────────────
-[os]
-disabled = false
-format = "[ $symbol]($style)"
-style = "fg:#E8C84A bg:#1B1F36"
-
-[os.symbols]
-Macos = ""
-
 # ── ユーザー名 ───────────────────────────────────────────
 [username]
-format = "[ $user ]($style)"
-style_user = "bold fg:#FFFFFF bg:#1B1F36"
-style_root = "bold fg:#FF6B6B bg:#1B1F36"
+format = "[ $user ](bold fg:#FFFFFF bg:#1B1F36)"
 show_always = true
 
 # ── ディレクトリ ─────────────────────────────────────────
 [directory]
-format = "[  $path ]($style)[$read_only]($read_only_style)"
-style = "bold fg:#E0CCFF bg:#2D1B69"
-read_only_style = "fg:#FF6B6B bg:#2D1B69"
+format = "[ $path ](bold fg:#FFFFFF bg:#1B1F36)"
 truncation_length = 4
 truncation_symbol = "…/"
-read_only = " "
 
 # ── Git ブランチ ─────────────────────────────────────────
 [git_branch]
-symbol = " "
-format = "[ $symbol$branch ]($style)"
-style = "bold fg:#7DFFC1 bg:#0D5B4F"
+symbol = ""
+format = "[ $symbol $branch ](bold fg:#FFFFFF bg:#1B1F36)"
 
 # ── Git ステータス ───────────────────────────────────────
 [git_status]
-format = '([$all_status$ahead_behind ]($style))'
-style = "bold fg:#FFFFFF bg:#0D5B4F"
+format = '([$all_status$ahead_behind](bold fg:#FFFFFF bg:#1B1F36))'
 conflicted = "= "
-ahead = "⇡${count} "
-behind = "⇣${count} "
-diverged = "⇕ "
+ahead = "⇡ "
+behind = "⇣ "
 untracked = "? "
-stashed = "$ "
 modified = "! "
-staged = "[+${count}](bold fg:#7DFFC1 bg:#0D5B4F) "
-renamed = "» "
+staged = "+ "
 deleted = "✘ "
-
-# ── コマンド実行時間 ─────────────────────────────────────
-[cmd_duration]
-format = "[ 󰔟 $duration ]($style)"
-style = "fg:#AAAAAA bg:#1B1F36"
-min_time = 2000
 
 # ── 時間 ─────────────────────────────────────────────────
 [time]
 disabled = false
-format = "[ $time ]($style)"
-style = "bold fg:#E8C84A bg:#1B1F36"
+format = "[ $time ](bold fg:#FFFFFF bg:#1B1F36)"
 time_format = "%H:%M"
 
 # ── プロンプト文字 ───────────────────────────────────────
 [character]
-success_symbol = "[](bold fg:#7DFFC1)[  ](bold fg:#1B1F36 bg:#7DFFC1)[](bold fg:#7DFFC1)"
-error_symbol = "[](bold fg:#FF6B6B)[  ](bold fg:#1B1F36 bg:#FF6B6B)[](bold fg:#FF6B6B)"
+success_symbol = "[](fg:#1B1F36)[  ](bold fg:#FFFFFF bg:#1B1F36)[](fg:#1B1F36)"
+error_symbol = "[](fg:#8B0000)[  ](bold fg:#FFFFFF bg:#8B0000)[](fg:#8B0000)"
 
-# ── Python ───────────────────────────────────────────────
+# ── 以下は表示される時だけ (帯の中に統合) ────────────────
 [python]
-format = "[  ${version} ]($style)"
-style = "fg:#6EC8DB bg:#4A1942"
+format = "[ py $version ](fg:#FFFFFF bg:#1B1F36)"
 
-# ── Node.js ──────────────────────────────────────────────
 [nodejs]
-format = "[  $version ]($style)"
-style = "fg:#7DFFC1 bg:#4A1942"
+format = "[ node $version ](fg:#FFFFFF bg:#1B1F36)"
 
-# ── AWS ──────────────────────────────────────────────────
 [aws]
-format = "[  $profile ]($style)"
-style = "bold fg:#E8C84A bg:#4A1942"
+format = "[ aws:$profile ](fg:#FFFFFF bg:#1B1F36)"
 [aws.region_aliases]
 ap-northeast-1 = "jp"
 
-# ── Docker ───────────────────────────────────────────────
 [docker_context]
-format = "[  $context ]($style)"
-style = "fg:#6EC8DB bg:#4A1942"
+format = "[ docker:$context ](fg:#FFFFFF bg:#1B1F36)"

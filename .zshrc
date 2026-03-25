@@ -209,24 +209,28 @@ zstyle ':zle:*' word-style unspecified
 
 # ── 見た目 ────────────────────────────────────────────────
 
-# lsに色をつける
-export LSCOLORS=gxfxcxdxbxegedabagacad
-export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
-zstyle ':completion:*' list-colors 'di=34' 'ln=35' 'so=32' 'ex=31' 'bd=46;34' 'cd=43;34'
+# ls色: 背景画像に映える太字白ベース (黄色背景で見えるようシアン/青を回避)
+# di=ディレクトリ(太字白), ln=シンボリックリンク(太字マゼンタ), ex=実行ファイル(太字赤)
+export LSCOLORS=Hxfxhxdxbxhghdhbhgbchd
+export LS_COLORS='di=1;37:ln=1;35:so=1;37:pi=1;37:ex=1;31:bd=1;37:cd=1;37:su=1;37:sg=1;37:tw=1;37:ow=1;37'
+zstyle ':completion:*' list-colors 'di=1;37' 'ln=1;35' 'so=1;37' 'ex=1;31'
 
 # プロンプト (Starship)
 eval "$(starship init zsh)"
 
 # ── fzf ───────────────────────────────────────────────────
-# fzfがインストール済みならキーバインドと補完を有効化
 if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
   source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
   source /opt/homebrew/opt/fzf/shell/completion.zsh
 fi
 
-# ── Pokemon Terminal (iTerm2 背景) ────────────────────────
-# iTerm2 起動時にピカチュウ背景を設定
-# 変更: pokemon-bg eevee, pokemon-bg charizard 等
-if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v pokemon &>/dev/null; then
-  pokemon -n pikachu 2>/dev/null
+# ── iTerm2 設定 (ピカチュウ背景対応) ─────────────────────
+# AppleScript で現在のセッションに直接設定を適用
+# プロファイル切り替え不要で即反映
+if [[ "$TERM_PROGRAM" == "iTerm.app" ]]; then
+  # ピカチュウ背景を設定
+  command -v pokemon &>/dev/null && pokemon -n pikachu 2>/dev/null
+
+  # Minimum Contrast を上げてテキスト視認性を確保 (iTerm2 escape sequence)
+  printf '\033]1337;MinimumContrast=0.85\007'
 fi
