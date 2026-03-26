@@ -4,8 +4,8 @@
       "Name": "Pokemon",
       "Guid": "pokemon-terminal-profile-001",
 
-      "Blend": 0.65,
-      "Minimum Contrast": 0.7,
+      "Blend": 0.40,
+      "Minimum Contrast": 0.85,
       "Transparency": 0.0,
       "Blur": false,
 
