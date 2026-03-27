@@ -24,6 +24,11 @@ const MAX_STDIN = 1024 * 1024;
 // Patterns that indicate potential hardcoded secrets
 const SECRET_PATTERNS = [
   { name: 'aws_key', pattern: /(?:AKIA|ASIA)[A-Z0-9]{16}/i },
+  { name: 'anthropic_key', pattern: /sk-ant-[A-Za-z0-9_-]{20,}/ },
+  { name: 'openai_key', pattern: /sk-[A-Za-z0-9]{20,}T3BlbkFJ/ },
+  { name: 'slack_webhook', pattern: /https:\/\/hooks\.slack\.com\/services\/[A-Z0-9]{10,}/ },
+  { name: 'db_connection_string', pattern: /(?:postgres|mysql|mongodb(?:\+srv)?):\/\/[^@\s]+@[^\s\/]+/ },
+  { name: 'google_service_account', pattern: /"type"\s*:\s*"service_account"/ },
   { name: 'generic_secret', pattern: /(?:secret|password|token|api[_-]?key)\s*[:=]\s*["'][^"']{8,}/i },
   { name: 'private_key', pattern: /-----BEGIN (?:RSA |EC |DSA )?PRIVATE KEY-----/ },
   { name: 'jwt', pattern: /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/ },
