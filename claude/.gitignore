@@ -1,6 +1,7 @@
 # === Secrets & credentials ===
 settings.local.json
 mcp-configs/
+channels/
 
 # === Session data (personal, large, ephemeral) ===
 projects/
