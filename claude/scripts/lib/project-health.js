@@ -86,6 +86,8 @@ function selectTemplate(projectInfo) {
  * @param {string} projectName - Project directory name
  * @returns {{ files: { path: string, content: string, description: string }[] }}
  */
+const ALLOWED_TEMPLATES = ['typescript-nextjs.md', 'typescript-express.md', 'python-fastapi.md', 'rust.md', 'generic.md'];
+
 function generateScaffold(projectInfo, projectName) {
   const { health } = projectInfo;
   const safeName = (typeof projectName === 'string' && projectName.trim())
@@ -95,6 +97,9 @@ function generateScaffold(projectInfo, projectName) {
 
   if (!health.hasClaudeMd) {
     const templateName = selectTemplate(projectInfo);
+    if (!ALLOWED_TEMPLATES.includes(templateName)) {
+      throw new Error(`Invalid template: ${templateName}`);
+    }
     const templateDir = path.join(__dirname, '..', '..', 'templates', 'claude-md');
     const templatePath = path.join(templateDir, templateName);
 

@@ -41,9 +41,11 @@ async function main() {
     log(`[SessionStart] Latest: ${latest.path}`);
 
     // Read and inject the latest session content into Claude's context
-    const content = stripAnsi(readFile(latest.path));
+    // Limit to 10KB to mitigate prompt injection via tampered session files
+    const MAX_SESSION_CONTENT = 10240;
+    const rawContent = stripAnsi(readFile(latest.path));
+    const content = rawContent ? rawContent.slice(0, MAX_SESSION_CONTENT) : '';
     if (content && !content.includes('[Session context goes here]')) {
-      // Only inject if the session has actual content (not the blank template)
       output(`Previous session summary:\n${content}`);
     }
   }
