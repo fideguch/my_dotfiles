@@ -108,6 +108,17 @@
         "description": "Block modifications to linter/formatter config files. Steers agent to fix code instead of weakening configs."
       },
       {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/scripts/hooks/pm-pipeline-guard.js",
+            "timeout": 5
+          }
+        ],
+        "description": "PM Pipeline Guard: Block plan.md/tasks.md creation without completed requirements (designs/ with FR-001+)"
+      },
+      {
         "matcher": "*",
         "hooks": [
           {
@@ -229,6 +240,18 @@
           }
         ],
         "description": "Capture tool use results for continuous learning"
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/scripts/hooks/bochi-feedback-capture.sh",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "bochi: auto-capture user feedback on source quality"
       }
     ],
     "PostToolUseFailure": [
