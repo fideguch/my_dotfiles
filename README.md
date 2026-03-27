@@ -98,6 +98,31 @@ Claude Code の設定一式。`set_up.sh` で `~/.claude/` にシンボリンク
 
 > 機密ファイル (`settings.local.json`, `mcp-configs/`) は `.gitignore` で除外済み。
 
+### 配置方式
+
+`set_up.sh` は以下のルールで `~/.claude/` にファイルを配置します:
+
+| 対象 | 方式 | 理由 |
+|------|------|------|
+| `CLAUDE.md`, `settings.json` 等 | ファイル単位シンボリックリンク | 個別管理 |
+| `rules/`, `agents/`, `hooks/`, `commands/` | ディレクトリ単位シンボリックリンク | 一括管理 |
+| `skills/` | **スキル単位でマージ** | 別リポジトリのスキル（requirements_designer等）を壊さない |
+
+このリポジトリには 28 agents と 48 skills が直接含まれています。一部のスキル（`requirements_designer`, `speckit-bridge` 等）は別リポジトリとして管理され、`~/.claude/skills/` 内に個別のシンボリックリンクが張られます。
+
+## 再実行の安全性（Idempotency）
+
+`set_up.sh` は何度実行しても安全です:
+
+- **Homebrew**: `command -v brew` で存在チェック、インストール済みならスキップ
+- **Brewfile**: `brew bundle install` は冪等（インストール済みパッケージはスキップ）
+- **シンボリックリンク**: 既存リンクは削除→再作成、通常ファイルはタイムスタンプ付きバックアップ後にリンク作成
+- **ディレクトリ**: `mkdir -p` で既存なら何もしない
+- **vim-plug**: 存在チェック後にインストール
+- **iTerm2**: アプリ存在チェック後にセットアップ
+
+`git pull` 後に再実行することで、設定の更新を安全に適用できます。
+
 ## 更新
 
 ```bash
