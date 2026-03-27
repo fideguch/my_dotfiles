@@ -22,6 +22,7 @@ const {
 const { getPackageManager, getSelectionPrompt } = require('../lib/package-manager');
 const { listAliases } = require('../lib/session-aliases');
 const { detectProjectType } = require('../lib/project-detect');
+const { checkProjectHealth, formatHealthAdvisory } = require('../lib/project-health');
 
 async function main() {
   const sessionsDir = getSessionsDir();
@@ -84,9 +85,18 @@ async function main() {
       parts.push(`frameworks: ${projectInfo.frameworks.join(', ')}`);
     }
     log(`[SessionStart] Project detected — ${parts.join('; ')}`);
-    output(`Project type: ${JSON.stringify(projectInfo)}`);
+    const { health: _, ...safeInfo } = projectInfo;
+    output(`Project type: ${JSON.stringify(safeInfo)}`);
   } else {
     log('[SessionStart] No specific project type detected');
+  }
+
+  // Project health check — detect missing config files
+  const healthResult = checkProjectHealth(projectInfo);
+  const advisory = formatHealthAdvisory(healthResult);
+  if (advisory) {
+    log(`[SessionStart] ${advisory}`);
+    output(advisory);
   }
 
   process.exit(0);
