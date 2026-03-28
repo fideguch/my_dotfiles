@@ -20,15 +20,27 @@ The Feature Implementation Workflow describes the development pipeline: research
    - Identify dependencies and risks
    - Break down into phases
 
-2. **TDD Approach**
-   - Use **tdd-guide** agent
-   - Write tests first (RED)
-   - Implement to pass tests (GREEN)
-   - Refactor (IMPROVE)
+2. **Implementation** _(route by change type)_
+
+   **Existing code modification (DEFAULT):**
+   - Use **triple-agent-coding** skill when modifying existing code
+   - Applies automatically when: 3+ files changed, running system affected, or user feedback applied
+   - Writer implements in worktree → Guardian deep-traces blast radius → Overseer verifies requirement alignment
+   - All 3 gates must pass before proceeding
+   - See `~/.claude/skills/triple-agent-coding/SKILL.md` for full protocol
+
+   **New code only (greenfield):**
+   - Use **tdd-guide** agent for TDD approach (RED → GREEN → IMPROVE)
+   - Use **subagent-driven-development** for plan execution with independent tasks
    - Verify 80%+ coverage
 
+   **Lightweight changes (1-2 files, no running system risk):**
+   - Direct implementation with **code-reviewer** agent post-review is sufficient
+   - Skip triple-agent-coding to avoid overhead
+
 3. **Code Review**
-   - Use **code-reviewer** agent immediately after writing code
+   - If triple-agent-coding was used: Guardian + Overseer already reviewed — run final **code-reviewer** for holistic check
+   - If not used: run **code-reviewer** agent immediately after writing code
    - Address CRITICAL and HIGH issues
    - Fix MEDIUM issues when possible
 
