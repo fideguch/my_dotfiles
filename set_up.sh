@@ -30,7 +30,7 @@ fi
 # ── 2. Brewfile からパッケージをインストール ──────────────
 if [[ -f "$DOTPATH/Brewfile" ]]; then
   echo "Brewfile からパッケージをインストールします..."
-  brew bundle install --file="$DOTPATH/Brewfile" --no-lock
+  brew bundle install --file="$DOTPATH/Brewfile"
   info "パッケージインストール完了"
 else
   warn "Brewfile が見つかりません。スキップします。"
