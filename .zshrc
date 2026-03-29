@@ -226,28 +226,20 @@ if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
 fi
 
 # ── iTerm2 ポケモン背景 ───────────────────────────────────
-# デフォルト: ダークライ / Claude Code実行中: ゾロアーク
-# preexec: コマンド実行前にエイリアスを解決し、claude なら切替
-# precmd:  claude プロセスが子にいる間はゾロアークを維持、終了したらダークライに戻す
+# 起動時にランダム選出。変更は `poke -n <name>` で随時可能
 if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v pokemon &>/dev/null; then
-  _pokemon_preexec() {
-    local resolved
-    resolved="$(whence "${1%% *}" 2>/dev/null)"
-    if [[ "$resolved" == claude* || "$resolved" == */claude ]]; then
-      poke -n zoroark
-      _POKEMON_CLAUDE_PID=$$
-    fi
-  }
-  _pokemon_precmd() {
-    if [[ -n "$_POKEMON_CLAUDE_PID" ]]; then
-      if ps -eo ppid,comm 2>/dev/null | awk -v p=$$ '$1==p && $2~/claude/{f=1; exit} END{exit !f}'; then
-        return
-      fi
-      unset _POKEMON_CLAUDE_PID
-      poke -n darkrai
-    fi
-  }
-  add-zsh-hook preexec _pokemon_preexec
-  add-zsh-hook precmd _pokemon_precmd
-  poke -n darkrai
+  _poke_favorites=(
+    gliscor froslass butterfree exploud volbeat poochyena starmie
+    woobat swalot blastoise aurorus grumpig diggersby klink pangoro
+    arbok pidove palkia dustox registeel spheal suicune mightyena
+  )
+  poke -n "${_poke_favorites[RANDOM % ${#_poke_favorites[@]} + 1]}"
+  unset _poke_favorites
 fi
+
+# bun completions
+[ -s "/Users/fumito_ideguchi/.bun/_bun" ] && source "/Users/fumito_ideguchi/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"

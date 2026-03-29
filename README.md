@@ -54,6 +54,8 @@ $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 | `cc` | claude | Claude Code |
 | `ccc` | claude --continue | 前回セッション継続 |
 | `ccr` | claude --resume | セッション再開 |
+| `ccf` | claude --dangerously-skip-permissions | 権限スキップ |
+| `ccp` | claude --print | 非対話モード |
 | `mkcd <dir>` | mkdir + cd | ディレクトリ作成&移動 |
 
 ## Vimキーマップ
@@ -70,18 +72,15 @@ $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 ## ポケモン背景 (iTerm2)
 
 [Pokemon-Terminal](https://github.com/LazoCoder/Pokemon-Terminal) でiTerm2の背景にポケモンを表示。
-Claude Code起動時に `preexec` フックで自動切替。
-
-| 状態 | ポケモン |
-|---|---|
-| 通常 | ダークライ |
-| Claude Code中 | ゾロアーク |
+ターミナル起動時に暗め紫系の厳選22匹からランダムで1匹を設定。
 
 ```bash
-poke -n darkrai  # ダークライに変更
+poke -n gliscor  # グライオンに変更
 poke 150         # ミュウツー
 poke             # 全ポケモンからランダム
 ```
+
+> Claude Code セッション中も `poke` コマンドで随時変更可能。
 
 ## Claude Code (`claude/`)
 
