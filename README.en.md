@@ -97,6 +97,34 @@ Full Claude Code configuration. `set_up.sh` creates symlinks to `~/.claude/`.
 | `claude/commands/` | Custom commands |
 
 > Sensitive files (`settings.local.json`, `mcp-configs/`) are excluded via `.gitignore`.
+> See `claude/settings.local.template.json` for the template.
+
+### 3-Layer Architecture
+
+The Claude Code environment is managed across 3 layers. On a new machine, run `set_up.sh` first, then manually install Layer 3.
+
+**Layer 1: dotfiles (this repo)** -- symlinked by `set_up.sh`
+
+Contains ECC (Everything Claude Code) skills, rules, agents, commands, and hooks. This repository directly includes 28 agents and 48 skills.
+
+**Layer 2: Self-made GitHub repos** -- auto-cloned by `set_up.sh`
+
+`set_up.sh` clones skill repositories from `fideguch/` and places them under `~/.claude/skills/`.
+
+| Skill | Repository | Location |
+|-------|-----------|----------|
+| bochi | fideguch/bochi | `~/.claude/skills/bochi` (direct clone) |
+| pm-data-analysis | fideguch/pm_data_analysis | `~/.claude/skills/pm-data-analysis` (direct clone) |
+| pm-ad-analysis | fideguch/pm_ad_analysis | `~/pm_ad_analysis` → symlink |
+| speckit-bridge | fideguch/speckit-bridge | `~/.claude/skills/speckit-bridge` (direct clone) |
+| requirements_designer | fideguch/requirements_designer | `~/.agents/skills/` → via npx skills |
+| google-workspace | fideguch/google-workspace | `~/google_mcps` → symlink |
+
+> Note: `pm-ad-operations` has been merged into `pm-ad-analysis` and no longer exists as a separate skill.
+
+**Layer 3: External skills** -- manual install (see `INSTALL_SKILLS.md`)
+
+Installed via `npx skills add`: PM skills (45+), Vercel Labs skills, official plugins (skill-creator, discord), etc. See `claude/INSTALL_SKILLS.md` for full details.
 
 ### Deployment Strategy
 
@@ -106,9 +134,7 @@ Full Claude Code configuration. `set_up.sh` creates symlinks to `~/.claude/`.
 |------|------|------|
 | `CLAUDE.md`, `settings.json` etc. | Per-file symlinks | Individual management |
 | `rules/`, `agents/`, `hooks/`, `commands/` | Per-directory symlinks | Bulk management |
-| `skills/` | **Per-skill merge** | Avoid breaking skills from other repos (e.g. requirements_designer) |
-
-This repository directly contains 28 agents and 48 skills. Some skills (`requirements_designer`, `speckit-bridge`, etc.) are managed as separate repositories with individual symlinks inside `~/.claude/skills/`.
+| `skills/` | **Per-skill merge** | Avoid breaking Layer 2/3 skills |
 
 ## Re-run Safety (Idempotency)
 

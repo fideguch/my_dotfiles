@@ -1,0 +1,50 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(/$HOME/.claude/**)",
+      "Read(/$HOME/my_dotfiles/**)",
+      "Read(/$HOME/requirements_designer/**)",
+      "Read(/$HOME/pm_ad_analysis/**)",
+      "Read(/$HOME/speckit-bridge/**)",
+      "Read(/$HOME/google_mcps/**)",
+      "Read(/$HOME/Desktop/**)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:pypi.org)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote:*)",
+      "Bash(git -C:*)",
+      "Bash(gh search:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh api:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(jq:*)",
+      "Bash(grep:*)",
+      "Bash(cp:*)",
+      "Bash(chmod:*)",
+      "Bash(which:*)",
+      "Bash(crontab -l)",
+      "Read(/$HOME/**)",
+      "mcp__claude_ai_Notion__notion-fetch",
+      "mcp__claude_ai_Notion__notion-update-page",
+      "mcp__plugin_discord_discord__reply",
+      "mcp__plugin_discord_discord__react",
+      "mcp__plugin_discord_discord__fetch_messages",
+      "mcp__plugin_discord_discord__edit_message",
+      "mcp__plugin_discord_discord__download_attachment"
+    ],
+    "deny": [
+      "Read(/$HOME/.ssh/**)",
+      "Read(/$HOME/.aws/**)",
+      "Read(/$HOME/.config/gcloud/**)",
+      "Read(/$HOME/.gnupg/**)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/google-ads.yaml)"
+    ]
+  },
+  "skipDangerousModePermissionPrompt": true
+}

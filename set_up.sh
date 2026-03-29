@@ -92,16 +92,55 @@ if [[ -d "$CLAUDE_SRC" ]]; then
   if [[ -d "$CLAUDE_SRC/skills" ]]; then
     mkdir -p "$CLAUDE_DST/skills"
     for skill_dir in "$CLAUDE_SRC/skills"/*/; do
-      local skill_name
       skill_name=$(basename "$skill_dir")
       link_file "$skill_dir" "$CLAUDE_DST/skills/$skill_name"
     done
+  fi
+
+  # settings.local.json のテンプレートをコピー（既存がなければ）
+  if [[ -f "$CLAUDE_SRC/settings.local.template.json" ]] && [[ ! -f "$CLAUDE_DST/settings.local.json" ]]; then
+    cp "$CLAUDE_SRC/settings.local.template.json" "$CLAUDE_DST/settings.local.json"
+    warn "settings.local.json をテンプレートからコピーしました。\$HOME パスを実際の値に置換してください"
   fi
 
   info "Claude Code 設定完了"
 else
   warn "claude/ ディレクトリが見つかりません。Claude Code セットアップをスキップします。"
 fi
+
+# ── 5b. 自作スキルリポジトリの clone ─────────────────────
+clone_skill_repo() {
+  local repo="$1" dest="$2"
+  if [[ -d "$dest" ]]; then
+    info "$dest は既に存在 — スキップ"
+  else
+    echo "  Cloning $repo → $dest"
+    git clone "git@github.com:$repo.git" "$dest" || warn "Clone failed: $repo — SSH キー未設定の可能性。後で手動実行してください"
+  fi
+}
+
+echo "自作スキルリポジトリを clone します..."
+
+# ~/.claude/skills/ 内に直接 clone
+clone_skill_repo "fideguch/bochi"             "$CLAUDE_DST/skills/bochi"
+clone_skill_repo "fideguch/pm_data_analysis"  "$CLAUDE_DST/skills/pm-data-analysis"
+clone_skill_repo "fideguch/speckit-bridge"    "$CLAUDE_DST/skills/speckit-bridge"
+
+# 別ディレクトリに clone → symlink
+clone_skill_repo "fideguch/pm_ad_analysis"    "$HOME/pm_ad_analysis"
+if [[ ! -e "$CLAUDE_DST/skills/pm-ad-analysis" ]]; then
+  ln -sv "$HOME/pm_ad_analysis" "$CLAUDE_DST/skills/pm-ad-analysis"
+fi
+
+clone_skill_repo "fideguch/google-workspace"  "$HOME/google_mcps"
+if [[ ! -e "$CLAUDE_DST/skills/google-workspace" ]]; then
+  ln -sv "$HOME/google_mcps/google-workspace" "$CLAUDE_DST/skills/google-workspace"
+fi
+
+# requirements_designer は npx skills add 経由でインストール
+# 詳細は claude/INSTALL_SKILLS.md を参照
+
+info "自作スキル clone 完了"
 
 # ── 6. Vim プラグインのインストール ──────────────────────
 if [[ -f "$HOME/.vim/autoload/plug.vim" ]]; then
@@ -130,4 +169,6 @@ echo "セットアップ完了！ 以下を実行してください:"
 echo "  1. ターミナルを再起動するか: source ~/.zshrc"
 echo "  2. Vimを開いて :PlugInstall を実行"
 echo "  3. iTerm2 で Pokemon プロファイルをデフォルトに設定"
+echo "  4. Claude Code 外部スキルをインストール: cat ~/my_dotfiles/claude/INSTALL_SKILLS.md"
+echo "  5. settings.local.json のプレースホルダーを実際の値に置換"
 echo ""

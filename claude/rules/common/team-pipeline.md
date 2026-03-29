@@ -69,7 +69,7 @@ specify tasks → tasks.md（依存関係付きタスクリスト）
 
 | Role | Primary Skills | Agents |
 |------|---------------|--------|
-| PM | /requirements_designer, /brainstorming, /pm-* skills, /pm-data-analysis, /pm-ad-operations | planner |
+| PM | /requirements_designer, /brainstorming, /pm-* skills, /pm-data-analysis, /pm-ad-analysis | planner |
 | Tech Lead | /writing-plans, spec-kit plan/tasks | planner, architect |
 | Engineer | spec-kit implement, /tdd-workflow | code-reviewer, tdd-guide, build-error-resolver |
 | Designer | Phase 5 (Figma MCP), /ui-ux-pro-max, /frontend-design | — |

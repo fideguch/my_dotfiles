@@ -85,7 +85,7 @@ poke             # 全ポケモンからランダム
 
 ## Claude Code (`claude/`)
 
-Claude Code の設定一式。`set_up.sh` で `~/.claude/` にシンボリンクが張られる。
+Claude Code の設定一式。`set_up.sh` で `~/.claude/` にシンボリックリンクが張られる。
 
 | ディレクトリ | 説明 |
 |---|---|
@@ -97,18 +97,44 @@ Claude Code の設定一式。`set_up.sh` で `~/.claude/` にシンボリンク
 | `claude/commands/` | カスタムコマンド |
 
 > 機密ファイル (`settings.local.json`, `mcp-configs/`) は `.gitignore` で除外済み。
+> テンプレートは `claude/settings.local.template.json` を参照。
+
+### 3層構成
+
+Claude Code 環境は以下の3層で管理される。新しいマシンでは `set_up.sh` 実行後、Layer 3 の手動インストールが必要。
+
+**Layer 1: dotfiles (このリポジトリ)** -- `set_up.sh` でシンボリックリンク
+
+ECC (Everything Claude Code) 由来スキル、rules、agents、commands、hooks を含む。このリポジトリには 28 agents と 48 skills が直接含まれている。
+
+**Layer 2: 自作 GitHub リポジトリ** -- `set_up.sh` で自動 clone
+
+`set_up.sh` が `fideguch/` 配下の自作スキルリポジトリを clone し、`~/.claude/skills/` に配置する。
+
+| スキル | リポジトリ | 配置先 |
+|--------|-----------|--------|
+| bochi | fideguch/bochi | `~/.claude/skills/bochi` (直接 clone) |
+| pm-data-analysis | fideguch/pm_data_analysis | `~/.claude/skills/pm-data-analysis` (直接 clone) |
+| pm-ad-analysis | fideguch/pm_ad_analysis | `~/pm_ad_analysis` → symlink |
+| speckit-bridge | fideguch/speckit-bridge | `~/.claude/skills/speckit-bridge` (直接 clone) |
+| requirements_designer | fideguch/requirements_designer | `~/.agents/skills/` → npx skills 経由 |
+| google-workspace | fideguch/google-workspace | `~/google_mcps` → symlink |
+
+> 注: `pm-ad-operations` は `pm-ad-analysis` に統合済み。単独スキルとしては存在しない。
+
+**Layer 3: 外部スキル** -- 手動インストール (`INSTALL_SKILLS.md` 参照)
+
+`npx skills add` でインストールする PM スキル群 (45+)、Vercel Labs スキル、公式プラグイン (skill-creator, discord) 等。詳細は `claude/INSTALL_SKILLS.md` を参照。
 
 ### 配置方式
 
-`set_up.sh` は以下のルールで `~/.claude/` にファイルを配置します:
+`set_up.sh` は以下のルールで `~/.claude/` にファイルを配置する:
 
 | 対象 | 方式 | 理由 |
 |------|------|------|
 | `CLAUDE.md`, `settings.json` 等 | ファイル単位シンボリックリンク | 個別管理 |
 | `rules/`, `agents/`, `hooks/`, `commands/` | ディレクトリ単位シンボリックリンク | 一括管理 |
-| `skills/` | **スキル単位でマージ** | 別リポジトリのスキル（requirements_designer等）を壊さない |
-
-このリポジトリには 28 agents と 48 skills が直接含まれています。一部のスキル（`requirements_designer`, `speckit-bridge` 等）は別リポジトリとして管理され、`~/.claude/skills/` 内に個別のシンボリックリンクが張られます。
+| `skills/` | **スキル単位でマージ** | Layer 2/3 のスキルを壊さない |
 
 ## 再実行の安全性（Idempotency）
 
