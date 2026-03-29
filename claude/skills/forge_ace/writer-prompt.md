@@ -58,7 +58,7 @@ Agent tool (general-purpose, isolation: worktree):
     3. Delegated Verification Deficit | 4. Delta Thinking Trap
     5. Stale Context Divergence | 6. Spec-without-Implementation-Table
     7. Precondition-as-Assumption | 8. High-Risk-Implementation-Gap
-    9. Disconnected-Bloodline
+    9. Disconnected-Bloodline | 10. Deployment-Sync Blindness
 
     ---
 
@@ -96,6 +96,17 @@ Agent tool (general-purpose, isolation: worktree):
     User confirmation needed before proceeding.
     ```
     Do NOT proceed without user confirmation.
+
+    **DEPLOYMENT-SYNC SCAN (Anti-Pattern #10):**
+    For each file you will modify, check:
+    - Is this file referenced at runtime from a DIFFERENT path than its git repo location?
+    - Does a symlink, install script, or deploy hook keep them in sync?
+    - If git path ≠ runtime path and no sync mechanism exists, flag:
+    ```
+    ⚠️ DEPLOYMENT-SYNC RISK: [file]
+    Git path: [git_path] | Runtime path: [runtime_path]
+    Sync mechanism: [symlink/install.sh/none]
+    ```
 
     ### 0b. Before/After Specification
 
@@ -321,6 +332,7 @@ Agent tool (general-purpose, isolation: worktree):
     - High-Risk-Gap: [CLEAR | DETECTED: user confirmed / flagged]
     - Precondition-as-Assumption: [CLEAR | EXTRACTED: N independent tests]
     - Disconnected-Bloodline: [CLEAR | N/A | DETECTED: reachability test result]
+    - Deployment-Sync: [CLEAR | DETECTED: git path ≠ runtime path, sync mechanism verified/missing]
 
     ### Implementation Status Table (if applicable)
     | Component | Status | Evidence |

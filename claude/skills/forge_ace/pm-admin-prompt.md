@@ -71,7 +71,7 @@ Agent tool (general-purpose):
     3. Delegated Verification Deficit | 4. Delta Thinking Trap
     5. Stale Context Divergence | 6. Spec-without-Implementation-Table
     7. Precondition-as-Assumption | 8. High-Risk-Implementation-Gap
-    9. Disconnected-Bloodline
+    9. Disconnected-Bloodline | 10. Deployment-Sync Blindness
 
     ---
 

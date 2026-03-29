@@ -246,6 +246,7 @@ If UNAVAILABLE → safe defaults, all decisions require user confirmation.
 | 7 | Precondition-as-Assumption | Hidden test preconditions | Extract as independent tests |
 | 8 | High-Risk-Implementation-Gap | Session-external work | ⚠️ WARNING + user confirm |
 | 9 | Disconnected-Bloodline | External connection unverified | Reachability test required |
+| 10 | Deployment-Sync Blindness | git repo path ≠ runtime path | `diff <git> <runtime>` verification |
 
 ---
 
@@ -324,7 +325,7 @@ The Guardian has rejected 3 times. Human must decide:
 ```
 ~/.claude/skills/forge_ace/
 ├── SKILL.md                  ← This file (orchestration)
-├── anti-patterns.md          ← 9 patterns reference card (DRY across all agents)
+├── anti-patterns.md          ← 10 patterns reference card (DRY across all agents)
 ├── quality-standards.md      ← symlink → ../../bochi-data/master-quality-review.md
 ├── writer-prompt.md          ← v3.0 (XML, Red Team, Evidence-of-Execution)
 ├── guardian-prompt.md         ← v3.0 (Risk-tier, Blast Radius Score, 8-axis)

@@ -68,7 +68,7 @@ Agent tool (architect):
     3. Delegated Verification Deficit | 4. Delta Thinking Trap
     5. Stale Context Divergence | 6. Spec-without-Implementation-Table
     7. Precondition-as-Assumption | 8. High-Risk-Implementation-Gap
-    9. Disconnected-Bloodline
+    9. Disconnected-Bloodline | 10. Deployment-Sync Blindness
 
     ---
 
@@ -317,7 +317,7 @@ Agent tool (architect):
     - [violation: severity, source rule, recommendation]
 
     **Anti-Pattern Scan:**
-    - [#1-#9]: CLEAR or DETECTED with details
+    - [#1-#10]: CLEAR or DETECTED with details
 
     **User Perspective:**
     - Would user get expected outcome? YES / NO
