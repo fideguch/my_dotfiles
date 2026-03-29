@@ -289,12 +289,18 @@ Then test with Postman — the response should include a `Set-Cookie` header.
 <HARD-GATE>
 The session file MUST satisfy ALL of the following before showing to the user:
 
-1. All sections from the template are present (use "N/A" for genuinely empty ones)
-2. "What Did NOT Work" section contains specific error messages, not vague descriptions
-3. "Current State of Files" uses actual `git status` / `git diff` output, not guesses
-4. "Exact Next Step" is actionable without reading the rest of the document
-5. All file paths are absolute or relative to the project root
-6. No secrets, tokens, or passwords in any section
+### Structural Gates
+1. Sections "What We Are Building", "What WORKED", "Current State of Files", and "Exact Next Step" are ALWAYS present (mandatory minimum of 4)
+2. "What Did NOT Work" is present if ANY approach was tried and abandoned
+3. At least 1 of "Decisions Made", "Blockers & Open Questions", "Environment & Setup Notes" is also present (total minimum: 5 sections)
+4. Do NOT collapse multiple sections into one massive paragraph
+
+### Content Gates
+5. "What Did NOT Work" contains specific error messages, not vague descriptions
+6. "Current State of Files" uses actual `git status` / `git diff` output, not guesses
+7. "Exact Next Step" is actionable without reading the rest of the document — must include: what to do, what to read first, what to avoid
+8. All file paths are absolute or relative to the project root
+9. No secrets, tokens, or passwords in any section
 </HARD-GATE>
 
 ## Post-Save Actions
@@ -321,6 +327,22 @@ After the session file passes the Quality Gates and user confirms:
 | Vague next step ("continue the work") | Zero context for next session |
 | Including secrets or tokens | Security risk persisted in session files |
 | Summarizing instead of being specific | "Fixed some bugs" vs "Fixed NPE in auth.ts:42 caused by null user.email" |
+
+## Short-ID Convention
+
+Derive the short-id from the main theme of the session. Examples:
+- `auth-cookie-impl` (JWT cookie implementation session)
+- `forge-ace-v2pg` (forge_ace Plan Quality Gate work)
+- `bochi-sync-s3a` (bochi S3 sync project)
+- `ctx-ghost-clean` (config drift fix session)
+
+## When to Suggest Saving
+
+Proactively suggest `/save-session` when:
+- The user says goodbye or ending phrases ("done for today", "wrap up", "thanks")
+- Context window is approaching limits (strategic-compact territory)
+- A major milestone was reached (all tests pass, feature complete, PR merged)
+- The session has been running for an extended period with significant progress
 
 ## Notes
 
