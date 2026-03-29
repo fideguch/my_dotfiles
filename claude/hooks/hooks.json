@@ -361,6 +361,18 @@
           }
         ],
         "description": "Session end lifecycle marker (non-blocking)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run-with-flags.js\" \"session:end:worktree-cleanup\" \"scripts/hooks/worktree-cleanup.js\" \"minimal,standard,strict\"",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "Clean up orphaned agent worktrees (locked ones are skipped)"
       }
     ]
   }

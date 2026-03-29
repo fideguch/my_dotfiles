@@ -215,6 +215,7 @@ Agent tool (general-purpose, isolation: worktree):
     - [ ] Cache cold-start: Does this code assume cached data exists on first run?
     - [ ] Retry safety: If the caller retries after a timeout, can this cause data corruption?
     - [ ] Resource cleanup: Are file handles, connections, or locks always released?
+    - [ ] Worktree cleanup: If dispatched with isolation=worktree, ensure the orchestrating agent runs `git worktree remove` after consuming Writer output.
 
     If ANY check reveals a gap: fix it, add a test for it, re-run all tests.
 

@@ -1,0 +1,82 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # 1. Node.js syntax check for all hook scripts
+      - name: Node.js syntax check
+        run: |
+          echo "Checking Node.js syntax..."
+          count=0
+          fail=0
+          for f in $(find claude/scripts -name '*.js' -type f); do
+            if ! node --check "$f" 2>&1; then
+              fail=$((fail + 1))
+            fi
+            count=$((count + 1))
+          done
+          echo "Checked $count files, $fail failures"
+          [ "$count" -gt 0 ] || { echo "ERROR: No .js files found"; exit 1; }
+          [ "$fail" -eq 0 ]
+
+      # 2. shellcheck for shell scripts
+      - name: shellcheck
+        run: |
+          shellcheck --severity=error set_up.sh
+          for f in $(find claude/scripts/hooks -name '*.sh' -type f); do
+            shellcheck --severity=error "$f"
+          done
+
+      # 3. JSON validation
+      - name: Validate hooks.json
+        run: jq . claude/hooks/hooks.json > /dev/null
+
+      # 4. hooks.json reference integrity
+      #    Extracts all script paths from hooks.json and verifies each exists under claude/
+      #    Covers: ${CLAUDE_PLUGIN_ROOT}/, ~/.claude/, and run-with-flags secondary args
+      - name: Verify hook script references
+        run: |
+          fail=0
+          all_cmds=$(jq -r '.. | .command? // empty' claude/hooks/hooks.json)
+
+          # Pattern A: ${CLAUDE_PLUGIN_ROOT}/path/to/script
+          plugin_paths=$(echo "$all_cmds" \
+            | sed -n 's/.*CLAUDE_PLUGIN_ROOT}\/\([^"]*\)".*/\1/p' \
+            | sort -u)
+
+          # Pattern B: ~/.claude/path/to/script
+          tilde_paths=$(echo "$all_cmds" \
+            | sed -n 's|.*~/.claude/\([^"[:space:]]*\).*|\1|p' \
+            | sort -u)
+
+          # Pattern C: run-with-flags secondary script paths
+          # run-with-flags.js "hook-id" "relative/path.js" "profiles"
+          secondaries=$(echo "$all_cmds" \
+            | sed -n 's/.*run-with-flags[^"]*"[[:space:]]*"[^"]*"[[:space:]]*"\([^"]*\)".*/\1/p' \
+            | sort -u)
+
+          checked=0
+          for p in $plugin_paths $tilde_paths $secondaries; do
+            target="claude/$p"
+            if [ ! -f "$target" ]; then
+              echo "MISSING: $target"
+              fail=$((fail + 1))
+            fi
+            checked=$((checked + 1))
+          done
+
+          echo "Reference integrity: $checked paths checked, $fail missing"
+          [ "$fail" -eq 0 ]
