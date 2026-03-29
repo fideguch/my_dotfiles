@@ -127,6 +127,17 @@
           }
         ],
         "description": "Check MCP server health before MCP tool execution and block unhealthy MCP calls"
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/scripts/hooks/bochi-s3-pull-on-read.sh",
+            "timeout": 10
+          }
+        ],
+        "description": "bochi: pull latest bochi-data from S3 before reading (5s debounce)"
       }
     ],
     "PreCompact": [
@@ -151,6 +162,18 @@
           }
         ],
         "description": "Load previous context and detect package manager on new session"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/scripts/hooks/bochi-s3-pull.sh",
+            "async": true,
+            "timeout": 30
+          }
+        ],
+        "description": "bochi: pull latest bochi-data from S3 on session start"
       }
     ],
     "PostToolUse": [
@@ -252,6 +275,18 @@
           }
         ],
         "description": "bochi: auto-capture user feedback on source quality"
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/scripts/hooks/bochi-s3-push.sh",
+            "async": true,
+            "timeout": 30
+          }
+        ],
+        "description": "bochi: sync bochi-data to S3 after writes (async, non-blocking)"
       }
     ],
     "PostToolUseFailure": [
