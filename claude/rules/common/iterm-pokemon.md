@@ -17,6 +17,6 @@ poke                     # random
 
 ## Notes
 
-- Default Pokemon on shell startup: darkrai
+- Default Pokemon on shell startup: random from curated favorites (see .zshrc)
 - The `poke` command sets the iTerm2 background image and prints Pokedex info
 - Only works in iTerm2 (`$TERM_PROGRAM == "iTerm.app"`)

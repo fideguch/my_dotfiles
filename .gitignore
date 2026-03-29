@@ -1,2 +1,5 @@
 .vim/plugged/*
 .DS_Store
+
+# Claude Code runtime artifacts (worktrees, local settings)
+.claude/
