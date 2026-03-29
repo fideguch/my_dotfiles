@@ -94,6 +94,47 @@ Any MISSING → WARNING + user confirmation before proceeding.
 
 ---
 
+## Plan Quality Gate (M/L-size only)
+
+For M and L-size changes, validate plan quality BEFORE dispatching agents.
+S-size is exempt (direct inline planning is sufficient).
+
+**Trigger**: Complexity Classifier returns M or L.
+
+**Dispatch**:
+```
+Agent tool (planner):
+  description: "Plan Quality Gate: validate implementation plan"
+  model: opus
+  prompt: |
+    Follow ~/.claude/agents/planner.md v2.0 protocol.
+    Request: [user's original requirement]
+    Complexity: [M or L from Classifier]
+    Project root: [path]
+    Execute: SML confirm → Research → Plan → GAFA Gate → Output
+```
+
+**Status Display** (1-line to user):
+```
+Plan Quality: [S/M/L], [PASS/CONDITIONAL/FAIL] — [1-line reason]
+```
+
+**Gate Decision**:
+- All PASS → proceed to Writer dispatch
+- Any FAIL → planner revises (max 2 iterations), then human decides
+- User override: "skip-plan-gate" → bypass with WARNING logged
+
+**Evidence Carry-Forward**:
+Research Summary + Gate Results are passed to Writer (as context) and Guardian
+(for verification). Overseer uses Gate Results for requirements alignment check.
+
+**bochi-data Integration**:
+Planner v2.0 automatically searches `~/.claude/bochi-data/index.jsonl` for
+past judgment patterns relevant to the task (L6 in Research Hierarchy).
+Results are included in the plan's Research Summary section.
+
+---
+
 ## Agents
 
 | Agent | File | Model | Role |
@@ -210,7 +251,7 @@ If UNAVAILABLE → safe defaults, all decisions require user confirmation.
 
 ## Quality Standards
 
-Quality evaluation uses `quality-standards.md` (symlink → `bochi/references/master-quality-review.md`), which defines the 8-axis rubric:
+Quality evaluation uses `quality-standards.md` (symlink → `bochi-data/master-quality-review.md`), which defines the 8-axis rubric:
 
 1. Design & Architecture
 2. Functionality & Correctness
@@ -219,7 +260,7 @@ Quality evaluation uses `quality-standards.md` (symlink → `bochi/references/ma
 5. Security
 6. Documentation & Usability
 7. Performance & Efficiency
-8. Community & OSS Maturity
+8. Automation & Self-Improvement
 
 **Ship-ready threshold:** 70/80 (87.5%)
 **CRITICAL: 0 | HIGH: 0** required for approval.
@@ -284,7 +325,7 @@ The Guardian has rejected 3 times. Human must decide:
 ~/.claude/skills/forge_ace/
 ├── SKILL.md                  ← This file (orchestration)
 ├── anti-patterns.md          ← 9 patterns reference card (DRY across all agents)
-├── quality-standards.md      ← symlink → ../bochi/references/master-quality-review.md
+├── quality-standards.md      ← symlink → ../../bochi-data/master-quality-review.md
 ├── writer-prompt.md          ← v3.0 (XML, Red Team, Evidence-of-Execution)
 ├── guardian-prompt.md         ← v3.0 (Risk-tier, Blast Radius Score, 8-axis)
 ├── overseer-prompt.md         ← v3.0 (Behavioral Drift, DESIGN.md L1.5, Regression Guards)

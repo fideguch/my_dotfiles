@@ -43,7 +43,7 @@ Total: 28 — matches Writer claim
 | 5 | Security | PASS | `grep "authMiddleware" src/api/dashboard.ts → line 8` |
 | 6 | Documentation & Usability | PASS | JSDoc on exports, props documented |
 | 7 | Performance & Efficiency | PASS | useSWR revalidateOnFocus:false, no N+1 |
-| 8 | Community & OSS Maturity | PASS | Standard React patterns, no exotic deps |
+| 8 | Automation & Self-Improvement | PASS | Standard React patterns, no exotic deps |
 
 **Verdict:** GUARDIAN_APPROVED | **Confidence:** HIGH
 
