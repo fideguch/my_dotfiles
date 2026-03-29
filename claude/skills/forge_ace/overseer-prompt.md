@@ -205,7 +205,7 @@ Agent tool (architect):
     | 5 | Security | Does the change introduce user-facing security concerns? |
     | 6 | Documentation & Usability | Is the change documented for users/operators? |
     | 7 | Performance & Efficiency | Will users notice performance degradation? |
-    | 8 | Community & OSS Maturity | N/A for most changes — flag only if relevant |
+    | 8 | Automation & Self-Improvement | N/A for most changes — flag only if relevant |
 
     Score each: PASS / CONCERN / FAIL
     FAIL on axes 1-5 → OVERSEER_REJECTED

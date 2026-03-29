@@ -166,7 +166,7 @@ Agent tool (general-purpose):
     | 5 | Security | YES/NO | | |
     | 6 | Documentation & Usability | YES/NO | | |
     | 7 | Performance & Efficiency | YES/NO | | |
-    | 8 | Community & OSS Maturity | YES/NO | | |
+    | 8 | Automation & Self-Improvement | YES/NO | | |
 
     If auto_approve=true: CONCERN → YES with WARNING
     If auto_approve=false: CONCERN → NO (ask Admin)

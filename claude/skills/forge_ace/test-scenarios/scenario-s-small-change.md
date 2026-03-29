@@ -140,7 +140,7 @@ no runtime behavior change, no API surface modification.
 | 5 | Security | PASS | No secrets, no code paths |
 | 6 | Documentation & Usability | PASS | Fixes user-facing accuracy |
 | 7 | Performance & Efficiency | PASS | N/A |
-| 8 | Community & OSS Maturity | PASS | N/A |
+| 8 | Automation & Self-Improvement | PASS | N/A |
 
 ### Guardian Report
 

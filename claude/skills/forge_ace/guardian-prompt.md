@@ -255,7 +255,7 @@ Agent tool (general-purpose):
     | 5 | Security | OWASP scan from Phase 2.5e clean? |
     | 6 | Documentation & Usability | Comments where needed? API docs updated? |
     | 7 | Performance & Efficiency | No O(n²) where O(n) suffices? No memory leaks? |
-    | 8 | Community & OSS Maturity | Dependencies well-maintained? Licenses compatible? |
+    | 8 | Automation & Self-Improvement | Quality gates present? Improvement tracked? Research automated? |
 
     Score each axis: PASS / CONCERN / FAIL
     FAIL on any axis → GUARDIAN_REJECTED (even for LOW-risk changes)
