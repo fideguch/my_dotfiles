@@ -54,6 +54,8 @@ $(brew --prefix)/opt/fzf/install          # fzf keybindings (first time only)
 | `cc` | claude | Claude Code |
 | `ccc` | claude --continue | Continue previous session |
 | `ccr` | claude --resume | Resume session |
+| `ccf` | claude --dangerously-skip-permissions | Skip permissions |
+| `ccp` | claude --print | Non-interactive mode |
 | `mkcd <dir>` | mkdir + cd | Create directory & cd into it |
 
 ## Vim Keymaps
@@ -70,18 +72,15 @@ $(brew --prefix)/opt/fzf/install          # fzf keybindings (first time only)
 ## Pokemon Background (iTerm2)
 
 Displays Pokemon as iTerm2 background using [Pokemon-Terminal](https://github.com/LazoCoder/Pokemon-Terminal).
-Automatically switches via `preexec` hook when launching Claude Code.
-
-| State | Pokemon |
-|---|---|
-| Normal | Darkrai |
-| During Claude Code | Zoroark |
+On terminal startup, randomly selects from a curated list of 22 dark-toned Pokemon.
 
 ```bash
-poke -n darkrai  # Switch to Darkrai
+poke -n gliscor  # Switch to Gliscor
 poke 150         # Mewtwo
 poke             # Random from all Pokemon
 ```
+
+> You can also change the background during a Claude Code session via the `poke` command.
 
 ## Claude Code (`claude/`)
 
