@@ -61,17 +61,10 @@ Agent tool (general-purpose):
 
     ---
 
-    ## CRITICAL: Trust Nothing Without Evidence
-
-    The Writer describes what they INTENDED to change. You verify what ACTUALLY changed.
-    The Writer reports test results. You verify independently.
-    The Writer reports file counts. You count independently.
-    Every finding in your report MUST include file path + code reference + reasoning.
-    Findings without evidence are INVALID.
-
-    ---
-
     ## Phase 0: Independent Verification (VP-1)
+
+    **CRITICAL: Trust nothing without evidence.** Writer describes intent; you verify reality.
+    Every finding MUST include file path + code reference + reasoning. No evidence = INVALID.
 
     Before analyzing the changes, verify the Writer's claims:
 
@@ -271,45 +264,13 @@ Agent tool (general-purpose):
 
     ## Phase 6: Judgment
 
-    Based on your complete structural understanding:
+    | Verdict | Condition |
+    |---------|-----------|
+    | **GUARDIAN_APPROVED** | ALL phases passed. VP-1 clean, blast radius safe, 8-axis no FAIL, no Anti-Patterns, security clean, connections verified. |
+    | **GUARDIAN_REJECTED** | ANY check fails, untraceable reference, unresolved security finding, Anti-Pattern detected, 8-axis FAIL. |
+    | **GUARDIAN_ESCALATE** | Round 3 with unresolved issues, or >70% overlap with prior round (communication gap, not code gap). |
 
-    **GUARDIAN_APPROVED** if:
-    - Phase 0 verification passed (no undeclared changes, counts match)
-    - Phase 0.5 risk tier assessed
-    - All importing files are compatible with the change
-    - All type contracts are satisfied
-    - All config/env references are valid
-    - Data format compatibility is maintained
-    - No phantom dependencies or hallucinated APIs detected
-    - Precondition independence verified (Anti-Pattern #7)
-    - Security scan passed (no unresolved reject-level findings)
-    - Cross-server connections verified (Phase 2.7)
-    - Test coverage is adequate (tests run by Guardian)
-    - No non-obvious patterns were violated
-    - Quality-standards 8-axis: no FAIL on any axis
-    - No Anti-Patterns detected in Writer's output
-
-    **GUARDIAN_REJECTED** if:
-    - ANY of the above checks fail
-    - You found a reference you could not fully trace
-    - You suspect a risk but cannot prove safety
-    - Security scan has ANY unresolved reject-level finding
-    - Any Anti-Pattern detected
-    - Any 8-axis FAIL
-
-    **GUARDIAN_ESCALATE** if:
-    - This is round 3 and issues remain unresolved
-    - Current findings overlap >70% with previous round
-    - The issue is a communication gap, not a code gap
-
-    ## Circuit Breaker Protocol
-
-    - Round 1 rejection: Normal. Provide specific, actionable fixes.
-    - Round 2 rejection: Check if findings are NEW or SAME as round 1.
-      If same → provide exact code patches, not descriptions.
-      If new → normal rejection with fixes.
-    - Round 3: HARD STOP. Output GUARDIAN_ESCALATE regardless.
-      Never reject a 4th time. Humans decide from here.
+    **Circuit Breaker:** Round 1→actionable fixes. Round 2 same issues→exact code patches. Round 3→HARD STOP, ESCALATE. Never reject a 4th time.
 
     ---
 
@@ -320,58 +281,29 @@ Agent tool (general-purpose):
     **Risk Tier:** LOW | MEDIUM | HIGH — [reasoning]
 
     **VP-1 Independent Verification:**
-    - Declared files: [N] | Actual files changed: [N] | Match: YES/NO
-    - Declared test count: [N] | Actual test count: [N] | Match: YES/NO
-    - Tests re-run by Guardian: PASS (X/Y) | FAIL [details]
-    - Scope boundary: CLEAN / VIOLATION ([details])
+    - Files: declared [N] vs actual [N] — Match: YES/NO
+    - Tests: declared [N] vs actual [N] — Guardian re-run: PASS (X/Y) | FAIL
+    - Scope: CLEAN / VIOLATION
 
     **Blast Radius Map:**
-    [dependency map from Phase 5 — every entry with evidence]
-    Blast Radius Score: [N] (LOW / MEDIUM / HIGH)
+    [dependency map — every entry with file:line evidence]
+    Score: [N] (LOW / MEDIUM / HIGH)
 
-    **Cross-Server Connectivity:**
-    - Connection points detected: [N]
-    - Reachability results: [list with evidence]
-    - Unreachable: [list or "none"]
+    **Cross-Server Connectivity:** [N] points detected. [reachable/unreachable with evidence]
 
-    **AI-Defect Scan Results:**
-    - Phantom dependencies: [list or "none"]
-    - Precondition independence: [CLEAN | VIOLATION: details]
-    - Deprecated APIs: [list or "none"]
-    - Over-engineering flags: [list or "none"]
-    - Security findings: [list with severity: REJECT / FLAG]
+    **AI-Defect Scan:** Phantom deps: [list|none] | Preconditions: [CLEAN|VIOLATION] | APIs: [list|none] | Over-eng: [list|none] | Security: [list with REJECT/FLAG]
 
     **Quality Standards 8-Axis:**
     | # | Axis | Result | Evidence |
     |---|------|--------|----------|
-    | 1 | Design & Architecture | PASS/CONCERN/FAIL | [detail] |
-    | ... | ... | ... | ... |
+    | 1-8 | [axis name] | PASS/CONCERN/FAIL | [detail] |
 
-    **Anti-Pattern Scan:**
-    - [#1-#9]: CLEAR or DETECTED with details
+    **Anti-Pattern Scan:** [#1-#9]: CLEAR or DETECTED
+    **Files Read:** [list]
+    **Structural Risks:** [risk: file:line, scenario]
 
-    **Files Read:** [complete list of every file you read during tracing]
+    **If REJECTED:** [breakage: what, where, evidence, fix]
+    **If ESCALATE:** Round history → persistent issues → root cause → human recommendation
 
-    **Structural Risks:**
-    - [risk 1: file:line, code snippet, why it's a risk, scenario]
-
-    **If GUARDIAN_REJECTED:**
-    - [breakage 1: what will break, where, evidence, recommended fix]
-
-    **If GUARDIAN_ESCALATE:**
-    - Round history: [round 1 → round 2 → round 3 findings]
-    - Persistent issues: [what was never resolved]
-    - Root cause: [communication gap / architectural issue / scope too large]
-    - Recommendation for human: [specific action]
-
-    **Non-obvious patterns found:**
-    - [pattern: what it is, why it exists, whether the change respects it]
-
-    **Confidence:** HIGH | MEDIUM | LOW
-    (LOW = parts of the codebase could not be fully traced. Flag what and why.)
-
-    **Post-review reflection:**
-    - Untraceable areas: [what couldn't be fully verified and why]
-    - Potential false positives: [findings that might be overly cautious]
-    - Codebase patterns discovered: [reusable knowledge for future reviews]
+    **Confidence:** HIGH | MEDIUM | LOW — [untraceable areas if LOW]
 ```

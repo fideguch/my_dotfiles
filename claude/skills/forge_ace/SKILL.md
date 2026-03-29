@@ -245,15 +245,56 @@ Quality evaluation uses `quality-standards.md` (symlink → `bochi/references/ma
 
 ---
 
+## Token Usage Estimates
+
+| Size | Agents | Input Tokens | Output Tokens | Est. Cost | Est. Time |
+|------|--------|-------------|--------------|-----------|-----------|
+| S | Writer(Sonnet) + Guardian(Opus) | 5K-15K | 3K-8K | ~$0.3-1.0 | ~3-5 min |
+| M | + Overseer(Opus) | 15K-30K | 8K-15K | ~$1-3 | ~8-12 min |
+| L | + PM-Admin(Opus) + Designer(Sonnet) | 30K-50K | 15K-25K | ~$3-8 | ~15-25 min |
+
+Use S for most changes. Upgrade to M/L only when the Complexity Classifier requires it.
+L-size with all 5 agents is expensive — confirm the change justifies the cost.
+
+---
+
+## Troubleshooting
+
+**GUARDIAN_ESCALATE (Round 3 deadlock):**
+The Guardian has rejected 3 times. Human must decide:
+1. **Communication gap** → Rewrite the requirement more precisely, re-dispatch Writer
+2. **Architectural issue** → The change is too large for the current architecture; split it
+3. **Scope too large** → Break into smaller change-sets and run forge_ace on each
+
+**Designer cannot capture screenshots:**
+- Playwright not installed → Designer uses Manual Screenshot Fallback (Phase 0c)
+- User provides screenshots at `/tmp/forge_ace_screen_*.png`
+- Designer proceeds with QA checklist on manually provided images
+
+**bochi-data UNAVAILABLE:**
+- PM-Admin operates in degraded mode: all decisions require explicit user confirmation
+- Quality assessment falls back to code-direct analysis (no judgment pattern matching)
+- All decisions marked: "bochi-data UNAVAILABLE — code-direct analysis"
+
+---
+
 ## File Structure
 
 ```
 ~/.claude/skills/forge_ace/
 ├── SKILL.md                  ← This file (orchestration)
+├── anti-patterns.md          ← 9 patterns reference card (DRY across all agents)
 ├── quality-standards.md      ← symlink → ../bochi/references/master-quality-review.md
 ├── writer-prompt.md          ← v3.0 (XML, Red Team, Evidence-of-Execution)
-├── guardian-prompt.md         ← v3.0 (Risk-tier, Blast Radius Score, 8-axis, Blood Vessels)
+├── guardian-prompt.md         ← v3.0 (Risk-tier, Blast Radius Score, 8-axis)
 ├── overseer-prompt.md         ← v3.0 (Behavioral Drift, DESIGN.md L1.5, Regression Guards)
 ├── pm-admin-prompt.md         ← v1.0 (Scope Delegation, bochi, Two-Tier Memory, 4-axis)
-└── designer-prompt.md         ← v1.0 (Playwright, 25-item QA, AI Visual Judgment)
+├── designer-prompt.md         ← v1.0 (Playwright, 25-item QA, AI Visual Judgment)
+├── checklists/
+│   ├── ai-defect-scan.md     ← Guardian Phase 2.5 (extracted)
+│   └── connectivity-check.md ← Guardian Phase 2.7 (extracted)
+└── test-scenarios/
+    ├── scenario-s-small-change.md    ← S-size fixture (Writer + Guardian)
+    ├─��� scenario-m-api-change.md      ← M-size fixture (+ Overseer)
+    └── scenario-l-fullstack-with-ui.md ← L-size fixture (all 5 agents)
 ```
