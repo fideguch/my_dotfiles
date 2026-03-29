@@ -1,5 +1,12 @@
 ---
-description: Save current session state to a dated file in ~/.claude/sessions/ so work can be resumed in a future session with full context.
+description: |
+  Save current session state to a dated file in ~/.claude/sessions/ so work can be resumed in a future session with full context.
+  JP triggers: "セッションを保存", "引き継ぎ", "保存して終了",
+  "ここまでを記録", "記録して", "セッションをまとめて", "ハンドオフ",
+  "次のセッションに引き継いで", "ここまでの会話を記録",
+  "セッションを保存して終了", "このセッションを保存"
+  EN triggers: "save session", "hand off", "handoff",
+  "wrap up session", "save and quit", "save this session"
 ---
 
 # Save Session Command
@@ -12,17 +19,29 @@ Capture everything that happened in this session — what was built, what worked
 - Before hitting context limits (run this first, then start a fresh session)
 - After solving a complex problem you want to remember
 - Any time you need to hand off context to a future session
+- When a major milestone was reached (all tests pass, feature complete, PR merged)
+
+## Data Gathering Protocol
+
+<HARD-GATE>
+Before writing ANY session content, execute ALL of the following steps.
+Writing from conversation memory alone is PROHIBITED.
+
+1. Run `git status` in the current working directory
+2. Run `git diff --stat` to capture changed files
+3. Run `git log --oneline -5` to capture recent commits
+4. Read `~/.claude/projects/-Users-fumito-ideguchi/memory/MEMORY.md`
+5. Scan the conversation for: decisions, failed approaches, errors, discoveries
+6. Note: current working directory, active plan files, running services
+
+If not in a git repository, skip steps 1-3 and note "not a git repo" in the Environment section.
+</HARD-GATE>
 
 ## Process
 
-### Step 1: Gather context
+### Step 1: Gather context (via HARD-GATE above)
 
-Before writing the file, collect:
-
-- Read all files modified during this session (use git diff or recall from conversation)
-- Review what was discussed, attempted, and decided
-- Note any errors encountered and how they were resolved (or not)
-- Check current test/build status if relevant
+Execute every step in the Data Gathering Protocol. Do NOT proceed until all steps are done.
 
 ### Step 2: Create the sessions folder if it doesn't exist
 
@@ -34,7 +53,7 @@ mkdir -p ~/.claude/sessions
 
 ### Step 3: Write the session file
 
-Create `~/.claude/sessions/YYYY-MM-DD-<short-id>-session.tmp`, using today's actual date and a short-id that satisfies the rules enforced by `SESSION_FILENAME_REGEX` in `session-manager.js`:
+Create `~/.claude/sessions/YYYY-MM-DD-<short-id>-session.tmp`, using today's actual date and a short-id that satisfies the following rules:
 
 - Allowed characters: lowercase `a-z`, digits `0-9`, hyphens `-`
 - Minimum length: 8 characters
@@ -264,6 +283,44 @@ Then test with Postman — the response should include a `Set-Cookie` header.
 ```
 
 ---
+
+## Quality Gates
+
+<HARD-GATE>
+The session file MUST satisfy ALL of the following before showing to the user:
+
+1. All sections from the template are present (use "N/A" for genuinely empty ones)
+2. "What Did NOT Work" section contains specific error messages, not vague descriptions
+3. "Current State of Files" uses actual `git status` / `git diff` output, not guesses
+4. "Exact Next Step" is actionable without reading the rest of the document
+5. All file paths are absolute or relative to the project root
+6. No secrets, tokens, or passwords in any section
+</HARD-GATE>
+
+## Post-Save Actions
+
+After the session file passes the Quality Gates and user confirms:
+
+1. **Update MEMORY.md** (if the session involved significant work):
+   - Check `~/.claude/projects/-Users-fumito-ideguchi/memory/MEMORY.md`
+   - If a `## Handoff` section exists, add or update an entry:
+     `- [Topic](../sessions/YYYY-MM-DD-shortid-session.tmp) — one-line status`
+   - If the session produced decisions or discoveries worth persisting beyond handoff,
+     save them as appropriate memory types (project, feedback, etc.)
+
+2. **bochi integration** (if `~/.claude/bochi-data/context-seeds/` directory exists):
+   - Save a context-seed as `~/.claude/bochi-data/context-seeds/[YYYY-MM-DD]-session-[topic].md`
+   - Include: topic summary, key decisions, next-session intent (plain markdown, no frontmatter)
+
+## Anti-Patterns
+
+| Pattern | Why it fails |
+|---------|-------------|
+| Writing state without running git status | Inaccurate state propagates to next session |
+| Skipping "What Did NOT Work" | Next session repeats dead ends |
+| Vague next step ("continue the work") | Zero context for next session |
+| Including secrets or tokens | Security risk persisted in session files |
+| Summarizing instead of being specific | "Fixed some bugs" vs "Fixed NPE in auth.ts:42 caused by null user.email" |
 
 ## Notes
 

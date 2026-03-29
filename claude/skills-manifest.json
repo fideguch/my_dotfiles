@@ -1,0 +1,240 @@
+{
+  "version": 1,
+  "description": "Declarative manifest of all Claude Code skills. Source of truth for recovery.",
+  "generated_at": "2026-03-30",
+  "types": {
+    "dotfiles": {
+      "description": "Skills managed in ~/my_dotfiles/claude/skills/",
+      "link_strategy": "symlink_each",
+      "skills": [
+        "ai-regression-testing",
+        "android-clean-architecture",
+        "api-design",
+        "backend-patterns",
+        "coding-standards",
+        "compose-multiplatform-patterns",
+        "configure-ecc",
+        "continuous-learning",
+        "continuous-learning-v2",
+        "cpp-coding-standards",
+        "cpp-testing",
+        "django-patterns",
+        "django-tdd",
+        "django-verification",
+        "e2e-testing",
+        "eval-harness",
+        "forge_ace",
+        "frontend-patterns",
+        "frontend-slides",
+        "golang-patterns",
+        "golang-testing",
+        "health",
+        "iterative-retrieval",
+        "java-coding-standards",
+        "kotlin-coroutines-flows",
+        "kotlin-exposed-patterns",
+        "kotlin-ktor-patterns",
+        "kotlin-patterns",
+        "kotlin-testing",
+        "laravel-patterns",
+        "laravel-tdd",
+        "laravel-verification",
+        "mcp-server-patterns",
+        "perl-patterns",
+        "perl-testing",
+        "plankton-code-quality",
+        "playwright-skill",
+        "project-guidelines-example",
+        "python-patterns",
+        "python-testing",
+        "rust-patterns",
+        "rust-testing",
+        "session-handoff",
+        "skill-stocktake",
+        "springboot-patterns",
+        "springboot-tdd",
+        "springboot-verification",
+        "strategic-compact",
+        "tdd-workflow",
+        "verification-loop"
+      ]
+    },
+    "npx": {
+      "description": "Skills installed via npx skills add",
+      "install_dir": "~/.agents/skills/",
+      "link_strategy": "symlink_each_to_claude_skills",
+      "packages": [
+        {
+          "source": "anthropics/skills",
+          "skills": [
+            "brainstorming",
+            "dispatching-parallel-agents",
+            "doc-coauthoring",
+            "executing-plans",
+            "finishing-a-development-branch",
+            "frontend-design",
+            "receiving-code-review",
+            "requesting-code-review",
+            "skill-creator",
+            "subagent-driven-development",
+            "systematic-debugging",
+            "test-driven-development",
+            "using-git-worktrees",
+            "using-superpowers",
+            "verification-before-completion",
+            "writing-plans",
+            "writing-skills"
+          ]
+        },
+        {
+          "source": "deanpeters/Product-Manager-Skills",
+          "skills": [
+            "pm-acquisition-channel-advisor",
+            "pm-ai-shaped-readiness-advisor",
+            "pm-altitude-horizon-framework",
+            "pm-business-health-diagnostic",
+            "pm-company-research",
+            "pm-context-engineering-advisor",
+            "pm-customer-journey-map",
+            "pm-customer-journey-mapping-workshop",
+            "pm-director-readiness-advisor",
+            "pm-discovery-interview-prep",
+            "pm-discovery-process",
+            "pm-eol-message",
+            "pm-epic-breakdown-advisor",
+            "pm-epic-hypothesis",
+            "pm-executive-onboarding-playbook",
+            "pm-feature-investment-advisor",
+            "pm-finance-based-pricing-advisor",
+            "pm-finance-metrics-quickref",
+            "pm-jobs-to-be-done",
+            "pm-lean-ux-canvas",
+            "pm-opportunity-solution-tree",
+            "pm-pestel-analysis",
+            "pm-pol-probe",
+            "pm-pol-probe-advisor",
+            "pm-positioning-statement",
+            "pm-positioning-workshop",
+            "pm-prd-development",
+            "pm-press-release",
+            "pm-prioritization-advisor",
+            "pm-problem-framing-canvas",
+            "pm-problem-statement",
+            "pm-product-strategy-session",
+            "pm-proto-persona",
+            "pm-recommendation-canvas",
+            "pm-roadmap-planning",
+            "pm-saas-economics-efficiency-metrics",
+            "pm-saas-revenue-growth-metrics",
+            "pm-skill-authoring-workflow",
+            "pm-storyboard",
+            "pm-tam-sam-som-calculator",
+            "pm-user-story",
+            "pm-user-story-mapping",
+            "pm-user-story-mapping-workshop",
+            "pm-user-story-splitting",
+            "pm-vp-cpo-readiness-advisor",
+            "pm-workshop-facilitation",
+            "requirements_designer"
+          ]
+        },
+        {
+          "source": "vercel-labs/skills",
+          "skills": [
+            "find-skills"
+          ]
+        },
+        {
+          "source": "vercel-labs/agent-skills",
+          "skills": [
+            "vercel-react-best-practices",
+            "web-design-guidelines"
+          ]
+        },
+        {
+          "source": "kimny1143/claude-code-template",
+          "skills": [
+            "ui-ux-pro-max"
+          ]
+        },
+        {
+          "source": "remotion-dev/skills",
+          "skills": [
+            "remotion-best-practices"
+          ]
+        },
+        {
+          "source": "aj-geddes/useful-ai-prompts",
+          "skills": [
+            "funnel-analysis"
+          ]
+        },
+        {
+          "source": "wondelai/skills",
+          "skills": [
+            "cro-methodology"
+          ]
+        }
+      ]
+    },
+    "self_authored": {
+      "description": "Self-authored GitHub repos cloned directly into ~/.claude/skills/ (NEVER copy to dotfiles)",
+      "skills": [
+        {
+          "name": "bochi",
+          "repo": "fideguch/bochi",
+          "clone_to": "~/.claude/skills/bochi"
+        },
+        {
+          "name": "my_pm_tools",
+          "repo": "fideguch/my_pm_tools",
+          "clone_to": "~/.claude/skills/my_pm_tools"
+        },
+        {
+          "name": "pm-data-analysis",
+          "repo": "fideguch/pm-data-analysis",
+          "clone_to": "~/.claude/skills/pm-data-analysis"
+        },
+        {
+          "name": "speckit-bridge",
+          "repo": "fideguch/speckit-bridge",
+          "clone_to": "~/.claude/skills/speckit-bridge"
+        }
+      ]
+    },
+    "external_clone": {
+      "description": "GitHub repos cloned outside ~/.claude, then symlinked",
+      "skills": [
+        {
+          "name": "google-workspace",
+          "repo": "fideguch/google-workspace",
+          "clone_to": "~/google_mcps/google-workspace",
+          "link_as": "~/.claude/skills/google-workspace"
+        },
+        {
+          "name": "pm-ad-analysis",
+          "repo": "fideguch/pm_ad_analysis",
+          "clone_to": "~/pm_ad_analysis",
+          "link_as": "~/.claude/skills/pm-ad-analysis"
+        }
+      ]
+    },
+    "plugins": {
+      "description": "Claude plugins (not skills)",
+      "items": [
+        {
+          "name": "discord",
+          "install": "claude plugins install discord@claude-plugins-official"
+        },
+        {
+          "name": "skill-creator",
+          "install": "claude plugins install skill-creator@claude-plugins-official"
+        }
+      ]
+    }
+  },
+  "notes": {
+    "writing-plans_conflict": "Exists in both dotfiles and .agents. Current symlink points to .agents (anthropics/skills). Dotfiles copy is orphaned.",
+    "skill_lock_path": "~/.agents/.skill-lock.json tracks npx-installed skill metadata (hashes, timestamps)"
+  }
+}

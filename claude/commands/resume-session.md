@@ -1,5 +1,7 @@
 ---
-description: Load the most recent session file from ~/.claude/sessions/ and resume work with full context from where the last session ended.
+description: |
+  Load the most recent session or handoff file and resume work with full context from where the last session ended.
+  Searches both ~/.claude/sessions/ and memory/handoff_*.md files.
 ---
 
 # Resume Session Command
@@ -29,11 +31,13 @@ This command is the counterpart to `/save-session`.
 
 If no argument provided:
 
-1. Check `~/.claude/sessions/`
-2. Pick the most recently modified `*-session.tmp` file
-3. If the folder does not exist or has no matching files, tell the user:
+1. Check BOTH locations for session context:
+   - `~/.claude/sessions/*-session.tmp` (session files from `/save-session`)
+   - `~/.claude/projects/-Users-fumito-ideguchi/memory/handoff_*.md` (legacy handoff files)
+2. Pick the most recently modified file across both locations
+3. If neither location has matching files, tell the user:
    ```
-   No session files found in ~/.claude/sessions/
+   No session or handoff files found.
    Run /save-session at the end of a session to create one.
    ```
    Then stop.
@@ -108,6 +112,17 @@ Read it and follow the same briefing process — the format is the same regardle
 
 **Session file is empty or malformed:**
 Report: "Session file found but appears empty or unreadable. You may need to create a new one with /save-session."
+
+**Loading a legacy handoff file** (`memory/handoff_*.md`):
+These use a different section structure (8-section format with frontmatter). Map sections to the briefing format:
+- Section 1 (Context) → WHAT WE'RE BUILDING
+- Section 2 (Completed Work) → Working items
+- Section 3 (Decided Items) → include in WHAT WE'RE BUILDING as context
+- Section 4 (Unresolved Items) → OPEN QUESTIONS / BLOCKERS
+- Section 5 (Failed Approaches) → WHAT NOT TO RETRY
+- Section 6 (Current State) → CURRENT STATE
+- Section 7 (Next Session Prompt) → NEXT STEP
+- Section 8 (Reference Files) → mention in CURRENT STATE if relevant
 
 ---
 
