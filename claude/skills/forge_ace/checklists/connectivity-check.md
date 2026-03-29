@@ -37,3 +37,34 @@ If unreachable:
 ```
 [changed file] --> [remote: host:port] (reachable / unreachable) [evidence: curl/ssh output]
 ```
+
+## [5] Deployment-Sync Verification (Anti-Pattern #10)
+
+For every modified file, check whether the git repo path equals the runtime reference path.
+
+**Detection heuristics:**
+- File is under a git repo (e.g., `~/my_dotfiles/claude/`) but referenced at runtime from a different path (e.g., `~/.claude/`)
+- Deploy/install scripts have `git pull` but no corresponding `cp`/`ln`/`scp` for the changed file
+- Symlinks exist but may be broken or stale (Claude Edit can replace symlinks with regular files)
+- hooks.json command paths differ from git repo file paths
+
+**Verification steps:**
+1. For each changed file, identify the runtime reference path:
+   - Check for symlinks: `readlink -f <runtime_path>`
+   - If no symlink, check install/deploy scripts for copy commands
+2. Run `diff <git_repo_version> <runtime_version>`:
+   - Identical → CLEAR
+   - Divergent → DETECTED (sync mechanism broken or missing)
+   - Runtime file missing → DETECTED (never deployed)
+3. If symlink exists, verify it is not broken:
+   - `[ -L <path> ] && [ -e <path> ] && echo VALID || echo BROKEN`
+
+**Verdict:**
+- All files: git path = runtime path (or valid symlink) → CLEAR
+- Any divergence without sync mechanism → GUARDIAN_REJECTED
+- Sync mechanism exists but not yet executed → WARNING + flag for user
+
+**Integrate into Blast Radius Map:**
+```
+[changed file] --> [runtime: path] (synced / divergent / broken-symlink) [evidence: diff output]
+```

@@ -1,6 +1,6 @@
 # forge_ace Anti-Patterns Reference Card
 
-9 structural failure patterns detected across all forge_ace agents.
+10 structural failure patterns detected across all forge_ace agents.
 Each agent's Anti-Patterns section references this file for full definitions.
 
 ## Anti-Patterns (HARD-GATE — detect and act)
@@ -59,3 +59,14 @@ Markdown config ≠ live connection.
 **Detection**: Code contains SSH/HTTP/DB/S3/MQ/WS connection patterns.
 **Action**: Run reachability test (ssh/curl/aws CLI). Output = evidence. No output = no approval.
 Guardian Phase 2.7 performs systematic detection and verification.
+
+### 10. Deployment-Sync Blindness
+Git-managed file and runtime file are at different paths; `git pull` alone does not
+update the runtime copy. Symlinks, hooks scripts, env files, and settings copied
+outside the repo are all targets.
+**Detection**: Deploy script has `git pull` but no `cp`/`ln`/`scp`. Modified file's
+git repo path differs from the runtime reference path. `diff <git_version> <runtime_version>` shows divergence.
+**Action**: For every modified file, verify: git repo path = runtime reference path.
+If different, confirm a sync mechanism exists (symlink, install script, deploy hook).
+Run `diff` between git version and runtime version as evidence. No diff output = no approval.
+Guardian Phase 2.7 includes Deployment-Sync verification alongside connectivity checks.

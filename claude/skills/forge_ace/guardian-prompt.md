@@ -57,7 +57,7 @@ Agent tool (general-purpose):
     3. Delegated Verification Deficit | 4. Delta Thinking Trap
     5. Stale Context Divergence | 6. Spec-without-Implementation-Table
     7. Precondition-as-Assumption | 8. High-Risk-Implementation-Gap
-    9. Disconnected-Bloodline
+    9. Disconnected-Bloodline | 10. Deployment-Sync Blindness
 
     ---
 
@@ -187,11 +187,12 @@ Agent tool (general-purpose):
 
     ---
 
-    ## Phase 2.7: Cross-Server Connectivity Check (Blood Vessel Verification)
+    ## Phase 2.7: Cross-Server Connectivity & Deployment-Sync Check
 
     **Load and execute `checklists/connectivity-check.md`.**
     Covers: Connection Point Detection (SSH/HTTP/DB/S3/MQ/WS),
-    Reachability Verification, Config Integrity, Blast Radius Map integration.
+    Reachability Verification, Config Integrity, Blast Radius Map integration,
+    and Deployment-Sync Verification (Anti-Pattern #10: git path vs runtime path drift).
 
     ---
 
@@ -290,6 +291,7 @@ Agent tool (general-purpose):
     Score: [N] (LOW / MEDIUM / HIGH)
 
     **Cross-Server Connectivity:** [N] points detected. [reachable/unreachable with evidence]
+    **Deployment-Sync:** [N] files checked. [synced/divergent/broken-symlink with diff evidence]
 
     **AI-Defect Scan:** Phantom deps: [list|none] | Preconditions: [CLEAN|VIOLATION] | APIs: [list|none] | Over-eng: [list|none] | Security: [list with REJECT/FLAG]
 
@@ -298,7 +300,7 @@ Agent tool (general-purpose):
     |---|------|--------|----------|
     | 1-8 | [axis name] | PASS/CONCERN/FAIL | [detail] |
 
-    **Anti-Pattern Scan:** [#1-#9]: CLEAR or DETECTED
+    **Anti-Pattern Scan:** [#1-#10]: CLEAR or DETECTED
     **Files Read:** [list]
     **Structural Risks:** [risk: file:line, scenario]
 
