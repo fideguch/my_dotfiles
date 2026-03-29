@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "description": "Declarative manifest of all Claude Code skills. Source of truth for recovery.",
-  "generated_at": "2026-03-30",
+  "description": "Declarative manifest of all Claude Code skills. Source of truth for full-system recovery.",
+  "generated": "2026-03-30",
   "types": {
     "dotfiles": {
       "description": "Skills managed in ~/my_dotfiles/claude/skills/",
@@ -49,7 +49,6 @@
         "python-testing",
         "rust-patterns",
         "rust-testing",
-        "session-handoff",
         "skill-stocktake",
         "springboot-patterns",
         "springboot-tdd",
@@ -60,34 +59,11 @@
       ]
     },
     "npx": {
-      "description": "Skills installed via npx skills add",
-      "install_dir": "~/.agents/skills/",
-      "link_strategy": "symlink_each_to_claude_skills",
+      "description": "Skills installed via npx skills add -> ~/.agents/skills/",
+      "link_strategy": "symlink_relative",
       "packages": [
         {
-          "source": "anthropics/skills",
-          "skills": [
-            "brainstorming",
-            "dispatching-parallel-agents",
-            "doc-coauthoring",
-            "executing-plans",
-            "finishing-a-development-branch",
-            "frontend-design",
-            "receiving-code-review",
-            "requesting-code-review",
-            "skill-creator",
-            "subagent-driven-development",
-            "systematic-debugging",
-            "test-driven-development",
-            "using-git-worktrees",
-            "using-superpowers",
-            "verification-before-completion",
-            "writing-plans",
-            "writing-skills"
-          ]
-        },
-        {
-          "source": "deanpeters/Product-Manager-Skills",
+          "source": "deanpeters/product-manager-prompts",
           "skills": [
             "pm-acquisition-channel-advisor",
             "pm-ai-shaped-readiness-advisor",
@@ -152,6 +128,28 @@
           ]
         },
         {
+          "source": "anthropics/skills",
+          "skills": [
+            "brainstorming",
+            "dispatching-parallel-agents",
+            "doc-coauthoring",
+            "executing-plans",
+            "finishing-a-development-branch",
+            "frontend-design",
+            "receiving-code-review",
+            "requesting-code-review",
+            "skill-creator",
+            "subagent-driven-development",
+            "systematic-debugging",
+            "test-driven-development",
+            "using-git-worktrees",
+            "using-superpowers",
+            "verification-before-completion",
+            "writing-plans",
+            "writing-skills"
+          ]
+        },
+        {
           "source": "kimny1143/claude-code-template",
           "skills": [
             "ui-ux-pro-max"
@@ -178,7 +176,7 @@
       ]
     },
     "self_authored": {
-      "description": "Self-authored GitHub repos cloned directly into ~/.claude/skills/ (NEVER copy to dotfiles)",
+      "description": "Self-authored GitHub repos cloned directly (NEVER copy to dotfiles)",
       "skills": [
         {
           "name": "bochi",
@@ -186,36 +184,36 @@
           "clone_to": "~/.claude/skills/bochi"
         },
         {
-          "name": "my_pm_tools",
-          "repo": "fideguch/my_pm_tools",
-          "clone_to": "~/.claude/skills/my_pm_tools"
-        },
-        {
           "name": "pm-data-analysis",
-          "repo": "fideguch/pm-data-analysis",
+          "repo": "fideguch/pm_data_analysis",
           "clone_to": "~/.claude/skills/pm-data-analysis"
         },
         {
           "name": "speckit-bridge",
           "repo": "fideguch/speckit-bridge",
           "clone_to": "~/.claude/skills/speckit-bridge"
+        },
+        {
+          "name": "my_pm_tools",
+          "repo": "fideguch/my_pm_tools",
+          "clone_to": "~/.claude/skills/my_pm_tools"
         }
       ]
     },
     "external_clone": {
-      "description": "GitHub repos cloned outside ~/.claude, then symlinked",
+      "description": "GitHub repos cloned outside ~/.claude, then symlinked in",
       "skills": [
-        {
-          "name": "google-workspace",
-          "repo": "fideguch/google-workspace",
-          "clone_to": "~/google_mcps/google-workspace",
-          "link_as": "~/.claude/skills/google-workspace"
-        },
         {
           "name": "pm-ad-analysis",
           "repo": "fideguch/pm_ad_analysis",
           "clone_to": "~/pm_ad_analysis",
           "link_as": "~/.claude/skills/pm-ad-analysis"
+        },
+        {
+          "name": "google-workspace",
+          "repo": "fideguch/google-workspace",
+          "clone_to": "~/google_mcps",
+          "link_as": "~/.claude/skills/google-workspace"
         }
       ]
     },
@@ -223,18 +221,14 @@
       "description": "Claude plugins (not skills)",
       "items": [
         {
-          "name": "discord",
-          "install": "claude plugins install discord@claude-plugins-official"
-        },
-        {
           "name": "skill-creator",
           "install": "claude plugins install skill-creator@claude-plugins-official"
+        },
+        {
+          "name": "discord",
+          "install": "claude plugins install discord@claude-plugins-official"
         }
       ]
     }
-  },
-  "notes": {
-    "writing-plans_conflict": "Exists in both dotfiles and .agents. Current symlink points to .agents (anthropics/skills). Dotfiles copy is orphaned.",
-    "skill_lock_path": "~/.agents/.skill-lock.json tracks npx-installed skill metadata (hashes, timestamps)"
   }
 }

@@ -3,6 +3,8 @@
 New PC setup after running `set_up.sh`.
 This file lists skills NOT managed by dotfiles or self-made repos.
 
+> Full skill inventory: `skills-manifest.json` (declarative source of truth for all 126+ skills)
+
 ## 1. Official Plugins
 
 ```bash
@@ -28,7 +30,7 @@ Source: `affaan-m/everything-claude-code` (v1.9.0)
 
 ## 3. External Skills via npx skills
 
-`~/.agents/` ディレクトリに install される。`~/.claude/skills/` へ自動 symlink 作成。
+`~/.agents/` ディレクトリに install される。`~/.claude/skills/` へは `scripts/sync-npx-skills.sh` で自動 symlink 作成（`set_up.sh` が呼び出し、または手動実行可）。
 
 ### PM Skills (45+ skills)
 
