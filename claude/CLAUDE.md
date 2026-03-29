@@ -3,6 +3,7 @@
 ## Communication
 - **Default language**: 日本語（説明・質問・回答すべて）
 - **Code artifacts**: English only（変数名、コメント、コミットメッセージ、PR本文）
+- **Generated content**: 日本語（ファイル出力の見出し・本文・レポート等）— 詳細は `rules/common/output-language.md`
 - 説明とコードを切り替える際は言語も切り替える
 
 ## Primary Stack
@@ -22,6 +23,7 @@ TypeScript/JavaScript（メイン）。
 - コミットメッセージは英語、Conventional Commits 形式（詳細は `rules/common/git-workflow.md`）
 
 ## Workflow Defaults
+- 既存プロジェクトでコード変更開始前 → プロジェクトの `.claude/rules/` を読み、既存パターンを把握してから着手
 - マルチファイルタスク → まず **planner** エージェントで計画
 - コード記述後 → 指示なしで **code-reviewer** エージェントを実行
 - Figma URL → Figma MCP (`get_design_context`) でデザイン取得してからUI実装
@@ -29,6 +31,7 @@ TypeScript/JavaScript（メイン）。
 - プロダクト開発パイプライン → `rules/common/team-pipeline.md` に従う
 
 ## Quality
+- コードレビュー・品質評価 → `rules/common/quality-review.md`（全評価時に必読）
 - スキル改善・パイプライン・Stage Gate → `rules/common/team-pipeline.md`
 - Figma MCP 操作後 → DESIGN.md「HEAL」セクションに従う
 

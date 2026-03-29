@@ -5,8 +5,8 @@
 Change the iTerm2 background Pokemon at any time:
 
 ```bash
-poke -n <pokemon_name>   # by name (e.g., darkrai, zoroark, gengar)
-poke <pokedex_number>    # by Pokedex ID (e.g., 491)
+poke -n <pokemon_name>   # by name (e.g., gliscor, froslass, gengar)
+poke <pokedex_number>    # by Pokedex ID (e.g., 472)
 poke                     # random
 ```
 
