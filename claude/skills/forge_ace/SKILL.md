@@ -15,14 +15,14 @@ Prevent the gap between "code works" and "the right thing was built" by adding P
 
 ## When to Use
 
-Use forge_ace (instead of triple-agent-coding) when:
+Use forge_ace when:
 - Changes span requirements → design → implementation
 - UI/UX changes need design quality verification
 - PM-level scope delegation is needed ("全部任せる" / "ここまで作って" / "設計だけ見て")
 - The task involves bochi-data pattern matching for judgment
 
-Use triple-agent-coding when:
-- Code-only changes without UI or requirements review needed
+For code-only changes without UI or requirements review:
+- Use forge_ace S-size (Writer + Guardian) — same agents as the former triple-agent-coding
 
 ---
 
