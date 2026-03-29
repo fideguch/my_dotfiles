@@ -125,6 +125,7 @@ echo "自作スキルリポジトリを clone します..."
 clone_skill_repo "fideguch/bochi"             "$CLAUDE_DST/skills/bochi"
 clone_skill_repo "fideguch/pm_data_analysis"  "$CLAUDE_DST/skills/pm-data-analysis"
 clone_skill_repo "fideguch/speckit-bridge"    "$CLAUDE_DST/skills/speckit-bridge"
+clone_skill_repo "fideguch/my_pm_tools"      "$CLAUDE_DST/skills/my_pm_tools"
 
 # 別ディレクトリに clone → symlink
 clone_skill_repo "fideguch/pm_ad_analysis"    "$HOME/pm_ad_analysis"
@@ -141,6 +142,13 @@ fi
 # 詳細は claude/INSTALL_SKILLS.md を参照
 
 info "自作スキル clone 完了"
+
+# ── 5c. npx スキルの symlink 同期 ────────────────────────
+if [[ -f "$DOTPATH/claude/scripts/sync-npx-skills.sh" ]]; then
+  echo "npx スキルの symlink を同期します..."
+  bash "$DOTPATH/claude/scripts/sync-npx-skills.sh"
+  info "npx スキル同期完了"
+fi
 
 # ── 6. Vim プラグインのインストール ──────────────────────
 if [[ -f "$HOME/.vim/autoload/plug.vim" ]]; then
