@@ -19,7 +19,7 @@ $ grep -rn "dashboard" src/ --include="*.ts*"
 $ npm test -- --coverage
 28 passed, 0 failed, coverage 91.2%
 ```
-**Anti-Pattern Scan:** #1-#5 CLEAR | **Confidence:** 88%
+**Anti-Pattern Scan:** #1-#12 CLEAR | **Confidence:** 88%
 </writer_report>
 
 ---
