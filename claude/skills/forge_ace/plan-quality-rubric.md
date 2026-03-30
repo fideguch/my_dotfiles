@@ -7,8 +7,8 @@
 
 ## Gate Routing
 
-| Gate | Name | M-size | L-size |
-|------|------|--------|--------|
+| Gate | Name | Standard | Full |
+|------|------|----------|------|
 | 0 | Problem Clarity | Required | Required |
 | 1 | Solution Design | Required | Required |
 | 2 | Feasibility Proof | Skip | Required |
@@ -103,7 +103,7 @@ Plans based on assumptions ("should work") without execution evidence → FAIL.
 | RF-7 | Monolithic change with no incremental path | Meta / DORA 2025 |
 | RF-8 | Spec-as-Done: plan describes docs to WRITE, not behavior to BUILD | bochi lesson |
 | RF-9 | Type B change planned without behavioral verification strategy | bochi v2.6 lesson |
-| RF-10 | User specified size (L/M) but plan uses smaller flow | Agent-Skip Rationalization |
+| RF-10 | Checkpoint Template shows deviation without user approval | Agent-Skip Rationalization |
 
 ## Pass/Fail Protocol
 

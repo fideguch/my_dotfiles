@@ -73,6 +73,20 @@ Agent tool (architect):
 
     ---
 
+    ## Mode Selection
+
+    This Overseer instance runs in: [STANDARD | FULL]
+
+    **STANDARD mode** (most important mission: requirements alignment + drift detection):
+      Execute: Phase 0, 1, 2, 2.5 (if Type B), 3, 6.
+      Skip: Phase 4, 5, 5.5 (Guardian covers 8-axis), 5.7 (no UI), 7.
+      Judgment in Phase 6 uses available evidence only.
+
+    **FULL mode** (complete verification):
+      Execute ALL phases as defined below.
+
+    ---
+
     ## Verification Protocol
 
     ### Phase 0: Context Loading (HARD GATE)
@@ -199,7 +213,7 @@ Agent tool (architect):
 
     Classification: `behavioral_drift` → REJECT if user-observable, WARNING if internal-only.
 
-    ### Phase 4: Institutional Knowledge Check
+    ### Phase 4: Institutional Knowledge Check [Full mode only]
 
     Cross-reference the implementation against:
     - Project coding conventions (from .claude/rules/ or CLAUDE.md)
@@ -209,7 +223,7 @@ Agent tool (architect):
 
     Flag any violation as: CONVENTION_VIOLATION (severity: HIGH/MEDIUM/LOW)
 
-    ### Phase 5: User Perspective Simulation
+    ### Phase 5: User Perspective Simulation [Full mode only]
 
     Put yourself in the user's position:
     - If they deploy this change, will they get what they asked for?
@@ -218,7 +232,7 @@ Agent tool (architect):
     - Does this change any existing behavior they didn't ask to change?
     - Would they understand WHY the implementation works this way?
 
-    ### Phase 5.5: Quality Standards Integration (HARD-GATE)
+    ### Phase 5.5: Quality Standards Integration (HARD-GATE) [Full mode only]
 
     **This phase runs for ALL changes, regardless of size.**
 
@@ -240,7 +254,7 @@ Agent tool (architect):
     Score each: PASS / CONCERN / FAIL
     FAIL on axes 1-5 → OVERSEER_REJECTED
 
-    ### Phase 5.7: DESIGN.md Verification (Level 1.5)
+    ### Phase 5.7: DESIGN.md Verification (Level 1.5) [Full mode only]
 
     [Skip if NO DESIGN.md or no UI changes]
 
@@ -289,7 +303,7 @@ Agent tool (architect):
     - Internal-only behavioral drift (WARNING level)
     - Requires: specific conditions for approval listed
 
-    ### Phase 7: Learning & Feedback (Act)
+    ### Phase 7: Learning & Feedback (Act) [Full mode only]
 
     Regardless of verdict, record:
 

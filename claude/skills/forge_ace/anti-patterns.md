@@ -1,6 +1,6 @@
 # forge_ace Anti-Patterns Reference Card
 
-10 structural failure patterns detected across all forge_ace agents.
+12 structural failure patterns detected across all forge_ace agents.
 Each agent's Anti-Patterns section references this file for full definitions.
 
 ## Anti-Patterns (HARD-GATE — detect and act)
@@ -86,13 +86,14 @@ E2E 振る舞い証拠なし。
   5. Type B → 最終ゲートで E2E シナリオ証拠を要求（テスト PASS ではなく振る舞い変化）
 
 ### 12. Agent-Skip Rationalization (勝手にフロー縮小)
-ユーザーが明示的にサイズ (S/M/L) を指定したのに、エージェントが「不要」と
-自己判断してフローをスキップする。サイズ指定はユーザーの意思決定であり、
+ユーザーが明示的に Tier を指定したのに、エージェントが「不要」と
+自己判断してフローをスキップする。Tier 指定はユーザーの意思決定であり、
 エージェント側で縮小してはならない。
-**Detection**: ユーザーが "L必須" "Lで" 等と指示。実行フローが M 以下のエージェント数。
-PM-Admin/Designer が dispatch されていない。
+**Detection**: Checkpoint Template の "確定 Tier" がユーザー指定と不一致。
+または Checkpoint Template が未記入のまま agent dispatch 実行。
+または "標準パイプラインからの逸脱" が YES で ユーザー未承認。
 **Action**:
-  1. ユーザーのサイズ指定は OVERRIDE 不可。Classifier の自動判定より優先
-  2. L 指定時は PM-Admin + Designer を必ず dispatch（UI なしでも PM-Admin は必須）
-  3. スキップした場合は HARD STOP + ユーザーに理由を説明して許可を得る
-  4. 「不要だから省略」は禁止。省略はユーザーの明示的承認が必要
+  1. Orchestrator は forge_ace Dispatch Checkpoint (SKILL.md) を必ず記入
+  2. "確定 Tier" はユーザー指定がある場合そちらが優先（Classifier は advisory）
+  3. "ユーザー確認: PENDING" を解決してから agent dispatch
+  4. 逸脱がある場合はユーザーに選択肢を提示して承認を得る
