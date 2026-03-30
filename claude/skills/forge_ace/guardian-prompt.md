@@ -58,6 +58,7 @@ Agent tool (general-purpose):
     5. Stale Context Divergence | 6. Spec-without-Implementation-Table
     7. Precondition-as-Assumption | 8. High-Risk-Implementation-Gap
     9. Disconnected-Bloodline | 10. Deployment-Sync Blindness
+    11. Spec-Layer Blindness | 12. Agent-Skip Rationalization
 
     ---
 
@@ -119,6 +120,20 @@ Agent tool (general-purpose):
     Risk tier controls review DEPTH, not quality STANDARDS.
 
     Output: `Risk Tier: LOW | MEDIUM | HIGH` with reasoning.
+
+    **Change Target Classification (Anti-Pattern #11):**
+    ```
+    Type A: ALL changed files are executable code → standard review
+    Type B: ANY changed file is spec/prompt/config/.md → FLAG:
+      "⚠️ TYPE B CHANGE DETECTED: [list of spec/prompt/config files]
+       Structural review (blast radius, tests, 8-axis) CANNOT verify
+       that the target system will behaviorally comply with this spec change.
+       Guardian can verify: syntax, consistency, no contradictions.
+       Guardian CANNOT verify: LLM/system will follow this instruction.
+       Required: Writer's Reproduce-Before-Fix + Delta Demonstration evidence."
+    ```
+    If Type B and Writer did NOT provide reproduction evidence → GUARDIAN_REJECTED.
+    Reason: "Type B change without behavioral verification (Anti-Pattern #11)."
 
     ---
 
@@ -267,8 +282,8 @@ Agent tool (general-purpose):
 
     | Verdict | Condition |
     |---------|-----------|
-    | **GUARDIAN_APPROVED** | ALL phases passed. VP-1 clean, blast radius safe, 8-axis no FAIL, no Anti-Patterns, security clean, connections verified. |
-    | **GUARDIAN_REJECTED** | ANY check fails, untraceable reference, unresolved security finding, Anti-Pattern detected, 8-axis FAIL. |
+    | **GUARDIAN_APPROVED** | ALL phases passed. VP-1 clean, blast radius safe, 8-axis no FAIL, no Anti-Patterns, security clean, connections verified. If Type B: Writer provided Reproduce-Before-Fix AND Delta Demonstration. |
+    | **GUARDIAN_REJECTED** | ANY check fails, untraceable reference, unresolved security finding, Anti-Pattern detected, 8-axis FAIL. Type B change without reproduction evidence or delta demonstration (Anti-Pattern #11). |
     | **GUARDIAN_ESCALATE** | Round 3 with unresolved issues, or >70% overlap with prior round (communication gap, not code gap). |
 
     **Circuit Breaker:** Round 1→actionable fixes. Round 2 same issues→exact code patches. Round 3→HARD STOP, ESCALATE. Never reject a 4th time.
@@ -280,6 +295,9 @@ Agent tool (general-purpose):
     **Verdict:** GUARDIAN_APPROVED | GUARDIAN_REJECTED | GUARDIAN_ESCALATE
 
     **Risk Tier:** LOW | MEDIUM | HIGH — [reasoning]
+
+    **Change Target:** Type A | Type B — [file list if Type B]
+    **Type B Verification:** N/A (Type A) | Reproduce: [evidence ref] | Delta: [evidence ref] | MISSING
 
     **VP-1 Independent Verification:**
     - Files: declared [N] vs actual [N] — Match: YES/NO
@@ -300,7 +318,7 @@ Agent tool (general-purpose):
     |---|------|--------|----------|
     | 1-8 | [axis name] | PASS/CONCERN/FAIL | [detail] |
 
-    **Anti-Pattern Scan:** [#1-#10]: CLEAR or DETECTED
+    **Anti-Pattern Scan:** [#1-#12]: CLEAR or DETECTED
     **Files Read:** [list]
     **Structural Risks:** [risk: file:line, scenario]
 

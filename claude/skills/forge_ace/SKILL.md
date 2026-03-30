@@ -45,6 +45,38 @@ L (Large):  diff >10 files OR cross-module OR UI changes OR auth/payment
   → Writer + Guardian + Overseer + PM-Admin ∥ Designer
 ```
 
+**HARD-GATE: User Size Override — ユーザーのサイズ指定は絶対。**
+ユーザーが "L必須" "Lで" "forceL" 等と指示した場合、Complexity Classifier の
+自動判定に関わらず指定サイズのフロー全体を実行する。エージェント側で
+「不要だから省略」は Anti-Pattern #12 違反。省略にはユーザーの明示的承認が必要。
+
+**Change Target Classification** (S/M/L と直交):
+
+```
+Type A (Executable Code): .ts/.js/.py/.go/.rs/.java/etc.
+  → Standard flow: tests verify behavior, Guardian traces blast radius
+
+Type B (Spec/Prompt/Config): .md prompts, SKILL.md, YAML/JSON config,
+  natural language instruction files, HARD-GATE definitions
+  → Additional gates required (Type B Mandatory Gates below)
+
+Classification heuristic:
+  ALL changed files are code → Type A
+  ANY changed file is spec/prompt/config → Type B (stricter gate applies)
+```
+
+**Type B Mandatory Gates** (Anti-Pattern #11 defense):
+
+```
+1. Reproduce-Before-Fix: demonstrate target bug/behavior EXISTS
+   BEFORE applying spec change. Evidence = Bash output or scenario log.
+2. Delta Demonstration: show before-behavior vs after-behavior.
+   "File changed" ≠ evidence. "Behavior changed" = evidence.
+3. E2E Behavioral Verification: after all agents approve, orchestrator
+   runs actual scenario. Scenario PASS = ship. FAIL = reject
+   (even if all agents said APPROVED).
+```
+
 **HARD-GATE: Quality is size-independent.**
 Even S-size gets Guardian's quality-standards.md 8-axis evaluation.
 Size controls agent COUNT, not quality STANDARDS.
@@ -247,6 +279,8 @@ If UNAVAILABLE → safe defaults, all decisions require user confirmation.
 | 8 | High-Risk-Implementation-Gap | Session-external work | ⚠️ WARNING + user confirm |
 | 9 | Disconnected-Bloodline | External connection unverified | Reachability test required |
 | 10 | Deployment-Sync Blindness | git repo path ≠ runtime path | `diff <git> <runtime>` verification |
+| 11 | Spec-Layer Blindness (修正した気になる) | Type B change with structural-only review | Type B Gates: Reproduce → Delta → E2E |
+| 12 | Agent-Skip Rationalization (勝手にフロー縮小) | User specified L, agent ran M | User size override is absolute. No skip without explicit approval |
 
 ---
 
