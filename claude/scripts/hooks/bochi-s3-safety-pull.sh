@@ -1,47 +1,14 @@
 #!/bin/bash
-# PreToolUse(Read) hook: pull latest bochi-data from S3 before reading
-# Sync execution (not async) — ensures data is fresh before Read proceeds
-# 5-second debounce to avoid redundant pulls within same response
+# Periodic safety-net pull (Lightsail cron every 5 min)
+# Pulls from S3 + merges index.jsonl to prevent entry loss
 set -euo pipefail
-
 BUCKET="bochi-sync-fumito"
 DATA_DIR="$HOME/.claude/bochi-data"
 LOCKFILE="/tmp/bochi-s3-sync.lock"
-DEBOUNCE_FILE="/tmp/bochi-s3-pull-last"
-DEBOUNCE_SECONDS=5
 
-# Read stdin JSON from Claude Code hook
-INPUT_JSON=$(cat)
-
-# Extract file_path (same pattern as bochi-s3-push.sh)
-FILE_PATH=$(echo "$INPUT_JSON" | grep -o '"file_path":"[^"]*"' | head -1 | cut -d'"' -f4 2>/dev/null || true)
-
-# Path guard: only pull when reading bochi-data
-if [ -n "$FILE_PATH" ] && ! echo "$FILE_PATH" | grep -q "bochi-data"; then
-  exit 0
-fi
-
-# If no file_path extracted, skip (fail-open)
-[ -z "$FILE_PATH" ] && exit 0
-
-# Debounce: skip if last pull was within 5 seconds
-if [ -f "$DEBOUNCE_FILE" ]; then
-  LAST=$(cat "$DEBOUNCE_FILE" 2>/dev/null || echo "0")
-  NOW=$(date +%s)
-  DIFF=$((NOW - LAST))
-  if [ "$DIFF" -lt "$DEBOUNCE_SECONDS" ]; then
-    exit 0
-  fi
-fi
-
-# Safety: if symlink exists but is broken, do NOT create a real directory
-if [ -L "$DATA_DIR" ] && [ ! -d "$DATA_DIR" ]; then
-  echo "WARNING: bochi-data symlink is broken (target missing)" >&2
-  exit 0
-fi
+# Safety: broken symlink check
+if [ -L "$DATA_DIR" ] && [ ! -d "$DATA_DIR" ]; then exit 0; fi
 [ -d "$DATA_DIR" ] || mkdir -p "$DATA_DIR"
-
-# AWS CLI must be available
 command -v aws &>/dev/null || exit 0
 
 # Stale lock cleanup (120s timeout)
@@ -50,7 +17,7 @@ if [ -d "$LOCKFILE.d" ]; then
   [ "$LOCK_AGE" -gt 120 ] && rmdir "$LOCKFILE.d" 2>/dev/null || true
 fi
 
-# mkdir lock (macOS/Linux compatible)
+# Cross-platform lock
 if command -v flock &>/dev/null; then
   exec 200>"$LOCKFILE"
   flock -n 200 || exit 0
@@ -59,15 +26,10 @@ else
   trap 'rmdir "$LOCKFILE.d" 2>/dev/null' EXIT
 fi
 
-# Update debounce timestamp (before sync to prevent race conditions)
-date +%s > "$DEBOUNCE_FILE"
-
-# S3 sync (fail-open: exit 0 on error)
+# Pull from S3
 aws s3 sync "s3://$BUCKET/bochi-data/" "$DATA_DIR/" \
-  --exclude ".DS_Store" \
-  --exclude "*.tmp" \
-  --region ap-northeast-1 \
-  --quiet 2>/dev/null || true
+  --exclude ".DS_Store" --exclude "*.tmp" \
+  --region ap-northeast-1 --quiet 2>/dev/null || true
 
 # Merge index.jsonl: union of local + S3 entries by id/path
 LOCAL_INDEX="$DATA_DIR/index.jsonl"

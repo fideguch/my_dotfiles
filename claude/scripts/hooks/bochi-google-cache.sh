@@ -196,7 +196,6 @@ if command -v aws &>/dev/null; then
     --exclude ".DS_Store" \
     --exclude "*.tmp" \
     --exclude "*.lock" \
-    --size-only \
     --region ap-northeast-1 \
     --quiet 2>/dev/null || true
 fi
