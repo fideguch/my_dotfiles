@@ -42,5 +42,6 @@ aws s3 sync "$DATA_DIR/" "s3://$BUCKET/bochi-data/" \
   --exclude ".DS_Store" \
   --exclude "*.tmp" \
   --exclude "*.lock" \
+  --exclude "bochi-data/" \
   --region ap-northeast-1 \
   --quiet

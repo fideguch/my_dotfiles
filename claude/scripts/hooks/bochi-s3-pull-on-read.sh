@@ -16,12 +16,17 @@ INPUT_JSON=$(cat)
 # Extract file_path (same pattern as bochi-s3-push.sh)
 FILE_PATH=$(echo "$INPUT_JSON" | grep -o '"file_path":"[^"]*"' | head -1 | cut -d'"' -f4 2>/dev/null || true)
 
-# Path guard: only pull when reading bochi-data
+# Fallback: Grep tool uses "path" instead of "file_path"
+if [ -z "$FILE_PATH" ]; then
+  FILE_PATH=$(echo "$INPUT_JSON" | grep -o '"path":"[^"]*"' | head -1 | cut -d'"' -f4 2>/dev/null || true)
+fi
+
+# Path guard: only pull when reading/grepping bochi-data
 if [ -n "$FILE_PATH" ] && ! echo "$FILE_PATH" | grep -q "bochi-data"; then
   exit 0
 fi
 
-# If no file_path extracted, skip (fail-open)
+# If no file_path or path extracted, skip (fail-open)
 [ -z "$FILE_PATH" ] && exit 0
 
 # Debounce: skip if last pull was within 5 seconds
