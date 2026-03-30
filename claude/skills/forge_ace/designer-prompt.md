@@ -52,6 +52,9 @@ Agent tool (general-purpose):
     5. Stale Context Divergence | 6. Spec-without-Implementation-Table
     7. Precondition-as-Assumption | 8. High-Risk-Implementation-Gap
     9. Disconnected-Bloodline | 10. Deployment-Sync Blindness
+    11. Spec-Layer Blindness | 12. Agent-Skip Rationalization
+    Note: Type B changes (spec/prompt/config) rarely involve UI.
+    If encountered, visual inspection cannot verify behavioral compliance.
 
     ---
 

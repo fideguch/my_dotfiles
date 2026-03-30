@@ -72,6 +72,7 @@ Agent tool (general-purpose):
     5. Stale Context Divergence | 6. Spec-without-Implementation-Table
     7. Precondition-as-Assumption | 8. High-Risk-Implementation-Gap
     9. Disconnected-Bloodline | 10. Deployment-Sync Blindness
+    11. Spec-Layer Blindness | 12. Agent-Skip Rationalization
 
     ---
 
@@ -215,6 +216,22 @@ Agent tool (general-purpose):
        - Review Guardian's Phase 2.7 results
        - If connections are critical: re-run reachability tests independently
 
+    4. **Type B verification (Anti-Pattern #11):**
+       If change target is Type B (spec/prompt/config):
+       - Writer: Reproduce-Before-Fix → [PRESENT/MISSING]
+       - Writer: Delta Demonstration → [PRESENT/MISSING]
+       - Guardian: "TYPE B CHANGE DETECTED" flag → [YES/NO]
+       - Overseer: E2E scenario defined → [PRESENT/MISSING]
+       - If ANY is MISSING → PM-Admin verdict: NO
+         Reason: "Type B review chain incomplete (Anti-Pattern #11)"
+       - If ALL present → output E2E Mandate:
+         ```
+         E2E EXECUTION MANDATE (Type B):
+         Orchestrator MUST run this scenario AFTER PM-Admin approves.
+         Scenario: [paste Overseer's E2E scenario]
+         If scenario FAILS: revert to REJECTED despite all agent approvals.
+         ```
+
     **HARD-GATE:** PM-Admin cannot output YES without Bash execution evidence.
     "Other agents said PASS" is NOT evidence.
     "PM-Admin ran tests and saw PASS output" IS evidence.
@@ -308,7 +325,7 @@ Agent tool (general-purpose):
     | 4. Runtime Verification | PASS/FAIL | [Bash output] | — |
 
     **Anti-Pattern Scan:**
-    - [#1-#9]: CLEAR or DETECTED with details
+    - [#1-#12]: CLEAR or DETECTED with details
 
     **Cross-Agent Consistency:**
     - Writer → Guardian agreement: [consistent / discrepancy: details]

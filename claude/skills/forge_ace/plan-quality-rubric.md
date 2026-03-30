@@ -80,7 +80,8 @@ Plans based on assumptions ("should work") without execution evidence → FAIL.
 
 | Criteria | Evidence Required |
 |----------|------------------|
-| Anti-patterns #1-9 checked against plan | Checklist with CLEAR/DETECTED |
+| Anti-patterns #1-12 checked against plan | Checklist with CLEAR/DETECTED |
+| If plan targets Type B files, Reproduce-Before-Fix strategy included | Reproduction strategy documented |
 | PDCA 3-cycle review completed (bochi method) | Cycle 1: technical, Cycle 2: meta, Cycle 3: coverage |
 | Research completion criteria met for size | Research Summary with source counts |
 | bochi-data consulted (if available) | bochi memory status line |
@@ -101,6 +102,8 @@ Plans based on assumptions ("should work") without execution evidence → FAIL.
 | RF-6 | Security/privacy not addressed | Google / NVIDIA Safety |
 | RF-7 | Monolithic change with no incremental path | Meta / DORA 2025 |
 | RF-8 | Spec-as-Done: plan describes docs to WRITE, not behavior to BUILD | bochi lesson |
+| RF-9 | Type B change planned without behavioral verification strategy | bochi v2.6 lesson |
+| RF-10 | User specified size (L/M) but plan uses smaller flow | Agent-Skip Rationalization |
 
 ## Pass/Fail Protocol
 

@@ -59,6 +59,7 @@ Agent tool (general-purpose, isolation: worktree):
     5. Stale Context Divergence | 6. Spec-without-Implementation-Table
     7. Precondition-as-Assumption | 8. High-Risk-Implementation-Gap
     9. Disconnected-Bloodline | 10. Deployment-Sync Blindness
+    11. Spec-Layer Blindness | 12. Agent-Skip Rationalization
 
     ---
 
@@ -106,6 +107,23 @@ Agent tool (general-purpose, isolation: worktree):
     ⚠️ DEPLOYMENT-SYNC RISK: [file]
     Git path: [git_path] | Runtime path: [runtime_path]
     Sync mechanism: [symlink/install.sh/none]
+    ```
+
+    ### 0b-TypeB. Change Target Classification
+
+    Classify this change-set:
+    - **Type A** (all changed files are executable code) → proceed normally
+    - **Type B** (any changed file is spec/prompt/config/.md instruction) →
+      BEFORE making any change, execute Reproduce-Before-Fix:
+
+    ```
+    REPRODUCE-BEFORE-FIX (Type B only):
+    Target file: [spec/prompt file being modified]
+    Bug/behavior to fix: [description]
+    Reproduction evidence: [Bash output, scenario log, or observed behavior
+      demonstrating the bug EXISTS before your fix]
+    If reproduction fails (bug not found): STOP — report NEEDS_CONTEXT.
+    You cannot fix what you cannot reproduce.
     ```
 
     ### 0b. Before/After Specification
@@ -182,6 +200,17 @@ Agent tool (general-purpose, isolation: worktree):
     3. Verify output files/results with `ls -la` or `Read`
     4. Record evidence: "spec says X → implementation does X → output confirms X"
     5. Spec-only output (without implementation evidence) is an Evidence-of-Execution violation
+
+    **Type B Delta Demonstration (Anti-Pattern #11):**
+    If this is a Type B change, after applying the fix:
+    ```
+    DELTA DEMONSTRATION:
+    Before-behavior: [paste reproduction evidence from 0b-TypeB]
+    After-behavior: [execute same scenario/check AFTER fix applied]
+    Behavioral delta: [specific difference observed]
+    ```
+    "File content changed" is NOT a delta demonstration.
+    "Behavior X became behavior Y" IS a delta demonstration.
 
     **Implementation Status Table (Anti-Pattern #6):**
     If your changes reference external components, append this table:
@@ -333,6 +362,7 @@ Agent tool (general-purpose, isolation: worktree):
     - Precondition-as-Assumption: [CLEAR | EXTRACTED: N independent tests]
     - Disconnected-Bloodline: [CLEAR | N/A | DETECTED: reachability test result]
     - Deployment-Sync: [CLEAR | DETECTED: git path ≠ runtime path, sync mechanism verified/missing]
+    - Spec-Layer Blindness: [CLEAR (Type A) | Type B: reproduce=[evidence], delta=[evidence]]
 
     ### Implementation Status Table (if applicable)
     | Component | Status | Evidence |

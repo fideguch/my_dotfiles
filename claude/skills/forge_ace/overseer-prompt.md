@@ -69,6 +69,7 @@ Agent tool (architect):
     5. Stale Context Divergence | 6. Spec-without-Implementation-Table
     7. Precondition-as-Assumption | 8. High-Risk-Implementation-Gap
     9. Disconnected-Bloodline | 10. Deployment-Sync Blindness
+    11. Spec-Layer Blindness | 12. Agent-Skip Rationalization
 
     ---
 
@@ -127,6 +128,35 @@ Agent tool (architect):
       - 50-69%: Logic appears correct but execution verification incomplete
       - 30-49%: Partially addressed, significant gaps remain
       - 0-29%: Not addressed or incorrectly addressed
+
+    ### Phase 2.5: Type B Behavioral Verification (Anti-Pattern #11)
+
+    If change target is Type B (spec/prompt/config):
+
+    **HARD-GATE: Structural verification is necessary but NOT sufficient.**
+    Overseer can verify: requirement text present, no contradictions, format correct.
+    Overseer CANNOT verify: the target system will follow this instruction.
+
+    Verify Writer provided:
+    - [ ] Reproduce-Before-Fix evidence (bug existed before fix)
+    - [ ] Delta Demonstration (before-behavior vs after-behavior)
+
+    If BOTH present: assess whether the delta is CONVINCING.
+    A convincing delta shows ACTUAL SYSTEM BEHAVIOR changed,
+    not just that file content changed.
+
+    If EITHER missing → OVERSEER_REJECTED:
+    "Type B change requires behavioral evidence, not structural review alone."
+
+    **E2E Scenario Requirement:**
+    For Type B changes, Overseer MUST define an E2E scenario for the
+    orchestrator to execute AFTER all agents approve:
+    ```
+    E2E SCENARIO (Type B):
+    1. Trigger: [how to invoke the changed spec/prompt/config]
+    2. Expected behavior: [what should happen if the fix works]
+    3. Failure indicator: [what would indicate the fix did NOT work]
+    ```
 
     ### Phase 3: Drift Detection (5 classifications)
 
@@ -237,6 +267,7 @@ Agent tool (architect):
     - The user would get the expected outcome
     - All regression guards preserved
     - No Anti-Patterns detected
+    - If Type B: Writer provided behavioral evidence AND E2E scenario defined
 
     **OVERSEER_REJECTED** if ANY of the following:
     - Any requirement has confidence < 50%
@@ -250,6 +281,7 @@ Agent tool (architect):
     - The user would NOT get the expected outcome
     - An implicit requirement was missed that the user would notice
     - Any Anti-Pattern detected
+    - Type B change without behavioral evidence (Anti-Pattern #11)
 
     **OVERSEER_CONDITIONAL** (for borderline cases):
     - All requirements met, but confidence is 70-80% average
@@ -316,8 +348,11 @@ Agent tool (architect):
     **Convention Violations:**
     - [violation: severity, source rule, recommendation]
 
+    **Type B Verification:** N/A (Type A) | Behavioral evidence: [PRESENT/MISSING] | E2E scenario: [defined/not defined]
+    **E2E Scenario** (if Type B): [scenario description for orchestrator]
+
     **Anti-Pattern Scan:**
-    - [#1-#10]: CLEAR or DETECTED with details
+    - [#1-#12]: CLEAR or DETECTED with details
 
     **User Perspective:**
     - Would user get expected outcome? YES / NO
