@@ -1,7 +1,7 @@
-# Test Scenario: M-Size — API Endpoint Addition
+# Test Scenario: Standard-Tier — API Endpoint Addition
 
-**Size:** M (5 files, >100 lines, API surface change)
-**Agents:** Writer + Guardian + Overseer
+**Tier:** Standard (5 files, >100 lines, API surface change, no UI)
+**Agents:** Writer + Guardian + Overseer(standard) + PM-Admin(standard)
 **Scenario:** Add `GET /api/v1/notifications` endpoint to Express.js app
 
 ## Scenario Context
@@ -95,7 +95,7 @@ Blast Radius Score: 12 (MEDIUM) — 5 files × 1 depth × 2 API-surface weight +
 
 **AI-Defect Scan:** Phantom deps: none | Preconditions: CLEAN | APIs: none | Over-eng: none | Security: CLEAR
 **Quality Standards 8-Axis:** All 8 PASS
-**Anti-Pattern Scan:** [#1-#9]: All CLEAR
+**Anti-Pattern Scan:** [#1-#12]: All CLEAR
 **Confidence:** HIGH
 
 ## Expected Overseer Report
@@ -121,6 +121,31 @@ Blast Radius Score: 12 (MEDIUM) — 5 files × 1 depth × 2 API-surface weight +
 **Regression Guards:**
 - Existing routes: PRESERVED (no route conflicts detected)
 - Auth middleware: PRESERVED (grep shows unchanged)
+
+## Expected PM-Admin Report (Standard Mode)
+
+**Verdict:** YES
+**Mode:** STANDARD
+
+**bochi 記憶状態:**
+- index.jsonl: [LOADED/UNAVAILABLE]
+- user-profile.yaml pm_admin: [LOADED/UNAVAILABLE]
+- Referenced records: N/A
+
+**Scope Declaration:**
+- Level: full
+- Scope compliance: PASS
+
+**4-Axis Review (Standard — Axis 1 + 4 only):**
+| Axis | Result | Evidence |
+|------|--------|----------|
+| 1. Scope Compliance | PASS | 5 files within declared boundary |
+| 4. Runtime Verification | PASS | npm test: 8/8 PASS |
+
+**Cross-Agent Consistency:**
+- Writer → Guardian: consistent (8/8 tests, 5 files)
+- Guardian → Overseer: consistent (APPROVED)
+- Independent verification: matches
 
 ## Verification Assertions
 

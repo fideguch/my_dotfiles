@@ -1,7 +1,7 @@
 # Scenario M-TypeB: Spec Fix — HARD-GATE Not Followed (Type B)
 
-**Size:** M (3 files: SKILL.md + config.yaml + test file)
-**Agents:** Writer + Guardian + Overseer
+**Tier:** Standard (3 files: SKILL.md + config.yaml + test file)
+**Agents:** Writer + Guardian + Overseer(standard) + PM-Admin(standard)
 **Change Target:** Type B (SKILL.md + config YAML)
 **Anti-Pattern #11 exercise:** Full Reproduce → Delta → E2E chain
 **Source:** bochi v2.6 incident (3 spec modifications, all failed E2E)

@@ -1,6 +1,7 @@
-# Scenario S: Documentation Fix (Writer + Guardian)
+# Scenario S: Documentation Fix (Standard-tier)
 
-S-size test scenario for forge_ace. Demonstrates the minimal 2-agent flow
+Standard-tier test scenario for forge_ace. Demonstrates the 4-agent flow
+(Writer + Guardian + Overseer-standard + PM-Admin-standard)
 on a documentation-only change with full quality gate enforcement.
 
 ## Scenario Context
@@ -9,13 +10,13 @@ on a documentation-only change with full quality gate enforcement.
 The doc references `POST /api/v1/users/create` but the actual endpoint
 was renamed to `POST /api/v2/users` in a recent migration.
 
-**Complexity Classification:**
+**Tier Classification:**
 ```
-S (Small): diff ≤3 files, ≤100 lines, no API surface change, no UI
-→ Writer + Guardian (8-axis FULL)
+Standard: All code/spec changes (no UI)
+→ Writer + Guardian + Overseer(standard) + PM-Admin(standard)
 ```
 
-**Flow:** `Writer → Guardian(8-axis) → DONE`
+**Flow:** `Writer → Guardian → Overseer(standard) → PM-Admin(standard) → DONE`
 
 ---
 
@@ -165,6 +166,75 @@ Score: 0 (LOW)
 
 ---
 
+## Overseer Execution (Standard Mode)
+
+### Mode: STANDARD
+Execute: Phase 0, 1, 2, 2.5 (N/A — not Type B for code endpoint), 3, 6.
+Skip: Phase 4, 5, 5.5, 5.7, 7.
+
+### Phase 1: Requirement Decomposition
+
+| # | Requirement | Source |
+|---|-------------|--------|
+| 1 | API endpoint path updated from v1 to v2 | user words |
+| 2 | Curl example updated to match | implied |
+
+### Phase 3: Drift Detection
+
+- Scope creep: none
+- Under-delivery: none
+- Misinterpretation: none
+- Behavioral drift: none
+
+### Overseer Report (Standard)
+
+**Verdict:** OVERSEER_APPROVED
+**Mode:** STANDARD
+**Aggregate confidence:** 95% — **Result:** PASS
+
+---
+
+## PM-Admin Execution (Standard Mode)
+
+### Mode: STANDARD
+Execute: Phase 0 (bochi + memory state), Phase 1 (scope), Phase 4 (runtime + Type B).
+Skip: Phase 2, 3, 5.
+
+### Phase 0: bochi Memory Loading
+
+```
+bochi 記憶状態:
+- index.jsonl: [LOADED/UNAVAILABLE]
+- user-profile.yaml pm_admin: [LOADED/UNAVAILABLE]
+- Referenced records: N/A (simple doc fix)
+```
+
+### Phase 1: Scope Compliance
+
+Scope compliance: PASS — documentation-only change within declared boundary.
+
+### Phase 4: Runtime Verification
+
+```bash
+# Verify endpoint matches source
+$ grep -rn "v2/users" src/routes/users.ts
+12:  router.post('/api/v2/users', createUserHandler);
+```
+
+Runtime verification: PASS — documentation matches actual endpoint.
+
+### PM-Admin Report (Standard)
+
+**Verdict:** YES
+**Mode:** STANDARD
+**4-Axis Review (Standard — Axis 1 + 4 only):**
+| Axis | Result | Evidence |
+|------|--------|----------|
+| 1. Scope Compliance | PASS | docs/ only, within boundary |
+| 4. Runtime Verification | PASS | grep confirms endpoint path |
+
+---
+
 ## Verification Assertions
 
 Grep-testable patterns to validate this scenario file:
@@ -183,8 +253,10 @@ grep -c '^\$' scenario-s-small-change.md               # expected: ≥4
 # 4. Anti-Pattern #1 (Spec-as-Done) checked as CLEAR
 grep "Spec-as-Done: CLEAR" scenario-s-small-change.md  # expected: 1 match
 
-# 5. S-size flow declared
+# 5. Standard-tier flow declared
 grep "Writer + Guardian" scenario-s-small-change.md    # expected: ≥1
+grep "Overseer.*standard" scenario-s-small-change.md   # expected: ≥1
+grep "PM-Admin.*standard\|PM-Admin.*Standard" scenario-s-small-change.md  # expected: ≥1
 
 # 6. Guardian verdict is APPROVED
 grep "GUARDIAN_APPROVED" scenario-s-small-change.md    # expected: 1

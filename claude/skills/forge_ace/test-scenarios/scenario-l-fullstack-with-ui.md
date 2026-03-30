@@ -1,7 +1,7 @@
 # Scenario L: Fullstack Dashboard Page (All 5 Agents)
 
 **Task:** Add `/dashboard` page + `GET /api/dashboard/stats` + React components (StatCard, ChartPanel).
-**Complexity:** `L (12 files, cross-module) → Writer + Guardian + Overseer + PM-Admin ∥ Designer`
+**Tier:** `Full (12 files, cross-module, UI changes) → Writer + Guardian + Overseer(full) + PM-Admin(full) ∥ Designer`
 
 ---
 

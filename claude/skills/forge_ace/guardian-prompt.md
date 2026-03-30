@@ -257,7 +257,12 @@ Agent tool (general-purpose):
     ## Phase 5.5: Quality Standards 8-Axis Evaluation
 
     **HARD-GATE: This phase runs for ALL risk tiers, including LOW.**
-    Quality is size-independent. S-size changes get full 8-axis evaluation.
+    Quality is tier-independent. Standard-tier changes get full 8-axis evaluation.
+
+    **Standard-tier awareness:** In Standard pipeline, Overseer skips Phase 5.5
+    (quality standards 8-axis) to avoid duplication. This makes Guardian's
+    8-axis evaluation the SOLE quality-standards gate.
+    Apply extra rigor: no CONCERN may pass without explicit reasoning.
 
     Read `quality-standards.md` (symlinked to master-quality-review.md).
     Evaluate the Writer's changes against all 8 axes:

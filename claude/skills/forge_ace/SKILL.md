@@ -22,7 +22,7 @@ Use forge_ace when:
 - The task involves bochi-data pattern matching for judgment
 
 For code-only changes without UI or requirements review:
-- Use forge_ace S-size (Writer + Guardian) — same agents as the former triple-agent-coding
+- Use forge_ace Standard tier (Writer + Guardian + Overseer-standard + PM-Admin-standard)
 
 ---
 
@@ -32,25 +32,17 @@ For code-only changes without UI or requirements review:
 
 Triggered when: code creation or modification is needed.
 
-**Complexity Classifier** determines agent roster:
+**Tier Classifier** determines pipeline:
 
 ```
-S (Small):  diff ≤3 files, ≤100 lines, no API surface change, no UI
-  → Writer + Guardian (8-axis FULL — quality is size-independent)
+Standard: All code/spec changes (no UI)
+  → Writer + Guardian + Overseer(standard) + PM-Admin(standard)
 
-M (Medium): diff 4-10 files OR >100 lines OR API surface change
-  → Writer + Guardian + Overseer
-
-L (Large):  diff >10 files OR cross-module OR UI changes OR auth/payment
-  → Writer + Guardian + Overseer + PM-Admin ∥ Designer
+Full: UI changes present OR user specifies "Full" / "forceFull"
+  → Writer + Guardian + Overseer(full) + PM-Admin(full) + Designer
 ```
 
-**HARD-GATE: User Size Override — ユーザーのサイズ指定は絶対。**
-ユーザーが "L必須" "Lで" "forceL" 等と指示した場合、Complexity Classifier の
-自動判定に関わらず指定サイズのフロー全体を実行する。エージェント側で
-「不要だから省略」は Anti-Pattern #12 違反。省略にはユーザーの明示的承認が必要。
-
-**Change Target Classification** (S/M/L と直交):
+**Change Target Classification** (Standard/Full と直交):
 
 ```
 Type A (Executable Code): .ts/.js/.py/.go/.rs/.java/etc.
@@ -77,15 +69,24 @@ Classification heuristic:
    (even if all agents said APPROVED).
 ```
 
+**Overseer standard mode** (most important mission preserved: requirements alignment + drift):
+  Execute: Phase 0 (context), 1 (decomposition), 2 (verification),
+           2.5 (Type B if applicable), 3 (drift detection), 6 (judgment)
+  Skip: Phase 4, 5, 5.5 (Guardian covers 8-axis), 5.7 (no UI), 7
+
+**PM-Admin standard mode** (most important mission preserved: scope + runtime + bochi):
+  Execute: Phase 0 (bochi + memory state), 1 (scope compliance),
+           4 (runtime verification + Type B check), judgment
+  Skip: Phase 2 (quality alignment detail), 3 (priority), 5 (session memory)
+
 **HARD-GATE: Quality is size-independent.**
-Even S-size gets Guardian's quality-standards.md 8-axis evaluation.
-Size controls agent COUNT, not quality STANDARDS.
+Even Standard tier gets Guardian's quality-standards.md 8-axis evaluation.
+Tier controls agent MODE, not quality STANDARDS.
 
 **Flow:**
 ```
-S: Writer → Guardian(8-axis) → DONE
-M: Writer → Guardian → Overseer → DONE
-L: Writer → Guardian → Overseer → PM-Admin ∥ Designer → PM-Admin final → DONE
+Standard: Writer → Guardian → Overseer(standard) → PM-Admin(standard) → DONE
+Full:     Writer → Guardian → Overseer(full) → PM-Admin(full) ∥ Designer → PM-Admin final → DONE
 ```
 
 ### Design Session (UI/UX artifacts)
@@ -102,8 +103,8 @@ PM-Admin(requirements review) → Designer(design+QA) → mutual review → PM-A
 ### Session Type Decision
 
 ```
-Code change AND UI change → Coding Session (L-size, Designer participates in parallel)
-Code change only         → Coding Session (S/M/L by classifier)
+Code change AND UI change → Coding Session (Full tier, Designer participates in parallel)
+Code change only         → Coding Session (Standard/Full by classifier)
 UI/UX only               → Design Session
 ```
 
@@ -126,12 +127,40 @@ Any MISSING → WARNING + user confirmation before proceeding.
 
 ---
 
-## Plan Quality Gate (M/L-size only)
+## forge_ace Dispatch Checkpoint (MANDATORY)
 
-For M and L-size changes, validate plan quality BEFORE dispatching agents.
-S-size is exempt (direct inline planning is sufficient).
+Before dispatching ANY agent, the orchestrator MUST fill this template
+and present it to the user. Empty blanks = visible violation.
 
-**Trigger**: Complexity Classifier returns M or L.
+```
+Tier Classifier 結果: [Standard / Full]
+判定根拠: [UI 変更あり → Full / UI なし → Standard]
+ユーザーの明示的指定: [なし / Standard / Full / forceFull]
+→ 確定 Tier: [Standard / Full]  ※ユーザー指定優先
+
+確定 Tier のエージェント構成:
+- [ ] Writer: [dispatch]
+- [ ] Guardian: [dispatch]
+- [ ] Overseer: [dispatch (standard) / dispatch (full)]
+- [ ] PM-Admin: [dispatch (standard) / dispatch (full)]
+- [ ] Designer: [dispatch / N/A (Standard)]
+
+標準パイプラインからの逸脱: [YES: 内容 / NO]
+→ YES の場合: STOP。ユーザーに選択肢を提示し承認を得る。
+
+ユーザー確認: [PENDING — dispatch 前に必ず解決]
+```
+
+This template replaces prohibition text with mandatory procedure.
+Blanks are visible when unfilled. Prohibitions are invisible when violated.
+
+---
+
+## Plan Quality Gate (ALL tiers)
+
+For ALL changes, validate plan quality BEFORE dispatching agents.
+
+**Trigger**: Tier Classifier returns Standard or Full.
 
 **Dispatch**:
 ```
@@ -141,14 +170,14 @@ Agent tool (planner):
   prompt: |
     Follow ~/.claude/agents/planner.md v2.0 protocol.
     Request: [user's original requirement]
-    Complexity: [M or L from Classifier]
+    Tier: [Standard or Full from Classifier]
     Project root: [path]
-    Execute: SML confirm → Research → Plan → GAFA Gate → Output
+    Execute: Tier confirm → Research → Plan → GAFA Gate → Output
 ```
 
 **Status Display** (1-line to user):
 ```
-Plan Quality: [S/M/L], [PASS/CONDITIONAL/FAIL] — [1-line reason]
+Plan Quality: [Standard/Full], [PASS/CONDITIONAL/FAIL] — [1-line reason]
 ```
 
 **Gate Decision**:
@@ -280,7 +309,7 @@ If UNAVAILABLE → safe defaults, all decisions require user confirmation.
 | 9 | Disconnected-Bloodline | External connection unverified | Reachability test required |
 | 10 | Deployment-Sync Blindness | git repo path ≠ runtime path | `diff <git> <runtime>` verification |
 | 11 | Spec-Layer Blindness (修正した気になる) | Type B change with structural-only review | Type B Gates: Reproduce → Delta → E2E |
-| 12 | Agent-Skip Rationalization (勝手にフロー縮小) | User specified L, agent ran M | User size override is absolute. No skip without explicit approval |
+| 12 | Agent-Skip Rationalization (勝手にフロー縮小) | Checkpoint Template unfilled or deviated | Fill Checkpoint, user confirms before dispatch |
 
 ---
 
@@ -323,14 +352,10 @@ Quality evaluation uses `quality-standards.md` (symlink → `bochi-data/master-q
 
 ## Token Usage Estimates
 
-| Size | Agents | Input Tokens | Output Tokens | Est. Cost | Est. Time |
+| Tier | Agents | Input Tokens | Output Tokens | Est. Cost | Est. Time |
 |------|--------|-------------|--------------|-----------|-----------|
-| S | Writer(Sonnet) + Guardian(Opus) | 5K-15K | 3K-8K | ~$0.3-1.0 | ~3-5 min |
-| M | + Overseer(Opus) | 15K-30K | 8K-15K | ~$1-3 | ~8-12 min |
-| L | + PM-Admin(Opus) + Designer(Sonnet) | 30K-50K | 15K-25K | ~$3-8 | ~15-25 min |
-
-Use S for most changes. Upgrade to M/L only when the Complexity Classifier requires it.
-L-size with all 5 agents is expensive — confirm the change justifies the cost.
+| Standard | Writer + Guardian + Overseer-std + PM-Admin-std | 20K-35K | 10K-18K | ~$1-3 | ~8-12 min |
+| Full | + Designer | 30K-50K | 15K-25K | ~$3-8 | ~15-25 min |
 
 ---
 
@@ -347,11 +372,6 @@ The Guardian has rejected 3 times. Human must decide:
 - User provides screenshots at `/tmp/forge_ace_screen_*.png`
 - Designer proceeds with QA checklist on manually provided images
 
-**bochi-data UNAVAILABLE:**
-- PM-Admin operates in degraded mode: all decisions require explicit user confirmation
-- Quality assessment falls back to code-direct analysis (no judgment pattern matching)
-- All decisions marked: "bochi-data UNAVAILABLE — code-direct analysis"
-
 ---
 
 ## File Structure
@@ -359,7 +379,7 @@ The Guardian has rejected 3 times. Human must decide:
 ```
 ~/.claude/skills/forge_ace/
 ├── SKILL.md                  ← This file (orchestration)
-├── anti-patterns.md          ← 10 patterns reference card (DRY across all agents)
+├── anti-patterns.md          ← 12 patterns reference card (DRY across all agents)
 ├── quality-standards.md      ← symlink → ../../bochi-data/master-quality-review.md
 ├── writer-prompt.md          ← v3.0 (XML, Red Team, Evidence-of-Execution)
 ├── guardian-prompt.md         ← v3.0 (Risk-tier, Blast Radius Score, 8-axis)
@@ -370,7 +390,7 @@ The Guardian has rejected 3 times. Human must decide:
 │   ├── ai-defect-scan.md     ← Guardian Phase 2.5 (extracted)
 │   └── connectivity-check.md ← Guardian Phase 2.7 (extracted)
 └── test-scenarios/
-    ├── scenario-s-small-change.md    ← S-size fixture (Writer + Guardian)
-    ├─��� scenario-m-api-change.md      ← M-size fixture (+ Overseer)
-    └── scenario-l-fullstack-with-ui.md ← L-size fixture (all 5 agents)
+    ├── scenario-s-small-change.md    ← Standard-tier fixture (Writer + Guardian + Overseer-std + PM-Admin-std)
+    ├── scenario-m-api-change.md      ← Standard-tier fixture (API change)
+    └── scenario-l-fullstack-with-ui.md ← Full-tier fixture (all 5 agents)
 ```

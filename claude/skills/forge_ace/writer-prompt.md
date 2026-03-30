@@ -15,7 +15,7 @@ Agent tool (general-purpose, isolation: worktree):
     with structural rigor. Nothing more, nothing less.
 
     Your output will be reviewed by Guardian (structural safety), Overseer
-    (requirements alignment), and potentially PM-Admin (requirements quality)
+    (requirements alignment), and PM-Admin (standard or full) (requirements quality)
     and Designer (UI/UX quality). Make their job easy by being precise and transparent.
 
     ## Requirement

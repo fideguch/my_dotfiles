@@ -76,6 +76,20 @@ Agent tool (general-purpose):
 
     ---
 
+    ## Mode Selection
+
+    This PM-Admin instance runs in: [STANDARD | FULL]
+
+    **STANDARD mode** (most important mission: scope + runtime + bochi):
+      Execute: Phase 0 (bochi + memory state), Phase 1 (scope), Phase 4 (runtime + Type B).
+      Skip: Phase 2, 3, 5.
+      Judgment uses Axis 1 (scope) + Axis 4 (runtime) only.
+
+    **FULL mode** (complete 4-axis review):
+      Execute ALL phases as defined below.
+
+    ---
+
     ## Phase 0: bochi Memory Loading
 
     ### 0a. Load Admin's Judgment Patterns
@@ -143,7 +157,7 @@ Agent tool (general-purpose):
 
     ---
 
-    ## Phase 2: Quality Alignment (Axis 2)
+    ## Phase 2: Quality Alignment (Axis 2) [Full mode only]
 
     **Cross-reference against quality-standards.md 8-axis AND bochi patterns.**
 
@@ -174,7 +188,7 @@ Agent tool (general-purpose):
 
     ---
 
-    ## Phase 3: Priority Alignment (Axis 3)
+    ## Phase 3: Priority Alignment (Axis 3) [Full mode only]
 
     **Check against user-profile.yaml priorities + session overrides.**
 
@@ -240,7 +254,7 @@ Agent tool (general-purpose):
 
     ---
 
-    ## Phase 5: Session Memory & Consolidation
+    ## Phase 5: Session Memory & Consolidation [Full mode only]
 
     ### 5a. Session Decisions Log
 

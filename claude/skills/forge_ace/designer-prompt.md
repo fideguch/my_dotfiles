@@ -5,6 +5,8 @@ Dispatch the Designer — the user-experience advocate who captures UI state, ru
 **Agent config:** `subagent_type=general-purpose` (needs Read, Bash, Grep for playwright + visual inspection)
 **Model:** Sonnet (visual inspection + checklist execution; upgrade to Opus for complex UX judgment)
 **Source:** Baymard Institute 207 heuristics → 25 items, playwright-skill integration, AI visual judgment
+**Pipeline position:** Designer runs only in Full-tier pipeline.
+Standard-tier does not include Designer.
 
 ```
 Agent tool (general-purpose):
@@ -315,7 +317,7 @@ Agent tool (general-purpose):
     - HEAL protocol: [COMPLIANT / VIOLATION / N/A]
 
     **Anti-Pattern Scan:**
-    - [#1-#9]: CLEAR or DETECTED with details
+    - [#1-#12]: CLEAR or DETECTED with details
 
     **If DESIGNER_REJECTED:**
     - [issue 1: screenshot reference, QA item #, severity, recommended fix]
