@@ -38,15 +38,20 @@ else
   trap 'rmdir "$LOCKFILE.d" 2>/dev/null' EXIT
 fi
 
+# Write Ownership: Mac pushes only memos/index/context-seeds,
+# Lightsail pushes only topics/newspaper/conversations/reflections/seen
+EXCLUDE_COMMON=(--exclude ".DS_Store" --exclude "*.tmp" --exclude "*.lock" --exclude "bochi-data/")
+
+if [ "$(uname)" = "Darwin" ]; then
+  # Mac CLI: exclude Lightsail-owned directories
+  EXCLUDE_OWNERSHIP=(--exclude "topics/*" --exclude "newspaper/*" --exclude "conversations/*" --exclude "reflections/*" --exclude "seen.jsonl" --exclude "sources/*" --exclude "stats/*" --exclude "user-profile.yaml" --exclude "cache/*")
+else
+  # Lightsail: exclude Mac-owned directories
+  EXCLUDE_OWNERSHIP=(--exclude "context-seeds/*")
+fi
+
 aws s3 sync "$DATA_DIR/" "s3://$BUCKET/bochi-data/" \
-  --exclude ".DS_Store" \
-  --exclude "*.tmp" \
-  --exclude "*.lock" \
-  --exclude "bochi-data/" \
-  --exclude "topics/*" \
-  --exclude "newspaper/*" \
-  --exclude "conversations/*" \
-  --exclude "reflections/*" \
-  --exclude "seen.jsonl" \
+  "${EXCLUDE_COMMON[@]}" \
+  "${EXCLUDE_OWNERSHIP[@]}" \
   --region ap-northeast-1 \
   --quiet
