@@ -119,6 +119,17 @@
         "description": "PM Pipeline Guard: Block plan.md/tasks.md creation without completed requirements (designs/ with FR-001+)"
       },
       {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/scripts/hooks/forge-ace-dispatch-guard.js",
+            "timeout": 5
+          }
+        ],
+        "description": "forge_ace: Enforce agent dispatch sequence (Writer→Guardian→Overseer→PM-Admin→Designer)"
+      },
+      {
         "matcher": "*",
         "hooks": [
           {
@@ -358,6 +369,17 @@
           }
         ],
         "description": "Track token and cost metrics per session"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/scripts/hooks/forge-ace-session-complete.js",
+            "timeout": 10
+          }
+        ],
+        "description": "forge_ace: Save session outcome and warn on incomplete sessions"
       }
     ],
     "SessionEnd": [
