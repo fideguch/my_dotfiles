@@ -99,6 +99,37 @@ $ npx playwright screenshot http://localhost:3000/dashboard --viewport-size=375,
 
 ## PM-Admin Final Gate — All 5 gates passed → **SHIP_READY**
 
+## v4.0 State Transitions
+
+Full tier — 15-step sequence including Designer:
+
+| Step | State Before | Action | State After |
+|------|-------------|--------|------------|
+| 1 | — | Session init | INIT |
+| 2 | INIT | Classify | CLASSIFIED |
+| 3 | CLASSIFIED | Fill checkpoint | CHECKPOINT_FILLED |
+| 4 | CHECKPOINT_FILLED | User confirms | USER_CONFIRMED |
+| 5 | USER_CONFIRMED | Dispatch Writer | WRITER_DISPATCHED |
+| 6 | WRITER_DISPATCHED | Writer completes | WRITER_DONE |
+| 7 | WRITER_DONE | Dispatch Guardian | GUARDIAN_DISPATCHED |
+| 8 | GUARDIAN_DISPATCHED | Guardian completes | GUARDIAN_DONE |
+| 9 | GUARDIAN_DONE | Dispatch Overseer | OVERSEER_DISPATCHED |
+| 10 | OVERSEER_DISPATCHED | Overseer completes | OVERSEER_DONE |
+| 11 | OVERSEER_DONE | Dispatch PM-Admin | PM_ADMIN_DISPATCHED |
+| 12 | PM_ADMIN_DISPATCHED | PM-Admin completes | PM_ADMIN_DONE |
+| 13 | PM_ADMIN_DONE | Dispatch Designer | DESIGNER_DISPATCHED |
+| 14 | DESIGNER_DISPATCHED | Designer completes | DESIGNER_DONE |
+| 15 | DESIGNER_DONE | Full tier complete | COMPLETE |
+
+### v4.0 Assertions
+
+- Session file created at step 1 with `state: INIT`
+- Dispatch guard blocks Writer before `USER_CONFIRMED`
+- Dispatch guard blocks Guardian before `WRITER_DONE`
+- Dispatch guard blocks Designer before `PM_ADMIN_DONE`
+- Designer steps included (Full tier, steps 13-15)
+- Session-complete hook writes `completed: true` to outcomes.jsonl at COMPLETE
+
 ## Verification Assertions
 
 ```bash
@@ -116,4 +147,10 @@ grep "DESIGN.md Verification: PASS" $F # 1 — Overseer token check
 grep "LOADED (47 entries)" $F        # 1   — bochi index loaded
 grep -c "pm_admin: UNAVAILABLE" $F   # 2   — pm_admin absent in 2 places
 grep "SHIP_READY" $F                 # 1   — Final verdict
+
+# v4.0 state transitions
+grep -q "v4.0 State Transitions" $F && echo "PASS: v4.0 transitions"
+grep -q "DESIGNER_DISPATCHED" $F && echo "PASS: Designer dispatch state"
+grep -q "DESIGNER_DONE" $F && echo "PASS: Designer done state"
+grep -c "COMPLETE" $F                # ≥2  — In transitions + session-complete
 ```

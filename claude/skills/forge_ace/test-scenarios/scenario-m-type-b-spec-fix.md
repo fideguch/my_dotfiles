@@ -122,6 +122,42 @@ E2E SCENARIO (Type B):
 
 ---
 
+## v4.0 State Transitions
+
+Standard tier (Type B) — 13-step sequence, no Designer:
+
+| Step | State Before | Action | State After |
+|------|-------------|--------|------------|
+| 1 | — | Session init | INIT |
+| 2 | INIT | Classify (Type B detected) | CLASSIFIED |
+| 3 | CLASSIFIED | Fill checkpoint | CHECKPOINT_FILLED |
+| 4 | CHECKPOINT_FILLED | User confirms | USER_CONFIRMED |
+| 5 | USER_CONFIRMED | Dispatch Writer | WRITER_DISPATCHED |
+| 6 | WRITER_DISPATCHED | Writer completes | WRITER_DONE |
+| 7 | WRITER_DONE | Dispatch Guardian | GUARDIAN_DISPATCHED |
+| 8 | GUARDIAN_DISPATCHED | Guardian completes | GUARDIAN_DONE |
+| 9 | GUARDIAN_DONE | Dispatch Overseer | OVERSEER_DISPATCHED |
+| 10 | OVERSEER_DISPATCHED | Overseer completes | OVERSEER_DONE |
+| 11 | OVERSEER_DONE | Dispatch PM-Admin | PM_ADMIN_DISPATCHED |
+| 12 | PM_ADMIN_DISPATCHED | PM-Admin completes | PM_ADMIN_DONE |
+| 13 | PM_ADMIN_DONE | Standard: skip Designer | COMPLETE |
+
+### Type B Notes
+
+- **Reproduce-Before-Fix**: Writer must demonstrate the bug exists BEFORE applying the fix (step 6)
+- **Delta Demonstration**: Writer must show before vs after behavioral difference (step 6)
+- **E2E Mandate**: PM-Admin issues E2E Execution Mandate at step 12; Orchestrator runs it after COMPLETE
+
+### v4.0 Assertions
+
+- Session `type` field set to `"B"` at step 2
+- Dispatch guard blocks Writer before `USER_CONFIRMED`
+- Writer report includes `REPRODUCE-BEFORE-FIX` and `DELTA DEMONSTRATION` sections
+- Guardian flags `TYPE B CHANGE DETECTED`
+- Overseer defines `E2E SCENARIO (Type B)`
+- PM-Admin issues `E2E EXECUTION MANDATE`
+- Session-complete hook writes `completed: true` to outcomes.jsonl at COMPLETE
+
 ## Verification Assertions (grep-testable)
 
 ```bash
@@ -140,6 +176,12 @@ grep -c "Phase 2.5" overseer-report.md              # ≥ 1
 
 # Anti-Pattern scan includes #11
 grep -c "#1-#12" guardian-report.md                  # ≥ 1
+
+# v4.0 state transitions
+grep -q "v4.0 State Transitions" scenario-m-type-b-spec-fix.md && echo "PASS: v4.0 transitions"
+grep -q "Reproduce-Before-Fix" scenario-m-type-b-spec-fix.md && echo "PASS: Type B reproduce note"
+grep -q "E2E Mandate" scenario-m-type-b-spec-fix.md && echo "PASS: Type B E2E mandate"
+grep -q "COMPLETE" scenario-m-type-b-spec-fix.md && echo "PASS: COMPLETE state"
 ```
 
 ---

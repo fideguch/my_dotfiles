@@ -234,8 +234,12 @@ Reference: See `anti-patterns.md` for the full 12-pattern card.
 ├── checklists/
 │   ├── ai-defect-scan.md     <- Guardian Phase 2.5
 │   └── connectivity-check.md <- Guardian Phase 2.7
+├── tests/
+│   ├── test-dispatch-guard.sh    <- Dispatch guard hook tests (14 cases)
+│   └── test-state-machine.sh     <- State machine + session-complete tests (12 cases)
 └── test-scenarios/
     ├── scenario-s-small-change.md
     ├── scenario-m-api-change.md
+    ├── scenario-m-type-b-spec-fix.md
     └── scenario-l-fullstack-with-ui.md
 ```
