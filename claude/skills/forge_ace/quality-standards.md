@@ -1,1 +1,1 @@
-../../bochi-data/master-quality-review.md
+/Users/fumito_ideguchi/.claude/bochi-data/master-quality-review.md
