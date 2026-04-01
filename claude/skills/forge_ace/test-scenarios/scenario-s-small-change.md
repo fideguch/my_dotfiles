@@ -235,6 +235,34 @@ Runtime verification: PASS — documentation matches actual endpoint.
 
 ---
 
+## v4.0 State Transitions
+
+Standard tier (Type A) — 13-step sequence, no Designer:
+
+| Step | State Before | Action | State After |
+|------|-------------|--------|------------|
+| 1 | — | Session init | INIT |
+| 2 | INIT | Classify | CLASSIFIED |
+| 3 | CLASSIFIED | Fill checkpoint | CHECKPOINT_FILLED |
+| 4 | CHECKPOINT_FILLED | User confirms | USER_CONFIRMED |
+| 5 | USER_CONFIRMED | Dispatch Writer | WRITER_DISPATCHED |
+| 6 | WRITER_DISPATCHED | Writer completes | WRITER_DONE |
+| 7 | WRITER_DONE | Dispatch Guardian | GUARDIAN_DISPATCHED |
+| 8 | GUARDIAN_DISPATCHED | Guardian completes | GUARDIAN_DONE |
+| 9 | GUARDIAN_DONE | Dispatch Overseer | OVERSEER_DISPATCHED |
+| 10 | OVERSEER_DISPATCHED | Overseer completes | OVERSEER_DONE |
+| 11 | OVERSEER_DONE | Dispatch PM-Admin | PM_ADMIN_DISPATCHED |
+| 12 | PM_ADMIN_DISPATCHED | PM-Admin completes | PM_ADMIN_DONE |
+| 13 | PM_ADMIN_DONE | Standard: skip Designer | COMPLETE |
+
+### v4.0 Assertions
+
+- Session file created at step 1 with `state: INIT`
+- Dispatch guard blocks Writer before `USER_CONFIRMED`
+- Dispatch guard blocks Guardian before `WRITER_DONE`
+- Designer steps skipped (Standard tier)
+- Session-complete hook writes `completed: true` to outcomes.jsonl at COMPLETE
+
 ## Verification Assertions
 
 Grep-testable patterns to validate this scenario file:
@@ -263,4 +291,9 @@ grep "GUARDIAN_APPROVED" scenario-s-small-change.md    # expected: 1
 
 # 7. 8-axis evaluation present with all PASS
 grep -c "| PASS |" scenario-s-small-change.md          # expected: 8
+
+# 8. v4.0 state transitions present
+grep -q "v4.0 State Transitions" scenario-s-small-change.md && echo "PASS: v4.0 transitions"
+grep -q "COMPLETE" scenario-s-small-change.md && echo "PASS: COMPLETE state"
+grep -c "DESIGNER" scenario-s-small-change.md          # expected: 1 (skipped note only)
 ```

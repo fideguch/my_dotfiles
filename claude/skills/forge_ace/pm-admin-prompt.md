@@ -79,6 +79,48 @@ Agent tool (general-purpose):
     ```
     If UNAVAILABLE: auto_approve -> false, safe defaults, all decisions need user confirmation.
 
+    ### 0d. Load Outcome History
+    ```bash
+    OUTCOMES="$HOME/.claude/bochi-data/forge-ace-outcomes/outcomes.jsonl"
+    if [ -f "$OUTCOMES" ]; then
+      python3 -c "
+import json, sys
+lines = open('$OUTCOMES').readlines()
+data = [json.loads(l) for l in lines if l.strip()]
+total = len(data)
+completed = sum(1 for d in data if d.get('completed'))
+rate = round(completed / total * 100, 1) if total else 0
+tiers = {}
+for d in data:
+    t = d.get('tier', 'Unknown')
+    tiers[t] = tiers.get(t, 0) + 1
+rejections = {}
+for d in data:
+    if not d.get('completed'):
+        s = d.get('state', 'UNKNOWN')
+        rejections[s] = rejections.get(s, 0) + 1
+print(f'Total sessions: {total}')
+print(f'Success rate: {rate}%')
+print(f'Tier distribution: {json.dumps(tiers)}')
+print(f'Rejection hotspots: {json.dumps(rejections)}')
+"
+    else
+      echo "NO_OUTCOMES"
+    fi
+    ```
+
+    **Calibration rules:**
+    - Success rate >80%: standard review depth (trust pipeline)
+    - Success rate 60-80%: normal review depth
+    - Success rate <60%: raise escalation threshold — auto_approve -> false, require explicit user confirmation on all borderline decisions
+    - Total sessions <5: insufficient data — use safe defaults, do not calibrate
+
+    Add to Phase 0 report:
+    ```
+    - outcomes.jsonl: LOADED (N sessions, X% success) | NO_OUTCOMES
+    - Calibration: standard | normal | elevated | insufficient_data
+    ```
+
     ---
 
     ## Phase 1: Scope Compliance (Axis 1)

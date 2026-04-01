@@ -147,6 +147,34 @@ Blast Radius Score: 12 (MEDIUM) — 5 files × 1 depth × 2 API-surface weight +
 - Guardian → Overseer: consistent (APPROVED)
 - Independent verification: matches
 
+## v4.0 State Transitions
+
+Standard tier (Type A) — 13-step sequence, no Designer:
+
+| Step | State Before | Action | State After |
+|------|-------------|--------|------------|
+| 1 | — | Session init | INIT |
+| 2 | INIT | Classify | CLASSIFIED |
+| 3 | CLASSIFIED | Fill checkpoint | CHECKPOINT_FILLED |
+| 4 | CHECKPOINT_FILLED | User confirms | USER_CONFIRMED |
+| 5 | USER_CONFIRMED | Dispatch Writer | WRITER_DISPATCHED |
+| 6 | WRITER_DISPATCHED | Writer completes | WRITER_DONE |
+| 7 | WRITER_DONE | Dispatch Guardian | GUARDIAN_DISPATCHED |
+| 8 | GUARDIAN_DISPATCHED | Guardian completes | GUARDIAN_DONE |
+| 9 | GUARDIAN_DONE | Dispatch Overseer | OVERSEER_DISPATCHED |
+| 10 | OVERSEER_DISPATCHED | Overseer completes | OVERSEER_DONE |
+| 11 | OVERSEER_DONE | Dispatch PM-Admin | PM_ADMIN_DISPATCHED |
+| 12 | PM_ADMIN_DISPATCHED | PM-Admin completes | PM_ADMIN_DONE |
+| 13 | PM_ADMIN_DONE | Standard: skip Designer | COMPLETE |
+
+### v4.0 Assertions
+
+- Session file created at step 1 with `state: INIT`
+- Dispatch guard blocks Writer before `USER_CONFIRMED`
+- Dispatch guard blocks Guardian before `WRITER_DONE`
+- Designer steps skipped (Standard tier)
+- Session-complete hook writes `completed: true` to outcomes.jsonl at COMPLETE
+
 ## Verification Assertions
 
 ```bash
@@ -159,4 +187,8 @@ grep -q "OVERSEER_APPROVED" test-scenarios/scenario-m-api-change.md && echo "PAS
 grep -q "behavioral_drift\|Behavioral drift" test-scenarios/scenario-m-api-change.md && echo "PASS: drift check"
 grep -q "Implementation Status" test-scenarios/scenario-m-api-change.md && echo "PASS: anti-pattern #6"
 grep -q "npm test" test-scenarios/scenario-m-api-change.md && echo "PASS: evidence-of-execution"
+
+# v4.0 state transitions
+grep -q "v4.0 State Transitions" test-scenarios/scenario-m-api-change.md && echo "PASS: v4.0 transitions"
+grep -q "COMPLETE" test-scenarios/scenario-m-api-change.md && echo "PASS: COMPLETE state"
 ```
