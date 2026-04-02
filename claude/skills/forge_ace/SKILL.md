@@ -66,7 +66,7 @@ Agent tool (planner):
   description: "Plan Quality Gate: validate implementation plan"
   model: opus
   prompt: |
-    Follow ~/.claude/agents/planner.md v2.0 protocol.
+    Follow ~/.claude/agents/planner.md v2.1 protocol.
     Request: [user's original requirement]
     Tier: [Standard or Full]
     Project root: [path]

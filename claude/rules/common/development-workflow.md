@@ -24,10 +24,11 @@ The Feature Implementation Workflow describes the development pipeline: research
 
    **Existing code modification (DEFAULT):**
    - Use **forge_ace** skill when modifying existing code
-   - Complexity Classifier routes to S/M/L: S(Writer+Guardian), M(+Overseer), L(+PM-Admin+Designer)
-   - Writer implements in worktree → Guardian deep-traces blast radius → Overseer verifies requirement alignment
+   - Classify tier: Standard (code-only) or Full (UI present) — and type: A (code) or B (spec/prompt/config)
+   - Standard: Writer → Guardian → Overseer(std) → PM-Admin(std)
+   - Full: Writer → Guardian → Overseer(full) → PM-Admin(full) + Designer
    - All gates must pass before proceeding
-   - See `~/.claude/skills/forge_ace/SKILL.md` for full protocol
+   - See `~/.claude/skills/forge_ace/SKILL.md` (v4.0) for full protocol
 
    **New code only (greenfield):**
    - Use **tdd-guide** agent for TDD approach (RED → GREEN → IMPROVE)
