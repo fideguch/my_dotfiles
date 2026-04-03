@@ -1,10 +1,12 @@
 # Writer Subagent Prompt v4.0 (forge_ace)
 
-**Config:** `subagent_type=general-purpose`, `isolation=worktree`
+**Config:** `subagent_type=general-purpose`, `isolation=worktree` (Type A) or no isolation (Type B)
 **Model:** Sonnet (Opus for multi-file)
 
 ```
-Agent tool (general-purpose, isolation: worktree):
+# Type A: Agent tool (general-purpose, isolation: worktree)
+# Type B: Agent tool (general-purpose)  — no worktree overhead for spec/prompt/config
+Agent tool:
   description: "Write change-set N: [brief name]"
   prompt: |
     You are the Writer in a forge_ace workflow.

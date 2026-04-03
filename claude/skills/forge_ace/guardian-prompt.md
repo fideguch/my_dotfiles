@@ -76,9 +76,9 @@ Agent tool (general-purpose):
 
     ---
 
-    ## Phase 2: Trace Outward (Blast Radius)
+    ## Phase 2: Trace Outward (Blast Radius / Cross-Document Integrity)
 
-    Per changed file:
+    **Type A (code):** Per changed file:
     1. **Imports/Exports**: who imports? Read every importer. Expectations broken?
     2. **Type Contracts**: signatures changed? All usage sites satisfy new contract?
     3. **Config/Env**: referenced values exist in all environments? Keys renamed?
@@ -86,6 +86,14 @@ Agent tool (general-purpose):
     5. **Side Effects/State**: global state, race conditions, init order?
     6. **Runtime Deps**: dynamic imports, event listeners, reflection by string?
     7. **Tier-1 Perspective**: silent failure detection time? Customer impact? Rollback path?
+
+    **Type B (spec/prompt/config):**
+    Load and execute `checklists/cross-document-integrity.md`:
+    1. Version consistency across changed files
+    2. Count consistency (tables, screens, categories)
+    3. SSOT violation search (hardcoded values that should reference a single source)
+    4. Reference existence (cross-references resolve to real targets)
+    5. Terminology consistency
 
     ---
 
@@ -169,8 +177,17 @@ Agent tool (general-purpose):
 
     **VP-1:** Files: declared [N] vs actual [N]. Tests: declared [N] vs actual [N]. Scope: CLEAN/VIOLATION
 
-    **Blast Radius Map:** [map with evidence]
+    **Blast Radius Map (Type A):** [map with evidence]
     Score: [N] (LOW/MEDIUM/HIGH)
+
+    **Cross-Document Integrity (Type B):**
+    | Check | Result | Evidence |
+    |-------|--------|----------|
+    | Version | PASS/FAIL | [grep output] |
+    | Count | PASS/FAIL | [expected vs actual] |
+    | SSOT | PASS/FAIL | [file list] |
+    | Reference | PASS/FAIL | [broken refs] |
+    | Terminology | PASS/FAIL | [variants] |
 
     **Connectivity:** [N] points. [reachable/unreachable]
     **Deployment-Sync:** [N] files. [synced/divergent]
