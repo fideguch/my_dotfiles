@@ -15,7 +15,7 @@
 
 1. Write `/tmp/.forge-ace-session.json`:
    ```json
-   {"version":"4.0","created":"[ISO]","tier":null,"type":null,"state":"INIT","checkpoint_filled":false,"user_confirmed":false,"agents":{"writer":{"status":"pending","verdict":null},"guardian":{"status":"pending","verdict":null},"overseer":{"status":"pending","verdict":null},"pm_admin":{"status":"pending","verdict":null},"designer":{"status":"pending","verdict":null}},"transitions":[]}
+   {"version":"4.1","created":"[ISO]","tier":null,"type":null,"state":"INIT","checkpoint_filled":false,"user_confirmed":false,"qa_questions":[],"qa_answers":[],"agents":{"writer":{"status":"pending","verdict":null},"guardian":{"status":"pending","verdict":null},"overseer":{"status":"pending","verdict":null},"pm_admin":{"status":"pending","verdict":null},"designer":{"status":"pending","verdict":null}},"transitions":[]}
    ```
 2. Classify change target: Type A (all code) or Type B (any spec/prompt/config)
    - Reference: `references/type-b-gates.md`
@@ -69,12 +69,15 @@ Agent tool (planner):
     Follow ~/.claude/agents/planner.md v2.1 protocol.
     Request: [user's original requirement]
     Tier: [Standard or Full]
+    Type: [A or B]
     Project root: [path]
     Execute: Tier confirm -> Research -> Plan -> GAFA Gate -> Output
+    If Type B: execute references/type-b-pqg.md checklist (SSOT/Reference/Count/Version/Terminology)
 ```
 
 Gate: All PASS -> Writer dispatch. Any FAIL -> planner revises (max 2), then human decides.
 Evidence carry-forward: Research Summary + Gate Results -> Writer (context) + Guardian (verification).
+Type B carry-forward: SSOT map + reference list -> Writer + Guardian.
 
 </step>
 
@@ -82,14 +85,40 @@ Evidence carry-forward: Research Summary + Gate Results -> Writer (context) + Gu
 
 <step id="writer">
 
+Dispatch isolation depends on change type:
+- Type A (code): `isolation: worktree` — safe rollback via worktree discard
+- Type B (spec/prompt/config): no isolation — direct edit, worktree overhead unnecessary
+
 ```
+# Type A
 Agent tool (general-purpose, isolation: worktree):
+  description: "Write change-set N: [name]"
+  prompt: [Load writer-prompt.md, fill template variables]
+
+# Type B
+Agent tool (general-purpose):
   description: "Write change-set N: [name]"
   prompt: [Load writer-prompt.md, fill template variables]
 ```
 
 Update session: `state -> WRITER_DISPATCHED`
 On return: `agents.writer.verdict -> X, state -> WRITER_DONE`
+
+</step>
+
+## Step 4.5: Q&A Loop (optional)
+
+<step id="qa-loop">
+
+If Writer output raises unresolved questions about requirements:
+
+1. Update session: `state -> QA_LOOP`
+2. Present questions to user (one by one, with options if applicable)
+3. Record in session: `qa_questions[]` and `qa_answers[]`
+4. Re-dispatch Writer with Q&A answers as additional context
+5. Update session: `state -> WRITER_REVISION -> WRITER_DONE`
+
+Skip condition: Writer status is DONE with no open questions.
 
 </step>
 
@@ -141,14 +170,26 @@ On return: `agents.pm_admin.verdict -> X, state -> PM_ADMIN_DONE`
 
 </step>
 
-## Step 8: Designer (Full tier only)
+## Step 8: Designer (Full tier, or Type B with UI specs)
 
 <step id="designer">
 
+Dispatch conditions:
+- Full tier (any type): always dispatch — screenshot-based visual QA
+- Type B + UI brief/DESIGN.md included in change: dispatch in **Type B UI spec mode**
+  (review Mermaid diagrams, screen lists, component design — no screenshots needed)
+- Type B without UI specs: skip Designer
+
 ```
+# Full tier (screenshot mode)
 Agent tool (general-purpose):
   description: "Designer: UI/UX quality review for change-set N"
   prompt: [Load designer-prompt.md, provide target URLs]
+
+# Type B + UI spec mode
+Agent tool (general-purpose):
+  description: "Designer: UI spec review for change-set N"
+  prompt: [Load designer-prompt.md, set mode=type-b-ui-spec, provide changed UI spec files]
 ```
 
 Update session: `state -> DESIGNER_DISPATCHED`
@@ -180,6 +221,8 @@ Session type decision:
 - Code + UI -> Coding Session (Full, Designer parallel)
 - Code only -> Coding Session (Standard/Full by classifier)
 - UI/UX only -> Design Session: PM-Admin -> Designer -> mutual review -> DONE
+- Type B + UI brief/DESIGN.md -> Standard + Designer (Type B UI spec mode)
+- Type B without UI -> Standard (Designer skip)
 
 ## Agents
 
@@ -212,6 +255,7 @@ Reference: See `anti-patterns.md` for the full 12-pattern card.
 - `references/origin-and-sources.md` — Mission, research, token estimates, troubleshooting
 - `references/evidence-rules.md` — Evidence-of-Execution shared rules
 - `references/type-b-gates.md` — Type B change verification gates
+- `references/type-b-pqg.md` — Type B Plan Quality Gate checklist
 - `anti-patterns.md` — 12 anti-patterns reference card
 - `quality-standards.md` -> `bochi-data/master-quality-review.md`
 
@@ -219,6 +263,8 @@ Reference: See `anti-patterns.md` for the full 12-pattern card.
 
 ```
 ~/.claude/skills/forge_ace/
+├── README.md                 <- Japanese documentation
+├── README.en.md              <- English documentation
 ├── SKILL.md                  <- This file (orchestration)
 ├── anti-patterns.md          <- 12 patterns reference card
 ├── quality-standards.md      <- symlink -> ../../bochi-data/master-quality-review.md
@@ -230,10 +276,12 @@ Reference: See `anti-patterns.md` for the full 12-pattern card.
 ├── references/
 │   ├── origin-and-sources.md <- Mission, research, token estimates
 │   ├── evidence-rules.md     <- Evidence-of-Execution shared rules
-│   └── type-b-gates.md       <- Type B change verification gates
+│   ├── type-b-gates.md       <- Type B change verification gates
+│   └── type-b-pqg.md        <- Type B Plan Quality Gate checklist
 ├── checklists/
 │   ├── ai-defect-scan.md     <- Guardian Phase 2.5
-│   └── connectivity-check.md <- Guardian Phase 2.7
+│   ├── connectivity-check.md <- Guardian Phase 2.7
+│   └── cross-document-integrity.md <- Guardian Phase 2 Type B
 ├── tests/
 │   ├── test-dispatch-guard.sh    <- Dispatch guard hook tests (14 cases)
 │   └── test-state-machine.sh     <- State machine + session-complete tests (12 cases)

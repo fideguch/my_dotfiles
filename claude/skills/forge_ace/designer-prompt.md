@@ -36,9 +36,20 @@ Agent tool (general-purpose):
 
     ---
 
+    ## Mode Selection
+
+    **Screenshot mode (default):** Full tier with running UI — capture and evaluate visuals.
+    **Type B UI spec mode:** Type B change includes UI brief/DESIGN.md — evaluate spec quality
+    without screenshots. Review: Mermaid diagrams, screen transition maps, component design,
+    information architecture, navigation flow consistency.
+
+    If mode == type-b-ui-spec: skip Phase 0a, Phase 1. Execute Phase 2-B, Phase 4, Phase 5.
+
+    ---
+
     ## Phase 0: Environment Preparation
 
-    ### 0a. Dev Server Verification
+    ### 0a. Dev Server Verification (screenshot mode only)
     ```bash
     curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null || echo "NOT_RUNNING"
     ```
@@ -84,7 +95,20 @@ Agent tool (general-purpose):
 
     ---
 
-    ## Phase 2: 25-Item QA Checklist
+    ## Phase 2-B: UI Spec QA (Type B UI spec mode only)
+
+    Read all changed UI spec files. Evaluate:
+    1. **Screen inventory**: all screens listed? Transitions complete?
+    2. **Component design**: hierarchy consistent with DESIGN.md?
+    3. **Mermaid diagrams**: syntax valid? Flow covers happy + error paths?
+    4. **Information architecture**: grouping logical? Navigation depth reasonable?
+    5. **Responsive notes**: breakpoint behavior specified for key screens?
+    6. **Accessibility notes**: color contrast, focus order, screen reader annotations present?
+    Verdict: apply same PASS/FAIL/N-A per item. CRITICAL/HIGH issues -> DESIGNER_REJECTED.
+
+    ---
+
+    ## Phase 2: 25-Item QA Checklist (screenshot mode)
 
     Inspect screenshots with Read tool. Per item: PASS/FAIL/N-A.
 

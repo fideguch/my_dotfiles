@@ -77,6 +77,27 @@ Agent tool (architect):
     - Scope boundaries (what was NOT requested)
     - **Regression guards**: existing behaviors that MUST NOT change
 
+    ### Phase 1.5: Business Logic Contradiction Detection
+
+    **SSOT Source of Truth Identification (MANDATORY):**
+    Per data point in the change, identify which file is the authoritative source.
+    Flag when the same information appears with different values across files.
+
+    **Contradiction checks:**
+    1. **Intra-document**: tables vs prose in the same file (e.g., fee table says 5% but body says 20%)
+    2. **Inter-document**: amounts/ratios/conditions across related files
+    3. **Finalized data**: information marked as "confirmed" or "final" must be consistent everywhere
+
+    If contradiction found:
+    ```
+    BUSINESS_LOGIC_CONTRADICTION:
+    Data point: [what]
+    File A: [file:location] says [value_a]
+    File B: [file:location] says [value_b]
+    SSOT owner: [which file should be authoritative]
+    ```
+    Any unresolved contradiction -> OVERSEER_REJECTED
+
     ---
 
     ## Phase 2: Implementation Verification (HARD-GATE)
@@ -185,6 +206,9 @@ Agent tool (architect):
     |---|-------------|--------|--------|------------|----------|-----|
 
     **Aggregate confidence:** ___% (threshold: 80%)
+
+    **Business Logic Contradictions:** NONE | FOUND [count]
+    [If FOUND: data point, file A value, file B value, SSOT owner]
 
     **Drift Detection:**
     Scope creep: ___ | Under-delivery: ___ | Misinterpretation: ___
