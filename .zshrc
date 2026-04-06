@@ -225,8 +225,9 @@ if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
   source /opt/homebrew/opt/fzf/shell/completion.zsh
 fi
 
-# ── ポケモン背景 (iTerm2 / Ghostty) ─────────────────────────
-# 起動時にランダム選出。変更は `poke -n <name>` で随時可能
+# ── ポケモン背景 (iTerm2 / cmux/Ghostty) ────────────────────
+# 起動時にランダム選出。`poke -n <name>` で即時変更。
+# cmux: config-file + `cmux themes set` で即時リロード。
 if [[ "$TERM_PROGRAM" == "iTerm.app" || "$TERM_PROGRAM" == "ghostty" ]] && command -v pokemon &>/dev/null; then
   _poke_favorites=(
     gliscor froslass butterfree exploud volbeat poochyena starmie
@@ -237,14 +238,12 @@ if [[ "$TERM_PROGRAM" == "iTerm.app" || "$TERM_PROGRAM" == "ghostty" ]] && comma
   unset _poke_favorites
 fi
 
-# Resize handler: redraw background at new terminal dimensions
+# Resize handler: re-prepare background at new dimensions
 if [[ "$TERM_PROGRAM" == "ghostty" ]]; then
   TRAPWINCH() {
     local current
     current=$(cat ~/.cache/poke-current 2>/dev/null)
-    if [[ -n "$current" ]]; then
-      poke -n "$current" 2>/dev/null
-    fi
+    [[ -n "$current" ]] && poke -n "$current" 2>/dev/null
   }
 fi
 

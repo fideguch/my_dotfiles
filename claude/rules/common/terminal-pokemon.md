@@ -2,13 +2,11 @@
 
 ## Command
 
-Change the terminal background Pokemon at any time:
-
 ```bash
 poke -n <pokemon_name>   # by name (e.g., gliscor, froslass, gengar)
 poke <pokedex_number>    # by Pokedex ID (e.g., 472)
 poke                     # random
-poke --clear             # remove background (Ghostty/cmux only)
+poke --clear             # remove background
 ```
 
 ## Supported Terminals
@@ -16,15 +14,35 @@ poke --clear             # remove background (Ghostty/cmux only)
 | Terminal | Backend | Detection |
 |----------|---------|-----------|
 | iTerm2 | AppleScript via pokemon-terminal | `$TERM_PROGRAM == "iTerm.app"` |
-| cmux (Ghostty) | Kitty graphics protocol (z=-1) | `$TERM_PROGRAM == "ghostty"` |
+| cmux (Ghostty) | config-file + `cmux themes set` reload | `$TERM_PROGRAM == "ghostty"` |
 
-Both terminals work in parallel. The `poke` command auto-detects which backend to use.
+## cmux/Ghostty Implementation
 
-## Resize Handling (cmux/Ghostty)
+### How It Works
 
-Window resize triggers `TRAPWINCH` in `.zshrc`, which re-runs `poke` with the
-saved Pokemon name from `~/.cache/poke-current`. This redraws the background
-image at the new terminal dimensions.
+1. Gets front window size via AppleScript (falls back to TIOCGWINSZ → cache)
+2. Resizes image to match window dimensions (stretch, ignore aspect ratio)
+3. Darkens to 15% brightness for text readability
+4. Writes prepared image path to `~/.config/ghostty/background`
+5. Triggers `cmux themes set <current_theme>` to reload config instantly
+6. Background changes **immediately** (no restart needed)
+
+### Key Discovery
+
+`cmux themes set` triggers a full config reload including `background-image`.
+This enables iTerm2-equivalent instant background changes.
+
+### Resize Handling
+
+TRAPWINCH in `.zshrc` re-runs `poke` with the current pokemon name
+when the terminal is resized, re-preparing the image at new dimensions.
+
+### Known Limitations
+
+- `background-image` is global across all cmux windows (Ghostty limitation)
+- When tabs are separated into multiple windows with different sizes,
+  the image is sized for the front window; other windows may have slight gaps
+- `background-image-fit/opacity/position` are NOT supported in cmux 0.63.1
 
 ## When to Use
 
@@ -34,8 +52,6 @@ image at the new terminal dimensions.
 ## Notes
 
 - Default Pokemon on shell startup: random from curated favorites (see .zshrc)
-- iTerm2: uses AppleScript (pokemon-terminal default behavior)
-- cmux/Ghostty: uses Kitty graphics protocol with z=-1 (behind text)
-  - Workaround for cmux CAMetalLayer opacity bug (cmux/issues/1674)
-  - When cmux fixes native background-image, switch to config-file approach
-- Current Pokemon saved to `~/.cache/poke-current` for resize redraw
+- Prepared images cached at `~/.cache/poke-bg/`
+- Current Pokemon saved to `~/.cache/poke-current`
+- Window size cached at `~/.cache/poke-surface-size` (fallback for no-TTY)
