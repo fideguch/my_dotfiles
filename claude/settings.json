@@ -2,5 +2,6 @@
   "enabledPlugins": {
     "skill-creator@claude-plugins-official": true,
     "discord@claude-plugins-official": true
-  }
+  },
+  "skipDangerousModePermissionPrompt": true
 }

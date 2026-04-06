@@ -237,12 +237,13 @@ if [[ "$TERM_PROGRAM" == "iTerm.app" || "$TERM_PROGRAM" == "ghostty" ]] && comma
   unset _poke_favorites
 fi
 
-# ── Ghostty/cmux: ウィンドウリサイズ時にポケモン背景を再描画 ──
-if [[ "$TERM_PROGRAM" == "ghostty" ]] && command -v poke &>/dev/null; then
+# Resize handler: redraw background at new terminal dimensions
+if [[ "$TERM_PROGRAM" == "ghostty" ]]; then
   TRAPWINCH() {
-    local current="$HOME/.cache/poke-current"
-    if [[ -f "$current" ]]; then
-      poke -n "$(cat "$current")" 2>/dev/null
+    local current
+    current=$(cat ~/.cache/poke-current 2>/dev/null)
+    if [[ -n "$current" ]]; then
+      poke -n "$current" 2>/dev/null
     fi
   }
 fi

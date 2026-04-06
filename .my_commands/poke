@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""pokemon コマンドの短縮版 (図鑑情報+種族値を表示)
+"""pokemon コマンドの短縮版 (図鑑情報+種族値を表示+背景設定)
 Usage:
   poke 150         # ミュウツー
   poke -n gengar   # ゲンガー
   poke             # ランダム
-  poke --clear     # 背景をクリア (Ghostty/cmux)
+  poke --clear     # 背景をクリア
 
-Supports iTerm2 (AppleScript) and Ghostty/cmux (Kitty graphics protocol).
-Backend is auto-detected via $TERM_PROGRAM.
+Backend:
+  iTerm2:       AppleScript via pokemon-terminal
+  cmux/Ghostty: Kitty graphics protocol (z=-1, behind text)
+                TRAPWINCH in .zshrc handles resize.
 """
 import base64
-import io
 import os
+import struct
 import subprocess
 import sys
 
@@ -19,7 +21,8 @@ from pokemonterminal.database import Database
 from pokeutil import load_data, pokemon_oneliner
 
 CURRENT_POKEMON_PATH = os.path.expanduser("~/.cache/poke-current")
-KITTY_OPACITY = 60  # 0-255, lower = more transparent
+FADED_IMAGE_DIR = os.path.expanduser("~/.cache/poke-faded")
+BG_OPACITY = 0.15  # how visible the background pokemon is
 
 
 # ── Pokemon lookup ────────────────────────────────────────
@@ -46,7 +49,7 @@ def find_chosen_pokemon(args):
 
 
 def save_current_pokemon(en_name: str) -> None:
-    """Save current Pokemon name for TRAPWINCH resize redraw."""
+    """Save current Pokemon name for reference."""
     os.makedirs(os.path.dirname(CURRENT_POKEMON_PATH), exist_ok=True)
     with open(CURRENT_POKEMON_PATH, "w") as f:
         f.write(en_name)
@@ -62,72 +65,117 @@ def set_iterm_background(pid: str, en_name: str) -> None:
         subprocess.run(["pokemon", "-n", en_name], stdout=subprocess.DEVNULL)
 
 
-# ── Kitty graphics protocol backend (for cmux/Ghostty) ───
+# ── Kitty graphics protocol backend (cmux/Ghostty) ───────
+#
+# Renders the image behind text using z=-1.
+# The image is scaled by the terminal to fill c columns × r rows.
+# Writing to /dev/tty ensures escape sequences reach the terminal
+# even when stdout is captured.
 
-def _kitty_cmd(stdout, payload: str, data: str = "") -> None:
-    """Write a single Kitty graphics escape sequence."""
-    stdout.write(f"\033_G{payload};{data}\033\\".encode())
+def _write_tty(data: str) -> None:
+    """Write directly to the controlling terminal."""
+    try:
+        with open("/dev/tty", "w") as tty:
+            tty.write(data)
+            tty.flush()
+    except OSError:
+        sys.stdout.write(data)
+        sys.stdout.flush()
 
 
-def _prepare_kitty_image(image_path: str) -> bytes:
-    """Load image, apply transparency, return PNG bytes."""
-    from PIL import Image
+def _get_terminal_size_cells() -> tuple[int, int]:
+    """Get terminal size in cells (cols, rows)."""
+    try:
+        size = os.get_terminal_size()
+        return (size.columns, size.lines)
+    except OSError:
+        return (80, 24)
 
-    img = Image.open(image_path).convert("RGBA")
 
-    # Apply uniform opacity cap
-    r, g, b, a = img.split()
-    a = Image.eval(a, lambda x: min(x, KITTY_OPACITY))
-    img = Image.merge("RGBA", (r, g, b, a))
+def _get_terminal_size_pixels() -> tuple[int, int]:
+    """Get terminal size in pixels via ioctl TIOCGWINSZ."""
+    try:
+        import fcntl
+        import termios
+        with open("/dev/tty", "rb") as tty:
+            result = fcntl.ioctl(tty.fileno(), termios.TIOCGWINSZ,
+                                 b"\x00" * 8)
+            rows, cols, xpixel, ypixel = struct.unpack("HHHH", result)
+            if xpixel > 0 and ypixel > 0:
+                return (xpixel, ypixel)
+    except Exception:
+        pass
+    return (0, 0)
 
-    buf = io.BytesIO()
-    img.save(buf, format="PNG", optimize=True)
-    return buf.getvalue()
+
+def _kitty_cmd(payload: str, data: str = "") -> str:
+    """Build a Kitty graphics protocol escape sequence."""
+    if data:
+        return f"\033_G{payload};{data}\033\\"
+    return f"\033_G{payload}\033\\"
+
+
+def clear_kitty_images() -> None:
+    """Delete all Kitty graphics images from the terminal."""
+    _write_tty(_kitty_cmd("a=d,d=A"))
+
+
+def _prepare_background_image(src: str) -> str:
+    """Resize image to terminal pixel dimensions and fade for background use.
+
+    1. Get terminal size in pixels via TIOCGWINSZ
+    2. Stretch image to exactly fill terminal (ignore aspect ratio)
+    3. Darken to BG_OPACITY for readability
+    """
+    from PIL import Image, ImageEnhance
+
+    os.makedirs(FADED_IMAGE_DIR, exist_ok=True)
+    basename = os.path.splitext(os.path.basename(src))[0] + ".png"
+    dst = os.path.join(FADED_IMAGE_DIR, basename)
+
+    px_w, px_h = _get_terminal_size_pixels()
+    if px_w == 0 or px_h == 0:
+        px_w, px_h = 1920, 1080  # fallback
+
+    try:
+        img = Image.open(src).convert("RGB")
+        img = img.resize((px_w, px_h), Image.LANCZOS)
+        enhancer = ImageEnhance.Brightness(img)
+        faded = enhancer.enhance(BG_OPACITY)
+        faded.save(dst, "PNG")
+        return dst
+    except Exception:
+        return src
 
 
 def set_kitty_background(image_path: str) -> None:
-    """Display image via Kitty graphics protocol (2-phase: transmit + place)."""
-    cols, rows = 80, 24
-    try:
-        size = os.get_terminal_size()
-        cols, rows = size.columns, size.lines
-    except Exception:
-        pass
+    """Display image behind text using Kitty graphics protocol.
 
-    png_data = _prepare_kitty_image(image_path)
-    stdout = sys.stdout.buffer
+    1. Prepare image (resize to terminal pixels + fade)
+    2. Delete old images
+    3. Move cursor to (1,1), place image with z=-1, restore cursor
+    """
+    cols, rows = _get_terminal_size_cells()
+    prepared = _prepare_background_image(image_path)
+    path_b64 = base64.standard_b64encode(
+        os.path.abspath(prepared).encode()
+    ).decode()
 
-    # Delete ALL previous images (works around Ghostty ID bug #6711)
-    _kitty_cmd(stdout, "a=d,d=a,q=2")
-    stdout.flush()
+    # Delete all previous Kitty images
+    clear_kitty_images()
 
-    # Transmit image data (a=t lowercase = transmit only, no display)
-    b64 = base64.b64encode(png_data).decode("ascii")
-    chunk_size = 4096
-    chunks = [b64[i:i + chunk_size] for i in range(0, len(b64), chunk_size)]
-
-    for idx, chunk in enumerate(chunks):
-        is_last = idx == len(chunks) - 1
-        m = 0 if is_last else 1
-        if idx == 0:
-            _kitty_cmd(stdout, f"a=t,f=100,t=d,i=99,q=2,m={m}", chunk)
-        else:
-            _kitty_cmd(stdout, f"m={m}", chunk)
-    stdout.flush()
-
-    # Place image ONCE at home position, behind text
-    stdout.write(b"\0337")   # Save cursor
-    stdout.write(b"\033[H")  # Move to home
-    _kitty_cmd(stdout, f"a=p,i=99,z=-1,C=1,c={cols},r={rows},q=2")
-    stdout.write(b"\0338")   # Restore cursor
-    stdout.flush()
+    # Save cursor, move to origin, place image behind text, restore cursor
+    _write_tty(
+        "\033[s"            # save cursor
+        "\033[1;1H"         # move to top-left
+        + _kitty_cmd(f"a=T,t=f,z=-1,c={cols},r={rows}", path_b64)
+        + "\033[u"          # restore cursor
+    )
 
 
-def clear_kitty_background() -> None:
-    """Remove all Kitty graphics images."""
-    _kitty_cmd(sys.stdout.buffer, "a=d,d=a,q=2")
-    sys.stdout.buffer.flush()
-    # Also clear saved Pokemon
+def clear_ghostty_background() -> None:
+    """Clear background image."""
+    clear_kitty_images()
     try:
         os.remove(CURRENT_POKEMON_PATH)
     except FileNotFoundError:
@@ -142,7 +190,7 @@ def main():
 
     if "--clear" in args:
         if term == "ghostty":
-            clear_kitty_background()
+            clear_ghostty_background()
         return
 
     chosen = find_chosen_pokemon(args)
