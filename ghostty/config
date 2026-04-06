@@ -19,13 +19,12 @@ window-decoration = true
 macos-titlebar-style = transparent
 
 # ── Background ────────────────────────────────────────────
-# Pokemon background is displayed via Kitty graphics protocol
-# in the `poke` command. Ghostty's native background-image is
-# blocked by cmux's opaque CAMetalLayer (cmux/issues/1674).
-# When cmux fixes this, uncomment the native config below:
-#   config-file = background
-#   background-image-opacity = 0.40
-#   custom-shader = passthrough.glsl
+# Pokemon background via `poke` command.
+# `poke` writes background-image path to the `background` config file.
+# cmux 0.63.1: background-image-fit/opacity/position NOT supported.
+# `poke` pre-resizes image to window size (AppleScript) + darkens.
+# `cmux themes set` triggers instant config reload (no restart).
+config-file = background
 
 # ── Cursor ────────────────────────────────────────────────
 cursor-style = block

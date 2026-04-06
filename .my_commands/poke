@@ -1,37 +1,43 @@
 #!/usr/bin/env python3
-"""pokemon コマンドの短縮版 (図鑑情報+種族値を表示+背景設定)
+"""Pokemon terminal background + stats one-liner.
+
 Usage:
-  poke 150         # ミュウツー
-  poke -n gengar   # ゲンガー
-  poke             # ランダム
-  poke --clear     # 背景をクリア
+  poke 150         # Mewtwo (by Pokedex ID)
+  poke -n gengar   # Gengar (by name)
+  poke             # Random
+  poke --clear     # Remove background
 
 Backend:
   iTerm2:       AppleScript via pokemon-terminal
-  cmux/Ghostty: Kitty graphics protocol (z=-1, behind text)
-                TRAPWINCH in .zshrc handles resize.
+  cmux/Ghostty: config-file + `cmux themes set` reload for instant change
 """
-import base64
+from __future__ import annotations
+
+import fcntl
 import os
 import struct
 import subprocess
 import sys
+import termios
 
 from pokemonterminal.database import Database
 from pokeutil import load_data, pokemon_oneliner
 
 CURRENT_POKEMON_PATH = os.path.expanduser("~/.cache/poke-current")
-FADED_IMAGE_DIR = os.path.expanduser("~/.cache/poke-faded")
-BG_OPACITY = 0.15  # how visible the background pokemon is
+GHOSTTY_BG_CONFIG = os.path.expanduser("~/.config/ghostty/background")
+PREPARED_IMAGE_DIR = os.path.expanduser("~/.cache/poke-bg")
+CACHED_SIZE_PATH = os.path.expanduser("~/.cache/poke-surface-size")
+BG_BRIGHTNESS = 0.15
 
 
 # ── Pokemon lookup ────────────────────────────────────────
 
-def find_chosen_pokemon(args):
-    """dry-run で選ばれるポケモンを特定し、DB上のオブジェクトを返す"""
+def find_chosen_pokemon(args: list[str]) -> object | None:
+    """Identify the chosen pokemon via dry-run, return DB object."""
     result = subprocess.run(
-        ["pokemon"] + args + ["-dr"],
-        capture_output=True, text=True,
+        ["pokemon", *args, "-dr"],
+        capture_output=True,
+        text=True,
     )
     output = result.stdout + result.stderr
     chosen_name = None
@@ -49,133 +55,162 @@ def find_chosen_pokemon(args):
 
 
 def save_current_pokemon(en_name: str) -> None:
-    """Save current Pokemon name for reference."""
+    """Persist current pokemon name."""
     os.makedirs(os.path.dirname(CURRENT_POKEMON_PATH), exist_ok=True)
     with open(CURRENT_POKEMON_PATH, "w") as f:
         f.write(en_name)
+
+
+def _read_current_pokemon() -> str | None:
+    """Read the currently displayed pokemon name."""
+    try:
+        with open(CURRENT_POKEMON_PATH) as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return None
 
 
 # ── iTerm2 backend ────────────────────────────────────────
 
 def set_iterm_background(pid: str, en_name: str) -> None:
     """Set iTerm2 background via pokemon-terminal (AppleScript)."""
-    if pid != "---":
-        subprocess.run(["pokemon", pid], stdout=subprocess.DEVNULL)
-    else:
-        subprocess.run(["pokemon", "-n", en_name], stdout=subprocess.DEVNULL)
+    cmd = ["pokemon", pid] if pid != "---" else ["pokemon", "-n", en_name]
+    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
-# ── Kitty graphics protocol backend (cmux/Ghostty) ───────
-#
-# Renders the image behind text using z=-1.
-# The image is scaled by the terminal to fill c columns × r rows.
-# Writing to /dev/tty ensures escape sequences reach the terminal
-# even when stdout is captured.
+# ── cmux/Ghostty config-file backend ─────────────────────
 
-def _write_tty(data: str) -> None:
-    """Write directly to the controlling terminal."""
+def _save_surface_size(w: int, h: int) -> None:
+    """Cache the last known surface pixel size."""
     try:
-        with open("/dev/tty", "w") as tty:
-            tty.write(data)
-            tty.flush()
+        os.makedirs(os.path.dirname(CACHED_SIZE_PATH), exist_ok=True)
+        with open(CACHED_SIZE_PATH, "w") as f:
+            f.write(f"{w} {h}")
     except OSError:
-        sys.stdout.write(data)
-        sys.stdout.flush()
+        pass
 
 
-def _get_terminal_size_cells() -> tuple[int, int]:
-    """Get terminal size in cells (cols, rows)."""
+def _load_cached_surface_size() -> tuple[int, int]:
+    """Load last known surface pixel size from cache."""
     try:
-        size = os.get_terminal_size()
-        return (size.columns, size.lines)
-    except OSError:
-        return (80, 24)
-
-
-def _get_terminal_size_pixels() -> tuple[int, int]:
-    """Get terminal size in pixels via ioctl TIOCGWINSZ."""
-    try:
-        import fcntl
-        import termios
-        with open("/dev/tty", "rb") as tty:
-            result = fcntl.ioctl(tty.fileno(), termios.TIOCGWINSZ,
-                                 b"\x00" * 8)
-            rows, cols, xpixel, ypixel = struct.unpack("HHHH", result)
-            if xpixel > 0 and ypixel > 0:
-                return (xpixel, ypixel)
-    except Exception:
+        with open(CACHED_SIZE_PATH) as f:
+            parts = f.read().strip().split()
+            if len(parts) == 2:
+                return (int(parts[0]), int(parts[1]))
+    except (FileNotFoundError, ValueError):
         pass
     return (0, 0)
 
 
-def _kitty_cmd(payload: str, data: str = "") -> str:
-    """Build a Kitty graphics protocol escape sequence."""
-    if data:
-        return f"\033_G{payload};{data}\033\\"
-    return f"\033_G{payload}\033\\"
+def _get_window_pixel_size() -> tuple[int, int]:
+    """Get the cmux front window size for background-image sizing.
 
+    background-image is shared across all panes in a window.
+    Uses AppleScript front window (the active window where poke runs).
+    Falls back to TIOCGWINSZ then cache.
 
-def clear_kitty_images() -> None:
-    """Delete all Kitty graphics images from the terminal."""
-    _write_tty(_kitty_cmd("a=d,d=A"))
-
-
-def _prepare_background_image(src: str) -> str:
-    """Resize image to terminal pixel dimensions and fade for background use.
-
-    1. Get terminal size in pixels via TIOCGWINSZ
-    2. Stretch image to exactly fill terminal (ignore aspect ratio)
-    3. Darken to BG_OPACITY for readability
+    Note: background-image is global across all cmux windows.
+    When multiple windows have different sizes, the image is
+    sized for the front window. This is a Ghostty limitation.
     """
-    from PIL import Image, ImageEnhance
-
-    os.makedirs(FADED_IMAGE_DIR, exist_ok=True)
-    basename = os.path.splitext(os.path.basename(src))[0] + ".png"
-    dst = os.path.join(FADED_IMAGE_DIR, basename)
-
-    px_w, px_h = _get_terminal_size_pixels()
-    if px_w == 0 or px_h == 0:
-        px_w, px_h = 1920, 1080  # fallback
-
+    # Primary: AppleScript front window size
     try:
-        img = Image.open(src).convert("RGB")
-        img = img.resize((px_w, px_h), Image.LANCZOS)
-        enhancer = ImageEnhance.Brightness(img)
-        faded = enhancer.enhance(BG_OPACITY)
-        faded.save(dst, "PNG")
-        return dst
-    except Exception:
+        result = subprocess.run(
+            ["osascript", "-e",
+             'tell application "System Events" to tell process "cmux" '
+             'to get size of front window'],
+            capture_output=True, text=True, timeout=3,
+        )
+        if result.returncode == 0:
+            parts = result.stdout.strip().split(",")
+            if len(parts) == 2:
+                w = int(parts[0].strip())
+                h = int(parts[1].strip())
+                if w > 0 and h > 0:
+                    _save_surface_size(w, h)
+                    return (w, h)
+    except (subprocess.TimeoutExpired, OSError, ValueError):
+        pass
+
+    # Fallback: TIOCGWINSZ (pane pixels, better than nothing)
+    try:
+        with open("/dev/tty", "rb") as tty:
+            result = fcntl.ioctl(
+                tty.fileno(), termios.TIOCGWINSZ, b"\x00" * 8,
+            )
+            _, _, xpixel, ypixel = struct.unpack("HHHH", result)
+            if xpixel > 0 and ypixel > 0:
+                _save_surface_size(xpixel, ypixel)
+                return (xpixel, ypixel)
+    except OSError:
+        pass
+
+    # Last resort: cached value
+    return _load_cached_surface_size()
+
+
+def _prepare_background(src: str) -> str:
+    """Resize image to window size and darken for readability."""
+    try:
+        from PIL import Image, ImageEnhance
+    except ImportError:
+        print("[poke] Pillow required. Run: pip install Pillow",
+              file=sys.stderr)
         return src
 
+    px_w, px_h = _get_window_pixel_size()
+    if px_w == 0 or px_h == 0:
+        return src
 
-def set_kitty_background(image_path: str) -> None:
-    """Display image behind text using Kitty graphics protocol.
+    os.makedirs(PREPARED_IMAGE_DIR, exist_ok=True)
+    basename = os.path.splitext(os.path.basename(src))[0] + ".png"
+    dst = os.path.join(PREPARED_IMAGE_DIR, basename)
 
-    1. Prepare image (resize to terminal pixels + fade)
-    2. Delete old images
-    3. Move cursor to (1,1), place image with z=-1, restore cursor
-    """
-    cols, rows = _get_terminal_size_cells()
-    prepared = _prepare_background_image(image_path)
-    path_b64 = base64.standard_b64encode(
-        os.path.abspath(prepared).encode()
-    ).decode()
+    img = Image.open(src).convert("RGB")
+    img = img.resize((px_w, px_h), Image.LANCZOS)
+    img = ImageEnhance.Brightness(img).enhance(BG_BRIGHTNESS)
+    img.save(dst, "PNG")
+    return dst
 
-    # Delete all previous Kitty images
-    clear_kitty_images()
 
-    # Save cursor, move to origin, place image behind text, restore cursor
-    _write_tty(
-        "\033[s"            # save cursor
-        "\033[1;1H"         # move to top-left
-        + _kitty_cmd(f"a=T,t=f,z=-1,c={cols},r={rows}", path_b64)
-        + "\033[u"          # restore cursor
+def _get_current_theme() -> str:
+    """Read current cmux theme name."""
+    try:
+        result = subprocess.run(
+            ["cmux", "themes", "list"],
+            capture_output=True, text=True, timeout=5,
+        )
+        for line in result.stdout.splitlines():
+            if line.startswith("Current dark:"):
+                return line.split(":", 1)[1].strip()
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+    return "Japanesque"
+
+
+def _reload_cmux_config() -> None:
+    """Trigger cmux config reload via themes set."""
+    theme = _get_current_theme()
+    subprocess.run(
+        ["cmux", "themes", "set", theme],
+        capture_output=True, timeout=5,
     )
 
 
+def set_ghostty_background(image_path: str) -> None:
+    """Prepare image, write config, and trigger reload."""
+    os.makedirs(os.path.dirname(GHOSTTY_BG_CONFIG), exist_ok=True)
+    prepared = _prepare_background(image_path)
+    with open(GHOSTTY_BG_CONFIG, "w") as f:
+        f.write(f"background-image = {prepared}\n")
+    _reload_cmux_config()
+
+
 def clear_ghostty_background() -> None:
-    """Clear background image."""
-    clear_kitty_images()
+    """Remove background image and reload."""
+    with open(GHOSTTY_BG_CONFIG, "w") as f:
+        f.write("# no background\n")
+    _reload_cmux_config()
     try:
         os.remove(CURRENT_POKEMON_PATH)
     except FileNotFoundError:
@@ -184,7 +219,7 @@ def clear_ghostty_background() -> None:
 
 # ── Main ──────────────────────────────────────────────────
 
-def main():
+def main() -> None:
     args = sys.argv[1:]
     term = os.environ.get("TERM_PROGRAM", "")
 
@@ -195,14 +230,14 @@ def main():
 
     chosen = find_chosen_pokemon(args)
     if not chosen:
-        subprocess.run(["pokemon"] + args)
+        subprocess.run(["pokemon", *args])
         return
 
     pid = chosen.get_id()
     en_name = chosen.get_name()
 
     if term == "ghostty":
-        set_kitty_background(chosen.get_path())
+        set_ghostty_background(chosen.get_path())
         save_current_pokemon(en_name)
     else:
         set_iterm_background(pid, en_name)
