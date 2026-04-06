@@ -29,6 +29,9 @@ $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 | `Brewfile` | Homebrewパッケージ一覧 |
 | `.my_commands/` | 自作コマンド |
 | `.vim/` | Vimカラースキーム, vim-plug |
+| `ghostty/` | Ghostty/cmux 設定 (Japanesque テーマ, フォント, キーバインド) |
+| `cmux/` | cmux macOS defaults スクリプト |
+| `iterm2/` | iTerm2 Pokemon プロファイル |
 | `set_up.sh` | セットアップスクリプト |
 
 ## 自作コマンド (.my_commands/)
@@ -69,16 +72,26 @@ $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 | `Ctrl+g` | grep検索 (ripgrep) |
 | `Tab+l/h` | タブ移動 |
 
-## ポケモン背景 (iTerm2)
+## ポケモン背景 (iTerm2 / cmux)
 
-[Pokemon-Terminal](https://github.com/LazoCoder/Pokemon-Terminal) でiTerm2の背景にポケモンを表示。
-ターミナル起動時に暗め紫系の厳選22匹からランダムで1匹を設定。
+[Pokemon-Terminal](https://github.com/LazoCoder/Pokemon-Terminal) でターミナル背景にポケモンを表示。
+ターミナル起動時に厳選22匹からランダムで1匹を設定。
 
 ```bash
 poke -n gliscor  # グライオンに変更
 poke 150         # ミュウツー
 poke             # 全ポケモンからランダム
+poke --clear     # 背景クリア (cmux のみ)
 ```
+
+`poke` は `$TERM_PROGRAM` でバックエンドを自動判別:
+
+| ターミナル | バックエンド |
+|-----------|------------|
+| iTerm2 | AppleScript (pokemon-terminal) |
+| cmux (Ghostty) | Kitty graphics protocol (z=-1, テキストの後ろに表示) |
+
+cmux ではウィンドウリサイズ時に `.zshrc` の `TRAPWINCH` が自動的に再描画する。
 
 > Claude Code セッション中も `poke` コマンドで随時変更可能。
 
@@ -144,6 +157,7 @@ ECC (Everything Claude Code) 由来スキル、rules、agents、commands、hooks
 - **シンボリックリンク**: 既存リンクは削除→再作成、通常ファイルはタイムスタンプ付きバックアップ後にリンク作成
 - **ディレクトリ**: `mkdir -p` で既存なら何もしない
 - **vim-plug**: 存在チェック後にインストール
+- **Ghostty/cmux**: config はコピー、background はシードコピー（ランタイム状態）、cmux defaults はスクリプト実行
 - **iTerm2**: アプリ存在チェック後にセットアップ
 
 `git pull` 後に再実行することで、設定の更新を安全に適用できます。
@@ -160,3 +174,5 @@ vim +PlugUpdate +qall
 
 - macOS (Apple Silicon)
 - [Nerd Font](https://www.nerdfonts.com) (アイコン表示用)
+- ターミナル: [cmux](https://www.cmux.dev/) (推奨) または [iTerm2](https://iterm2.com/)
+- ポケモン背景: `pip3 install --user git+https://github.com/LazoCoder/Pokemon-Terminal.git`
