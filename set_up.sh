@@ -160,7 +160,35 @@ else
   info "vim-plug インストール完了"
 fi
 
-# ── 7. iTerm2 Pokemon プロファイル ─────────────────────────
+# ── 7. Ghostty / cmux セットアップ ────────────────────────
+GHOSTTY_CFG_DIR="$HOME/.config/ghostty"
+mkdir -p "$GHOSTTY_CFG_DIR"
+
+# Config is COPIED (not symlinked) because config-file = background
+# uses a relative path resolved from the config's physical directory.
+# Symlink would resolve to dotfiles dir, causing poke to dirty the repo.
+if [[ -f "$DOTPATH/ghostty/config" ]]; then
+  cp "$DOTPATH/ghostty/config" "$GHOSTTY_CFG_DIR/config"
+  info "Ghostty config をコピーしました"
+fi
+
+# Background seed: copy if missing (runtime state, written by poke)
+if [[ ! -f "$GHOSTTY_CFG_DIR/background" ]]; then
+  cp "$DOTPATH/ghostty/background" "$GHOSTTY_CFG_DIR/background"
+  info "Ghostty background seed をコピーしました"
+else
+  info "Ghostty background は既に存在 — スキップ"
+fi
+
+# cmux macOS defaults
+if [[ -f "$DOTPATH/cmux/setup-cmux-defaults.sh" ]]; then
+  bash "$DOTPATH/cmux/setup-cmux-defaults.sh"
+  info "cmux defaults 設定完了"
+fi
+
+info "Ghostty / cmux セットアップ完了"
+
+# ── 8. iTerm2 Pokemon プロファイル ─────────────────────────
 if [[ -d "/Applications/iTerm.app" ]]; then
   echo "iTerm2 Pokemon プロファイルをセットアップします..."
   "$DOTPATH/.my_commands/setup-pokemon-iterm"

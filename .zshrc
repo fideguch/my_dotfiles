@@ -225,9 +225,9 @@ if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
   source /opt/homebrew/opt/fzf/shell/completion.zsh
 fi
 
-# ── iTerm2 ポケモン背景 ───────────────────────────────────
+# ── ポケモン背景 (iTerm2 / Ghostty) ─────────────────────────
 # 起動時にランダム選出。変更は `poke -n <name>` で随時可能
-if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v pokemon &>/dev/null; then
+if [[ "$TERM_PROGRAM" == "iTerm.app" || "$TERM_PROGRAM" == "ghostty" ]] && command -v pokemon &>/dev/null; then
   _poke_favorites=(
     gliscor froslass butterfree exploud volbeat poochyena starmie
     woobat swalot blastoise aurorus grumpig diggersby klink pangoro
@@ -235,6 +235,16 @@ if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v pokemon &>/dev/null; then
   )
   poke -n "${_poke_favorites[RANDOM % ${#_poke_favorites[@]} + 1]}"
   unset _poke_favorites
+fi
+
+# ── Ghostty/cmux: ウィンドウリサイズ時にポケモン背景を再描画 ──
+if [[ "$TERM_PROGRAM" == "ghostty" ]] && command -v poke &>/dev/null; then
+  TRAPWINCH() {
+    local current="$HOME/.cache/poke-current"
+    if [[ -f "$current" ]]; then
+      poke -n "$(cat "$current")" 2>/dev/null
+    fi
+  }
 fi
 
 # bun completions
