@@ -130,6 +130,17 @@
         "description": "forge_ace: Enforce agent dispatch sequence (Writer→Guardian→Overseer→PM-Admin→Designer)"
       },
       {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/scripts/hooks/gatekeeper-pre-edit-guard.js",
+            "timeout": 5
+          }
+        ],
+        "description": "gatekeeper: Block src/ edits before HG-1 (designs/ + Figma) completion"
+      },
+      {
         "matcher": "*",
         "hooks": [
           {
@@ -380,6 +391,17 @@
           }
         ],
         "description": "forge_ace: Save session outcome and warn on incomplete sessions"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/scripts/hooks/gatekeeper-stop-check.js",
+            "timeout": 10
+          }
+        ],
+        "description": "gatekeeper: Warn on incomplete session (HG-5 verdict missing)"
       }
     ],
     "SessionEnd": [
