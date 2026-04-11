@@ -15,7 +15,25 @@
 const fs = require('fs');
 const path = require('path');
 
-const SESSION_DIR = process.env.GATEKEEPER_SESSION_DIR || process.cwd();
+function resolveSessionDir() {
+  // 1. Explicit env var (highest priority)
+  if (process.env.GATEKEEPER_SESSION_DIR) {
+    return process.env.GATEKEEPER_SESSION_DIR;
+  }
+  // 2. Git repository root
+  try {
+    const gitRoot = require('child_process')
+      .execSync('git rev-parse --show-toplevel', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] })
+      .trim();
+    if (gitRoot) return gitRoot;
+  } catch (_) {
+    // Not a git repo or git not installed — fall through
+  }
+  // 3. Current working directory (last resort)
+  return process.cwd();
+}
+
+const SESSION_DIR = resolveSessionDir();
 const SESSION_FILE = path.join(SESSION_DIR, '.gatekeeper', 'session.json');
 
 try {
