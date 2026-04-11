@@ -7,13 +7,16 @@
  * Warns when a gatekeeper session is incomplete (HG-5 verdict missing).
  * Does NOT block — only warns via stderr.
  *
- * Session file: /tmp/.gatekeeper-session.json
+ * Session file: {GATEKEEPER_SESSION_DIR}/.gatekeeper/session.json
+ * Fallback: process.cwd()/.gatekeeper/session.json
  * Exit codes: 0 always (warn only, never block on Stop)
  */
 
 const fs = require('fs');
+const path = require('path');
 
-const SESSION_FILE = '/tmp/.gatekeeper-session.json';
+const SESSION_DIR = process.env.GATEKEEPER_SESSION_DIR || process.cwd();
+const SESSION_FILE = path.join(SESSION_DIR, '.gatekeeper', 'session.json');
 
 try {
   // No session file → not a gatekeeper session
@@ -53,7 +56,7 @@ try {
 
   if (session.final_status === null && anyActive) {
     process.stderr.write(
-      `[gatekeeper] Session final_status is null. Update /tmp/.gatekeeper-session.json before closing.\n`
+      `[gatekeeper] Session final_status is null. Update ${SESSION_FILE} before closing.\n`
     );
   }
 
