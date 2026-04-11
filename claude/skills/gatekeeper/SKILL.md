@@ -7,7 +7,7 @@ triggers:
   - "実機検証"
 ---
 
-# gatekeeper v1.1 — Verify It Works, Not Just Compiles
+# gatekeeper v1.2 — Verify It Works, Not Just Compiles
 
 forge_ace が「コード品質」を��証し��gatekeeper が「実際に動くか・仕様通りか」を保証する。
 
@@ -43,11 +43,13 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 ## Integration with forge_ace
 
 ```
-[gatekeeper Step 1: RESEARCH]              <-- Before forge_ace Writer
+[gatekeeper Step 1: RESEARCH (HG-1)]       <-- Before forge_ace Writer
+  |
+[gatekeeper Step 1.5: UX PROTOCOL (HG-1.5)] <-- UX thinking before code
   |
 [forge_ace Writer]                          <-- Implementation
   |  Step 3 (FACTS) — active if external API call or error encountered
-  |  Step 4 (HYPOTHESIS) — active if debugging (fix attempt fails)
+  |  Step 4 (HYPOTHESIS) — requires Step 3 (facts) first
   |
 [gatekeeper Step 2: CONSISTENCY]            <-- Pre-check before Guardian
   |
@@ -56,10 +58,12 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 [gatekeeper Step 5: VERIFY]                 <-- Post-SHIP
 ```
 
+Step 1.5 is a **mandatory gate** — runs in both paired and standalone modes.
+
 Step 3 + Step 4 are **inline gates** — they activate during implementation whenever:
 - Step 3: Any external API integration or unexpected error requires fact collection first
-- Step 4: Any fix attempt fails twice on the same hypothesis
-- Skip condition: Pure UI-only implementation with zero external API calls and no debugging
+- Step 4: Any fix attempt fails twice on the same hypothesis. **HG-3 (facts) is a prerequisite for HG-4 (hypothesis)** — facts must be collected before forming hypotheses.
+- Shared skip condition: Pure UI-only implementation with zero external API calls and no debugging skips BOTH HG-3 and HG-4
 
 ---
 
@@ -67,18 +71,29 @@ Step 3 + Step 4 are **inline gates** — they activate during implementation whe
 
 <step id="activate">
 
-1. Determine mode:
+1. **Resolve project directory**:
+   - Read `GATEKEEPER_SESSION_DIR` environment variable
+   - If NOT set: **BLOCK** — ask the user to specify the project root directory
+     ```
+     [gatekeeper] GATEKEEPER_SESSION_DIR is not set.
+     Please set it to your project root: export GATEKEEPER_SESSION_DIR=/path/to/project
+     ```
+   - Fallback: `process.cwd()` (hooks only — SKILL.md requires the env var)
+
+2. Determine mode:
    - **Paired**: forge_ace Full is running → gatekeeper wraps around it
    - **Standalone**: Bug fix or debugging without forge_ace
 
-2. Write `/tmp/.gatekeeper-session.json`:
+3. Write `{GATEKEEPER_SESSION_DIR}/.gatekeeper/session.json`:
    ```json
    {
-     "version": "1.1",
+     "version": "1.2",
      "created": "[ISO]",
+     "project_dir": "[GATEKEEPER_SESSION_DIR value]",
      "mode": "paired|standalone",
      "gates": {
        "hg1": {"status": "pending", "evidence": null},
+       "hg1_5": {"status": "pending", "evidence": null},
        "hg2": {"status": "pending", "evidence": null},
        "hg3": {"status": "pending|skipped", "evidence": null},
        "hg4": {"status": "pending|skipped", "attempts": []},
@@ -93,7 +108,18 @@ Step 3 + Step 4 are **inline gates** — they activate during implementation whe
    }
    ```
 
-3. Update session: `state -> ACTIVATED`
+4. **Auto-migrate**: If `/tmp/.gatekeeper-session.json` exists, copy it to the new location and delete the old file.
+
+5. Update session: `state -> ACTIVATED`
+
+**Directory structure**:
+```
+{project_root}/.gatekeeper/
+├── session.json          <- Active session
+└── history/              <- Completed sessions (max 3, rotated by Stop hook)
+    ├── 2026-04-11T12-00-00Z.json
+    └── ...
+```
 
 </step>
 
@@ -120,16 +146,7 @@ Before writing ANY implementation code:
    ```bash
    grep -rl "ComponentName" src/app/ src/components/
    ```
-4. **UX Thinking Protocol** — write down before implementing:
-   ```
-   SCREEN: [screen name]
-   USER GOAL: What does the user want to accomplish here?
-   FIRST ACTION: What will the user tap/click first?
-   HAPPY PATH: [step 1] -> [step 2] -> [step 3] -> [success state]
-   ERROR PATH: What can go wrong? How does the user recover?
-   EDGE CASES: Empty state, slow network, expired session
-   ```
-5. **Ask if unclear**: One question at a time. Wait for answer before proceeding.
+4. **Ask if unclear**: One question at a time. Wait for answer before proceeding.
    - Do NOT batch questions. 1 question = 1 answer = then next question.
    - Reference: `checklists/pre-implementation.md` for full checklist
 
@@ -141,6 +158,48 @@ Update session: `gates.hg1.status -> PASS, gates.hg1.evidence -> [list of files 
 - Guessing component specs instead of reading designs/component-definitions.md
 - Assuming layout without checking Phase 3 precedent
 - Asking the user a question that can be answered by reading designs/ (grep first, ask second)
+
+</step>
+
+---
+
+## Step 1.5: UX THINKING PROTOCOL (HG-1.5)
+
+<HARD-GATE id="HG-1.5">
+NO CODE before writing down UX thinking. Violation = implementation restart.
+</HARD-GATE>
+
+Based on: UX Thinking Protocol extracted from HG-1 into independent gate for enforcement in ALL modes.
+
+<step id="hg1_5-ux-protocol">
+
+Mandatory in both paired and standalone modes. Write down before implementing:
+
+```
+SCREEN: [screen name]
+USER GOAL: What does the user want to accomplish here?
+FIRST ACTION: What will the user tap/click first?
+HAPPY PATH: [step 1] -> [step 2] -> [step 3] -> [success state]
+ERROR PATH: What can go wrong? How does the user recover?
+EDGE CASES: Empty state, slow network, expired session
+```
+
+For standalone bug fixes, adapt the protocol:
+```
+SCREEN: [affected screen]
+USER GOAL: What was the user trying to do when the bug occurred?
+FIRST ACTION: What triggers the bug?
+HAPPY PATH: [expected behavior after fix]
+ERROR PATH: What if the fix introduces a regression?
+EDGE CASES: Other screens/flows affected by the same code path
+```
+
+Update session: `gates.hg1_5.status -> PASS, gates.hg1_5.evidence -> [UX protocol written]`
+
+**Forbidden**:
+- Skipping UX protocol in any mode (paired or standalone)
+- Writing code before completing all 6 protocol fields
+- Copying a generic template without filling in specific details
 
 </step>
 
@@ -250,6 +309,9 @@ Update session: `gates.hg3.status -> PASS, gates.hg3.evidence -> [facts collecte
 Based on: ACM Fixation Bias prevention + Stripe/Airbnb harness escalation thresholds
 
 <step id="hg4-abandon">
+
+**Prerequisite**: HG-3 (FACTS) must be completed before HG-4 can activate. Facts → then hypothesis.
+If HG-3 is skipped (shared skip condition), HG-4 is also skipped.
 
 Applies: Debugging (always active).
 
@@ -386,13 +448,18 @@ Summary (8 most common):
 
 ```
 STEP 0 — ACTIVATE:
-  [ ] Create /tmp/.gatekeeper-session.json
+  [ ] Verify GATEKEEPER_SESSION_DIR is set (BLOCK if not)
+  [ ] Create {project}/.gatekeeper/session.json (v1.2)
+  [ ] Auto-migrate from /tmp/.gatekeeper-session.json if exists
   [ ] Determine mode: paired (with forge_ace) or standalone
 
 STEP 1 — RESEARCH (HG-1):
   [ ] Read designs/ + Figma screenshot + existing patterns
-  [ ] UX Protocol: user goal, first action, happy/error/edge paths
   [ ] Checklist: checklists/pre-implementation.md
+
+STEP 1.5 — UX PROTOCOL (HG-1.5, mandatory all modes):
+  [ ] SCREEN / USER GOAL / FIRST ACTION
+  [ ] HAPPY PATH / ERROR PATH / EDGE CASES
 
 STEP 2 — CONSISTENCY (HG-2):
   [ ] Grep existing components before creating new ones
@@ -404,9 +471,11 @@ STEP 3 — FACTS (HG-3, always active):
   [ ] Facts first (logs, console, network, dashboard)
   [ ] External API: node -e test before integrating
 
-STEP 4 — HYPOTHESIS (HG-4, always active):
+STEP 4 — HYPOTHESIS (HG-4, requires HG-3 first):
+  [ ] HG-3 must be PASS before HG-4 activates
   [ ] Max 2 attempts per hypothesis, then abandon
   [ ] 3 alternative hypotheses before retry
+  [ ] Skip: Pure UI-only with zero external API calls and no debugging (skips both HG-3+HG-4)
 
 STEP 5 — VERIFY (HG-5):
   [ ] Self-Check Protocol (5 questions)
@@ -428,7 +497,7 @@ STEP 5 — VERIFY (HG-5):
 
 ```
 ~/.claude/skills/gatekeeper/
-├── SKILL.md                          <- This file (v1.1, Step 0-5)
+├── SKILL.md                          <- This file (v1.2, Step 0-5 + 1.5)
 ├── references/
 │   ├── failure-patterns.md           <- 11 categories, 50+ incidents
 │   └── rationalizations-to-reject.md <- 17 patterns + Self-Check Protocol
@@ -436,9 +505,15 @@ STEP 5 — VERIFY (HG-5):
 │   ├── pre-implementation.md         <- HG-1 + UX Protocol combined
 │   └── research-validation.md        <- Category 8 prevention
 ├── tests/
-│   └── test-gate-compliance.sh       <- Gate application verification
+│   ├── test-gate-compliance.sh       <- Gate application verification
+│   └── test-hooks.sh                 <- Hook behavior verification
 └── test-scenarios/
     ├── scenario-new-screen.md        <- New screen implementation
     ├── scenario-bug-fix.md           <- Bug fix with hypothesis tracking
     └── scenario-api-integration.md   <- External API integration
+
+{project_root}/.gatekeeper/           <- Per-project session data (gitignored)
+├── session.json                      <- Active session
+└── history/                          <- Completed sessions (max 3)
+    └── {ISO-timestamp}.json
 ```

@@ -402,6 +402,17 @@
           }
         ],
         "description": "gatekeeper: Warn on incomplete session (HG-5 verdict missing)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/scripts/hooks/gatekeeper-session-rotate.js",
+            "timeout": 10
+          }
+        ],
+        "description": "gatekeeper: Rotate completed sessions to history (max 3 generations)"
       }
     ],
     "SessionEnd": [

@@ -7,13 +7,16 @@
  * Blocks src/ file edits when HG-1 (RESEARCH BEFORE CODE) has not passed.
  * Ensures designs/ and Figma are read before any implementation code is written.
  *
- * Session file: /tmp/.gatekeeper-session.json
+ * Session file: {GATEKEEPER_SESSION_DIR}/.gatekeeper/session.json
+ * Fallback: process.cwd()/.gatekeeper/session.json
  * Exit codes: 0 = allow, 2 = block
  */
 
 const fs = require('fs');
+const path = require('path');
 
-const SESSION_FILE = '/tmp/.gatekeeper-session.json';
+const SESSION_DIR = process.env.GATEKEEPER_SESSION_DIR || process.cwd();
+const SESSION_FILE = path.join(SESSION_DIR, '.gatekeeper', 'session.json');
 
 try {
   // No session file → not a gatekeeper session, allow
