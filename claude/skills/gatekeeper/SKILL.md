@@ -7,7 +7,7 @@ triggers:
   - "実機検証"
 ---
 
-# gatekeeper v1.2 — Verify It Works, Not Just Compiles
+# gatekeeper v1.2.1 — Verify It Works, Not Just Compiles
 
 forge_ace が「コード品質」を��証し��gatekeeper が「実際に動くか・仕様通りか」を保証する。
 
@@ -71,14 +71,13 @@ Step 3 + Step 4 are **inline gates** — they activate during implementation whe
 
 <step id="activate">
 
-1. **Resolve project directory**:
-   - Read `GATEKEEPER_SESSION_DIR` environment variable
-   - If NOT set: **BLOCK** — ask the user to specify the project root directory
-     ```
-     [gatekeeper] GATEKEEPER_SESSION_DIR is not set.
-     Please set it to your project root: export GATEKEEPER_SESSION_DIR=/path/to/project
-     ```
-   - Fallback: `process.cwd()` (hooks only — SKILL.md requires the env var)
+1. **Resolve project directory** (3-tier priority):
+   a. `GATEKEEPER_SESSION_DIR` environment variable (explicit override)
+   b. `git rev-parse --show-toplevel` (auto-detect for Git projects)
+   c. `process.cwd()` (fallback)
+   
+   If resolved: display "Project root: /path/to/project" and proceed (no confirmation needed)
+   If ALL fail (non-git, no env var): **BLOCK** — ask user to set GATEKEEPER_SESSION_DIR
 
 2. Determine mode:
    - **Paired**: forge_ace Full is running → gatekeeper wraps around it
@@ -87,7 +86,7 @@ Step 3 + Step 4 are **inline gates** — they activate during implementation whe
 3. Write `{GATEKEEPER_SESSION_DIR}/.gatekeeper/session.json`:
    ```json
    {
-     "version": "1.2",
+     "version": "1.2.1",
      "created": "[ISO]",
      "project_dir": "[GATEKEEPER_SESSION_DIR value]",
      "mode": "paired|standalone",
@@ -448,8 +447,8 @@ Summary (8 most common):
 
 ```
 STEP 0 — ACTIVATE:
-  [ ] Verify GATEKEEPER_SESSION_DIR is set (BLOCK if not)
-  [ ] Create {project}/.gatekeeper/session.json (v1.2)
+  [ ] Resolve project dir: GATEKEEPER_SESSION_DIR > git root > cwd (BLOCK if all fail)
+  [ ] Create {project}/.gatekeeper/session.json (v1.2.1)
   [ ] Auto-migrate from /tmp/.gatekeeper-session.json if exists
   [ ] Determine mode: paired (with forge_ace) or standalone
 
@@ -497,7 +496,7 @@ STEP 5 — VERIFY (HG-5):
 
 ```
 ~/.claude/skills/gatekeeper/
-├── SKILL.md                          <- This file (v1.2, Step 0-5 + 1.5)
+├── SKILL.md                          <- This file (v1.2.1, Step 0-5 + 1.5)
 ├── references/
 │   ├── failure-patterns.md           <- 11 categories, 50+ incidents
 │   └── rationalizations-to-reject.md <- 17 patterns + Self-Check Protocol
