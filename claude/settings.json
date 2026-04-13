@@ -3,5 +3,20 @@
     "skill-creator@claude-plugins-official": true,
     "discord@claude-plugins-official": true
   },
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/scripts/hooks/iterm-stop-notify.sh",
+            "async": true,
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
 }
