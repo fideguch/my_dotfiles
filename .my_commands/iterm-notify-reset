@@ -1,45 +1,27 @@
 #!/bin/zsh
-# iterm-notify-reset — Manual reset: restore original background
+# iterm-notify-reset — Manual reset: restore original Pokemon background
 # Normally the focus watcher handles reset automatically.
-# This is a fallback for manual use.
 
 local MARKER="/tmp/.iterm-notify-active"
 [[ ! -f "$MARKER" ]] && return 0
 
 local orig_image target_tty
 orig_image=$(sed -n '1p' "$MARKER")
-target_tty=$(sed -n '3p' "$MARKER")
+target_tty=$(sed -n '2p' "$MARKER")
+rm -f "$MARKER" /tmp/.iterm-notify-watcher-pid
 
-[[ -z "$orig_image" || ! -f "$orig_image" ]] && { rm -f "$MARKER"; return 0; }
-[[ -z "$target_tty" ]] && { rm -f "$MARKER"; return 0; }
+[[ -z "$orig_image" || -z "$target_tty" ]] && return 0
 
-rm -f "$MARKER"
-
-_osa_set() {
-  osascript -e "
+osascript -e "
 tell application \"iTerm2\"
   repeat with w in windows
     repeat with t in tabs of w
       repeat with s in sessions of t
         if tty of s is \"$target_tty\" then
-          set background image of s to \"$1\"
+          set background image of s to \"$orig_image\"
           return
         end if
       end repeat
     end repeat
   end repeat
 end tell" 2>/dev/null
-}
-
-local CACHE_DIR="$HOME/.cache/poke-notify"
-local img_hash
-img_hash=$(md5 -q "$orig_image" 2>/dev/null)
-
-if [[ -n "$img_hash" ]]; then
-  local prefix="$CACHE_DIR/${img_hash}"
-  [[ -f "${prefix}_b2.png" ]] && { _osa_set "${prefix}_b2.png"; sleep 0.12; }
-  [[ -f "${prefix}_b3.png" ]] && { _osa_set "${prefix}_b3.png"; sleep 0.12; }
-  [[ -f "${prefix}_b4.png" ]] && { _osa_set "${prefix}_b4.png"; sleep 0.12; }
-fi
-
-_osa_set "$orig_image"
