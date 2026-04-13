@@ -1,39 +1,45 @@
 #!/bin/zsh
 # iterm-notify-reset — Gradually restore original background from tinted state
-# Called from: focus watcher (auto) or ZSH preexec (manual command)
-#
-# Smooth transition: tinted → intermediate steps → original
+# Targets the specific session by TTY (from marker file), not "current session"
 
 local MARKER="/tmp/.iterm-notify-active"
 [[ ! -f "$MARKER" ]] && return 0
 
-local orig_image
-orig_image=$(head -1 "$MARKER")
-[[ -z "$orig_image" || ! -f "$orig_image" ]] && { rm -f "$MARKER"; return 0; }
+local orig_image target_tty
+orig_image=$(sed -n '1p' "$MARKER")
+target_tty=$(sed -n '3p' "$MARKER")
 
-# Remove marker first to prevent double-reset (focus watcher + preexec race)
+[[ -z "$orig_image" || ! -f "$orig_image" ]] && { rm -f "$MARKER"; return 0; }
+[[ -z "$target_tty" ]] && { rm -f "$MARKER"; return 0; }
+
+# Remove marker first to prevent double-reset
 rm -f "$MARKER"
 
-local osa_tell='tell application "iTerm2" to tell current session of current tab of current window to'
+# Helper: target session by TTY
+_osa_set_bg() {
+  osascript -e "
+tell application \"iTerm2\"
+  repeat with w in windows
+    repeat with t in tabs of w
+      repeat with s in sessions of t
+        if tty of s is \"$target_tty\" then
+          set background image of s to \"$1\"
+        end if
+      end repeat
+    end repeat
+  end repeat
+end tell" 2>/dev/null
+}
+
 local CACHE_DIR="$HOME/.cache/poke-notify"
 local img_hash
 img_hash=$(md5 -q "$orig_image" 2>/dev/null)
 
 if [[ -n "$img_hash" ]]; then
   local prefix="$CACHE_DIR/${img_hash}"
-  # Gradual fade: tint → b2 → b3 → b4 → original
-  [[ -f "${prefix}_b2.png" ]] && {
-    osascript -e "$osa_tell set background image to \"${prefix}_b2.png\"" 2>/dev/null
-    sleep 0.12
-  }
-  [[ -f "${prefix}_b3.png" ]] && {
-    osascript -e "$osa_tell set background image to \"${prefix}_b3.png\"" 2>/dev/null
-    sleep 0.12
-  }
-  [[ -f "${prefix}_b4.png" ]] && {
-    osascript -e "$osa_tell set background image to \"${prefix}_b4.png\"" 2>/dev/null
-    sleep 0.12
-  }
+  [[ -f "${prefix}_b2.png" ]] && { _osa_set_bg "${prefix}_b2.png"; sleep 0.12; }
+  [[ -f "${prefix}_b3.png" ]] && { _osa_set_bg "${prefix}_b3.png"; sleep 0.12; }
+  [[ -f "${prefix}_b4.png" ]] && { _osa_set_bg "${prefix}_b4.png"; sleep 0.12; }
 fi
 
-osascript -e "$osa_tell set background image to \"$orig_image\"" 2>/dev/null
+_osa_set_bg "$orig_image"
