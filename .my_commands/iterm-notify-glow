@@ -4,11 +4,10 @@
 #
 # iTerm2 constraints:
 #   - ONLY 'set background image' is safe (OSC/tab color/badge clear bg)
-#   - Profile Blend=0.40 darkens everything: effective = pixel * 0.60
+#   - Profile Blend=0.40 darkens all images: effective = pixel × 0.60
 #   - All brightness values are pre-compensated for the 40% blend
 #
-# All osascript calls target the session by TTY path (not current focus)
-# so split-pane operations never affect the wrong pane.
+# All osascript calls target the session by TTY (not current focus).
 
 local display_time="${1:-}"
 local exit_code="${2:-0}"
@@ -16,23 +15,19 @@ local cmd_text="${3:-}"
 local my_tty="${4:-$TTY}"
 local CACHE_DIR="$HOME/.cache/poke-notify"
 local MARKER="/tmp/.iterm-notify-active"
+local WATCHER_PID_FILE="/tmp/.iterm-notify-watcher-pid"
 
 [[ -z "$my_tty" || "$my_tty" == "not a tty" ]] && return 0
 
-# ── AppleScript helpers: target by TTY ───────────────────
-_osa_get_bg() {
-  osascript -e "
-tell application \"iTerm2\"
-  repeat with w in windows
-    repeat with t in tabs of w
-      repeat with s in sessions of t
-        if tty of s is \"$my_tty\" then return background image of s
-      end repeat
-    end repeat
-  end repeat
-end tell" 2>/dev/null
-}
+# ── Kill any existing watcher before starting ────────────
+if [[ -f "$WATCHER_PID_FILE" ]]; then
+  local old_pid
+  old_pid=$(cat "$WATCHER_PID_FILE" 2>/dev/null)
+  [[ -n "$old_pid" ]] && kill "$old_pid" 2>/dev/null
+  rm -f "$WATCHER_PID_FILE"
+fi
 
+# ── AppleScript: target by TTY ───────────────────────────
 _osa_set_bg() {
   osascript -e "
 tell application \"iTerm2\"
@@ -51,7 +46,16 @@ end tell" 2>/dev/null
 
 # ── 1. Get current background image ─────────────────────
 local orig_image
-orig_image=$(_osa_get_bg)
+orig_image=$(osascript -e "
+tell application \"iTerm2\"
+  repeat with w in windows
+    repeat with t in tabs of w
+      repeat with s in sessions of t
+        if tty of s is \"$my_tty\" then return background image of s
+      end repeat
+    end repeat
+  end repeat
+end tell" 2>/dev/null)
 
 if [[ -z "$orig_image" || "$orig_image" == "missing value" ]]; then
   return 0
@@ -64,18 +68,14 @@ if [[ -f "$MARKER" ]]; then
   [[ -n "$stored_orig" && -f "$stored_orig" ]] && orig_image="$stored_orig"
 fi
 
+# Skip if current image is already a notification variant
+[[ "$orig_image" == *"poke-notify"* ]] && return 0
+
 # ── 2. Determine tint color ─────────────────────────────
 local tint_color="blue"
 (( exit_code != 0 )) && tint_color="red"
 
 # ── 3. Generate image variants (cached) ─────────────────
-# Brightness values compensated for iTerm2 Blend=0.40:
-#   effective_brightness = value × 0.60
-#   b1: 0.35 → user sees 0.21 (dim but pokemon visible)
-#   b2: 0.50 → user sees 0.30
-#   b3: 0.70 → user sees 0.42
-#   b4: 0.90 → user sees 0.54
-#   tint base: 0.50 → user sees 0.30
 mkdir -p "$CACHE_DIR"
 local img_hash
 img_hash=$(md5 -q "$orig_image" 2>/dev/null)
@@ -90,11 +90,10 @@ from PIL import Image, ImageEnhance
 img = Image.open('${orig_image}').convert('RGB')
 w, h = img.size
 
-# Pre-compensated for Blend=0.40 (effective = value * 0.60)
+# Pre-compensated for Blend=0.40 (effective = value × 0.60)
 for idx, brt in [(1, 0.35), (2, 0.50), (3, 0.70), (4, 0.90)]:
     ImageEnhance.Brightness(img).enhance(brt).save('${prefix}_b%d.png' % idx, 'PNG')
 
-# Tinted variants — pastel, high visibility after 40% darkening
 dark = ImageEnhance.Brightness(img).enhance(0.50)
 blue = Image.new('RGB', (w, h), (170, 215, 255))
 Image.blend(dark, blue, 0.45).save('${prefix}_blue.png', 'PNG')
@@ -104,7 +103,7 @@ Image.blend(dark, red, 0.45).save('${prefix}_red.png', 'PNG')
 " 2>/dev/null || return 0
 fi
 
-# ── 4. Gradual pulse animation × 2 cycles ───────────────
+# ── 4. Pulse animation × 2 cycles ───────────────────────
 local cycle
 for cycle in 1 2; do
   _osa_set_bg "${prefix}_b3.png";  sleep 0.12
@@ -114,8 +113,6 @@ for cycle in 1 2; do
   _osa_set_bg "${prefix}_b3.png";  sleep 0.12
   _osa_set_bg "${prefix}_b4.png";  sleep 0.15
 done
-
-# Settle on tinted background
 _osa_set_bg "${prefix}_b3.png";  sleep 0.10
 _osa_set_bg "${prefix}_${tint_color}.png"
 
@@ -124,33 +121,26 @@ echo "${orig_image}" > "$MARKER"
 echo "${tint_color}" >> "$MARKER"
 echo "${my_tty}" >> "$MARKER"
 
-# ── 6. Focus watcher (defocus → refocus) ────────────────
+# ── 6. Focus watcher ────────────────────────────────────
 (
+  echo $$ > "$WATCHER_PID_FILE"
+
   local state="init"
-  local focused_tty
-  local target_tty="$my_tty"
-  local orig="$orig_image"
-  local pfx="$prefix"
+  local focused_tty target_tty="$my_tty" orig="$orig_image"
 
   while [[ -f "$MARKER" ]]; do
     focused_tty=$(osascript -e 'tell application "iTerm2" to return tty of current session of current tab of current window' 2>/dev/null)
 
     case "$state" in
       init)
-        if [[ "$focused_tty" == "$target_tty" ]]; then
-          state="wait_defocus"
-        else
-          state="wait_refocus"
-        fi
+        [[ "$focused_tty" == "$target_tty" ]] && state="wait_defocus" || state="wait_refocus"
         ;;
       wait_defocus)
         [[ "$focused_tty" != "$target_tty" ]] && state="wait_refocus"
         ;;
       wait_refocus)
         if [[ "$focused_tty" == "$target_tty" ]]; then
-          # User returned — reset directly (no external script dependency)
-          rm -f "$MARKER"
-          # Instant restore
+          rm -f "$MARKER" "$WATCHER_PID_FILE"
           osascript -e "
 tell application \"iTerm2\"
   repeat with w in windows
@@ -168,7 +158,7 @@ end tell" 2>/dev/null
         fi
         ;;
     esac
-
     sleep 1.5
   done
+  rm -f "$WATCHER_PID_FILE"
 ) &!
