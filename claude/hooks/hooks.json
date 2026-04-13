@@ -207,6 +207,17 @@
           }
         ],
         "description": "Skill/symlink health check on session start"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/scripts/hooks/iterm-session-start-notify.sh",
+            "timeout": 5
+          }
+        ],
+        "description": "Save Claude session TTY for notification targeting (iTerm2 only)"
       }
     ],
     "PostToolUse": [
