@@ -1,6 +1,7 @@
 #!/bin/zsh
-# iterm-notify-reset — Gradually restore original background from tinted state
-# Targets the specific session by TTY (from marker file), not "current session"
+# iterm-notify-reset — Manual reset: restore original background
+# Normally the focus watcher handles reset automatically.
+# This is a fallback for manual use.
 
 local MARKER="/tmp/.iterm-notify-active"
 [[ ! -f "$MARKER" ]] && return 0
@@ -12,11 +13,9 @@ target_tty=$(sed -n '3p' "$MARKER")
 [[ -z "$orig_image" || ! -f "$orig_image" ]] && { rm -f "$MARKER"; return 0; }
 [[ -z "$target_tty" ]] && { rm -f "$MARKER"; return 0; }
 
-# Remove marker first to prevent double-reset
 rm -f "$MARKER"
 
-# Helper: target session by TTY
-_osa_set_bg() {
+_osa_set() {
   osascript -e "
 tell application \"iTerm2\"
   repeat with w in windows
@@ -24,6 +23,7 @@ tell application \"iTerm2\"
       repeat with s in sessions of t
         if tty of s is \"$target_tty\" then
           set background image of s to \"$1\"
+          return
         end if
       end repeat
     end repeat
@@ -37,9 +37,9 @@ img_hash=$(md5 -q "$orig_image" 2>/dev/null)
 
 if [[ -n "$img_hash" ]]; then
   local prefix="$CACHE_DIR/${img_hash}"
-  [[ -f "${prefix}_b2.png" ]] && { _osa_set_bg "${prefix}_b2.png"; sleep 0.12; }
-  [[ -f "${prefix}_b3.png" ]] && { _osa_set_bg "${prefix}_b3.png"; sleep 0.12; }
-  [[ -f "${prefix}_b4.png" ]] && { _osa_set_bg "${prefix}_b4.png"; sleep 0.12; }
+  [[ -f "${prefix}_b2.png" ]] && { _osa_set "${prefix}_b2.png"; sleep 0.12; }
+  [[ -f "${prefix}_b3.png" ]] && { _osa_set "${prefix}_b3.png"; sleep 0.12; }
+  [[ -f "${prefix}_b4.png" ]] && { _osa_set "${prefix}_b4.png"; sleep 0.12; }
 fi
 
-_osa_set_bg "$orig_image"
+_osa_set "$orig_image"

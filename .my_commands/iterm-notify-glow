@@ -2,13 +2,13 @@
 # iterm-notify-glow — iTerm2 gradual pulse notification + persistent tint
 # Usage: iterm-notify-glow [<display_time>] [<exit_code>] [<command_text>] [<tty>]
 #
-# iTerm2 constraint: ANY session property change (color, name, OSC escape)
-# clears the session-level background image. Therefore ONLY these are safe:
-#   - set background image (the image itself)
-#   - display notification (system-level, not session)
+# iTerm2 constraints:
+#   - ONLY 'set background image' is safe (OSC/tab color/badge clear bg)
+#   - Profile Blend=0.40 darkens everything: effective = pixel * 0.60
+#   - All brightness values are pre-compensated for the 40% blend
 #
-# All osascript calls target the session by TTY path, not "current session",
-# so split-pane focus changes don't affect the wrong pane.
+# All osascript calls target the session by TTY path (not current focus)
+# so split-pane operations never affect the wrong pane.
 
 local display_time="${1:-}"
 local exit_code="${2:-0}"
@@ -19,16 +19,14 @@ local MARKER="/tmp/.iterm-notify-active"
 
 [[ -z "$my_tty" || "$my_tty" == "not a tty" ]] && return 0
 
-# ── Helper: target session by TTY (not focus) ────────────
+# ── AppleScript helpers: target by TTY ───────────────────
 _osa_get_bg() {
   osascript -e "
 tell application \"iTerm2\"
   repeat with w in windows
     repeat with t in tabs of w
       repeat with s in sessions of t
-        if tty of s is \"$my_tty\" then
-          return background image of s
-        end if
+        if tty of s is \"$my_tty\" then return background image of s
       end repeat
     end repeat
   end repeat
@@ -43,6 +41,7 @@ tell application \"iTerm2\"
       repeat with s in sessions of t
         if tty of s is \"$my_tty\" then
           set background image of s to \"$1\"
+          return
         end if
       end repeat
     end repeat
@@ -70,6 +69,13 @@ local tint_color="blue"
 (( exit_code != 0 )) && tint_color="red"
 
 # ── 3. Generate image variants (cached) ─────────────────
+# Brightness values compensated for iTerm2 Blend=0.40:
+#   effective_brightness = value × 0.60
+#   b1: 0.35 → user sees 0.21 (dim but pokemon visible)
+#   b2: 0.50 → user sees 0.30
+#   b3: 0.70 → user sees 0.42
+#   b4: 0.90 → user sees 0.54
+#   tint base: 0.50 → user sees 0.30
 mkdir -p "$CACHE_DIR"
 local img_hash
 img_hash=$(md5 -q "$orig_image" 2>/dev/null)
@@ -84,15 +90,17 @@ from PIL import Image, ImageEnhance
 img = Image.open('${orig_image}').convert('RGB')
 w, h = img.size
 
-for idx, brt in [(1, 0.20), (2, 0.30), (3, 0.42), (4, 0.58)]:
+# Pre-compensated for Blend=0.40 (effective = value * 0.60)
+for idx, brt in [(1, 0.35), (2, 0.50), (3, 0.70), (4, 0.90)]:
     ImageEnhance.Brightness(img).enhance(brt).save('${prefix}_b%d.png' % idx, 'PNG')
 
-dark = ImageEnhance.Brightness(img).enhance(0.30)
+# Tinted variants — pastel, high visibility after 40% darkening
+dark = ImageEnhance.Brightness(img).enhance(0.50)
 blue = Image.new('RGB', (w, h), (170, 215, 255))
-Image.blend(dark, blue, 0.40).save('${prefix}_blue.png', 'PNG')
+Image.blend(dark, blue, 0.45).save('${prefix}_blue.png', 'PNG')
 
 red = Image.new('RGB', (w, h), (255, 160, 160))
-Image.blend(dark, red, 0.40).save('${prefix}_red.png', 'PNG')
+Image.blend(dark, red, 0.45).save('${prefix}_red.png', 'PNG')
 " 2>/dev/null || return 0
 fi
 
@@ -111,38 +119,68 @@ done
 _osa_set_bg "${prefix}_b3.png";  sleep 0.10
 _osa_set_bg "${prefix}_${tint_color}.png"
 
-# ── 5. Write marker for persistent state ────────────────
-# Line 1: original image path
-# Line 2: tint color
-# Line 3: TTY path (for reset targeting)
+# ── 5. Write marker ─────────────────────────────────────
 echo "${orig_image}" > "$MARKER"
 echo "${tint_color}" >> "$MARKER"
 echo "${my_tty}" >> "$MARKER"
 
-# ── 6. Focus watcher (defocus → refocus transition) ─────
+# ── 6. Focus watcher (defocus → refocus) ────────────────
 (
   local state="init"
   local focused_tty
+  local target_tty="$my_tty"
+  local orig="$orig_image"
+  local pfx="$prefix"
 
   while [[ -f "$MARKER" ]]; do
     focused_tty=$(osascript -e 'tell application "iTerm2" to return tty of current session of current tab of current window' 2>/dev/null)
 
     case "$state" in
       init)
-        if [[ "$focused_tty" == "$my_tty" ]]; then
+        if [[ "$focused_tty" == "$target_tty" ]]; then
           state="wait_defocus"
         else
           state="wait_refocus"
         fi
         ;;
       wait_defocus)
-        [[ "$focused_tty" != "$my_tty" ]] && state="wait_refocus"
+        [[ "$focused_tty" != "$target_tty" ]] && state="wait_refocus"
         ;;
       wait_refocus)
-        if [[ "$focused_tty" == "$my_tty" ]]; then
-          sleep 0.3
-          local reset_script="$HOME/.my_commands/iterm-notify-reset"
-          [[ -f "$reset_script" ]] && zsh "$reset_script"
+        if [[ "$focused_tty" == "$target_tty" ]]; then
+          # User returned — reset directly (no external script dependency)
+          rm -f "$MARKER"
+          # Gradual fade back
+          for step in "${pfx}_b2.png" "${pfx}_b3.png" "${pfx}_b4.png"; do
+            [[ -f "$step" ]] && osascript -e "
+tell application \"iTerm2\"
+  repeat with w in windows
+    repeat with t in tabs of w
+      repeat with s in sessions of t
+        if tty of s is \"$target_tty\" then
+          set background image of s to \"$step\"
+          return
+        end if
+      end repeat
+    end repeat
+  end repeat
+end tell" 2>/dev/null
+            sleep 0.12
+          done
+          # Restore original
+          osascript -e "
+tell application \"iTerm2\"
+  repeat with w in windows
+    repeat with t in tabs of w
+      repeat with s in sessions of t
+        if tty of s is \"$target_tty\" then
+          set background image of s to \"$orig\"
+          return
+        end if
+      end repeat
+    end repeat
+  end repeat
+end tell" 2>/dev/null
           exit 0
         fi
         ;;
