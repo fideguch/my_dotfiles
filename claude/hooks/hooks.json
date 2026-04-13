@@ -438,19 +438,6 @@
         "description": "gatekeeper: Rotate completed sessions to history (max 3 generations)"
       }
     ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "date +%s > /tmp/.iterm-claude-start",
-            "timeout": 3
-          }
-        ],
-        "description": "Record prompt submission time for notification threshold"
-      }
-    ],
     "SessionEnd": [
       {
         "matcher": "*",
