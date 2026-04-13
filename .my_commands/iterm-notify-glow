@@ -6,7 +6,9 @@
 # On session return, restore the original Pokemon instantly.
 # No brightness/tint/blend manipulation — only image path swaps.
 
+local display_time="${1:-}"
 local exit_code="${2:-0}"
+local cmd_text="${3:-}"
 local my_tty="${4:-$TTY}"
 local MARKER="/tmp/.iterm-notify-active"
 local WATCHER_PID_FILE="/tmp/.iterm-notify-watcher-pid"
@@ -78,7 +80,14 @@ done
 
 (( aborted )) && return 0
 
-# ── 4. Write marker + start watcher ─────────────────────
+# ── 4. macOS notification (supplementary) ────────────────
+local notify_title="${cmd_text:-Command}"
+(( exit_code != 0 )) && notify_title="FAILED: ${notify_title}"
+local notify_body=""
+[[ -n "$display_time" ]] && notify_body="Elapsed: ${display_time}"
+osascript -e "display notification \"${notify_body}\" with title \"iTerm2\" subtitle \"${notify_title}\" sound name \"Glass\"" 2>/dev/null
+
+# ── 5. Write marker + start watcher ─────────────────────
 echo "${orig_image}" > "$MARKER"
 echo "${my_tty}" >> "$MARKER"
 

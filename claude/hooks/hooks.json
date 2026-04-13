@@ -207,17 +207,6 @@
           }
         ],
         "description": "Skill/symlink health check on session start"
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/scripts/hooks/iterm-session-start-notify.sh",
-            "timeout": 5
-          }
-        ],
-        "description": "Save Claude session TTY for notification targeting (iTerm2 only)"
       }
     ],
     "PostToolUse": [
@@ -356,7 +345,7 @@
             "timeout": 15
           }
         ],
-        "description": "Fire iTerm2 pulsing notification when Claude Code finishes (only if >10s elapsed)"
+        "description": "Fire iTerm2 Pokemon swap notification when Claude Code stops (skips if user is focused)"
       },
       {
         "matcher": "*",
