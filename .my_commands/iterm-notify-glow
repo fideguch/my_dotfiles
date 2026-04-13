@@ -111,17 +111,14 @@ if _is_focused; then
   # User is watching — skip animation, just settle on tint
   _osa_set_bg "${prefix}_${tint_color}.png"
 else
+  # Minimal pulse: 2 cycles × 2 steps = 4 calls (not 12+)
+  # Fewer set-background-image calls = less profile divorce damage
   for cycle in 1 2; do
-    _pulse_step "${prefix}_b3.png" 0.12 || break
-    _pulse_step "${prefix}_b2.png" 0.12 || break
-    _pulse_step "${prefix}_b1.png" 0.15 || break
-    _pulse_step "${prefix}_b2.png" 0.12 || break
-    _pulse_step "${prefix}_b3.png" 0.12 || break
-    _pulse_step "${prefix}_b4.png" 0.15 || break
+    _pulse_step "${prefix}_b1.png" 0.25 || break
+    _pulse_step "${prefix}_b4.png" 0.25 || break
   done
 
   if (( aborted == 0 )); then
-    _osa_set_bg "${prefix}_b3.png";  sleep 0.10
     _osa_set_bg "${prefix}_${tint_color}.png"
   fi
 fi
