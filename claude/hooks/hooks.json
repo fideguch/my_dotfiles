@@ -3,17 +3,6 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/scripts/hooks/iterm-tab-reset.sh",
-            "timeout": 3
-          }
-        ],
-        "description": "Reset iTerm2 tab color (#6495ED) from command completion notification on next Claude Code action"
-      },
-      {
         "matcher": "Bash",
         "hooks": [
           {
@@ -356,7 +345,7 @@
             "timeout": 15
           }
         ],
-        "description": "Fire iTerm2 pulsing notification (bg pulse + tab #6495ED) when Claude Code finishes a response"
+        "description": "Fire iTerm2 pulsing notification when Claude Code finishes (only if >10s elapsed)"
       },
       {
         "matcher": "*",
@@ -436,6 +425,19 @@
           }
         ],
         "description": "gatekeeper: Rotate completed sessions to history (max 3 generations)"
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "date +%s > /tmp/.iterm-claude-start",
+            "timeout": 3
+          }
+        ],
+        "description": "Record prompt submission time for notification threshold"
       }
     ],
     "SessionEnd": [
