@@ -1,9 +1,11 @@
 #!/bin/bash
-# iterm-stop-notify.sh — Notify on Claude Code response completion
+# iterm-stop-notify.sh — Notify when Claude Code needs user attention
 #
-# Reads the TTY saved by iterm-session-start-notify.sh (SessionStart hook).
-# Only fires if Claude was processing for >10 seconds.
-# The TTY is the pane where Claude is running, not the currently focused pane.
+# Fires on every Stop event (response complete, question, approval request).
+# iterm-notify-glow handles the focus check: if user is already watching
+# the Claude pane, it skips. If user is in another pane, it swaps Pokemon.
+#
+# TTY source: saved by iterm-session-start-notify.sh at SessionStart.
 
 [[ "$TERM_PROGRAM" != "iTerm.app" ]] && exit 0
 
@@ -19,19 +21,5 @@ TTY_FILE="/tmp/.iterm-claude-tty-${SESSION_ID}"
 MY_TTY=$(cat "$TTY_FILE" 2>/dev/null)
 [[ -z "$MY_TTY" ]] && exit 0
 
-# Check elapsed time since last prompt
-TIMESTAMP_FILE="/tmp/.iterm-claude-start"
-if [[ -f "$TIMESTAMP_FILE" ]]; then
-  start_ts=$(cat "$TIMESTAMP_FILE" 2>/dev/null)
-  now_ts=$(date +%s)
-  elapsed=$(( now_ts - start_ts ))
-  rm -f "$TIMESTAMP_FILE"
-
-  (( elapsed < 10 )) && exit 0
-else
-  # No timestamp = can't determine duration, skip
-  exit 0
-fi
-
-zsh "$GLOW_SCRIPT" "${elapsed}s" "0" "Claude Code" "$MY_TTY" &
+zsh "$GLOW_SCRIPT" "" "0" "Claude Code" "$MY_TTY" &
 exit 0
