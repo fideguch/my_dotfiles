@@ -66,7 +66,14 @@ local -a swap_pool
 swap_pool=( $(find "$POKE_DIR" -name "*.jpg" 2>/dev/null | grep -v "$(basename "$orig_image")" | sort -R | head -15) )
 (( ${#swap_pool[@]} == 0 )) && return 0
 
-# ── 3. Swap animation (focus-aware) ─────────────────────
+# ── 3. Sound notification (always fires) ─────────────────
+afplay /System/Library/Sounds/Glass.aiff 2>/dev/null &
+
+# ── 4. Swap animation (only when user is NOT focused) ───
+if _is_focused; then
+  return 0
+fi
+
 local aborted=0
 for img in "${swap_pool[@]}"; do
   if _is_focused; then
@@ -79,13 +86,6 @@ for img in "${swap_pool[@]}"; do
 done
 
 (( aborted )) && return 0
-
-# ── 4. macOS notification (supplementary) ────────────────
-local notify_title="${cmd_text:-Command}"
-(( exit_code != 0 )) && notify_title="FAILED: ${notify_title}"
-local notify_body=""
-[[ -n "$display_time" ]] && notify_body="Elapsed: ${display_time}"
-osascript -e "display notification \"${notify_body}\" with title \"iTerm2\" subtitle \"${notify_title}\" sound name \"Glass\"" 2>/dev/null
 
 # ── 5. Write marker + start watcher ─────────────────────
 echo "${orig_image}" > "$MARKER"
