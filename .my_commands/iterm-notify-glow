@@ -7,24 +7,52 @@
 #   - set background image (the image itself)
 #   - display notification (system-level, not session)
 #
-# Notification flow:
-#   1. Gradual pulse animation × 3 cycles (dark ↔ light)
-#   2. Settle on blue-tinted (success) or red-tinted (error) background
-#   3. Tinted background persists until session regains focus (auto-reset)
-#   4. Focus watcher: tracks "defocus → refocus" transition to avoid
-#      premature reset when user is already looking at the session
+# All osascript calls target the session by TTY path, not "current session",
+# so split-pane focus changes don't affect the wrong pane.
 
 local display_time="${1:-}"
 local exit_code="${2:-0}"
 local cmd_text="${3:-}"
-local my_tty="${4:-}"
+local my_tty="${4:-$TTY}"
 local CACHE_DIR="$HOME/.cache/poke-notify"
 local MARKER="/tmp/.iterm-notify-active"
-local osa_tell='tell application "iTerm2" to tell current session of current tab of current window to'
+
+[[ -z "$my_tty" || "$my_tty" == "not a tty" ]] && return 0
+
+# ── Helper: target session by TTY (not focus) ────────────
+_osa_get_bg() {
+  osascript -e "
+tell application \"iTerm2\"
+  repeat with w in windows
+    repeat with t in tabs of w
+      repeat with s in sessions of t
+        if tty of s is \"$my_tty\" then
+          return background image of s
+        end if
+      end repeat
+    end repeat
+  end repeat
+end tell" 2>/dev/null
+}
+
+_osa_set_bg() {
+  osascript -e "
+tell application \"iTerm2\"
+  repeat with w in windows
+    repeat with t in tabs of w
+      repeat with s in sessions of t
+        if tty of s is \"$my_tty\" then
+          set background image of s to \"$1\"
+        end if
+      end repeat
+    end repeat
+  end repeat
+end tell" 2>/dev/null
+}
 
 # ── 1. Get current background image ─────────────────────
 local orig_image
-orig_image=$(osascript -e "$osa_tell return background image" 2>/dev/null)
+orig_image=$(_osa_get_bg)
 
 if [[ -z "$orig_image" || "$orig_image" == "missing value" ]]; then
   return 0
@@ -33,7 +61,7 @@ fi
 # If notification is already active, use the stored original
 if [[ -f "$MARKER" ]]; then
   local stored_orig
-  stored_orig=$(head -1 "$MARKER")
+  stored_orig=$(sed -n '1p' "$MARKER")
   [[ -n "$stored_orig" && -f "$stored_orig" ]] && orig_image="$stored_orig"
 fi
 
@@ -56,52 +84,43 @@ from PIL import Image, ImageEnhance
 img = Image.open('${orig_image}').convert('RGB')
 w, h = img.size
 
-# Brightness steps — bright enough to see Pokemon silhouette at darkest
 for idx, brt in [(1, 0.20), (2, 0.30), (3, 0.42), (4, 0.58)]:
     ImageEnhance.Brightness(img).enhance(brt).save('${prefix}_b%d.png' % idx, 'PNG')
 
-# Blue-tinted settle — pastel sky blue
 dark = ImageEnhance.Brightness(img).enhance(0.30)
 blue = Image.new('RGB', (w, h), (170, 215, 255))
 Image.blend(dark, blue, 0.40).save('${prefix}_blue.png', 'PNG')
 
-# Red-tinted settle — pastel salmon pink
 red = Image.new('RGB', (w, h), (255, 160, 160))
 Image.blend(dark, red, 0.40).save('${prefix}_red.png', 'PNG')
 " 2>/dev/null || return 0
 fi
 
 # ── 4. Gradual pulse animation × 2 cycles ───────────────
-_set_bg() { osascript -e "$osa_tell set background image to \"$1\"" 2>/dev/null }
-
 local cycle
 for cycle in 1 2; do
-  # Darken: bright → dim
-  _set_bg "${prefix}_b3.png";  sleep 0.12
-  _set_bg "${prefix}_b2.png";  sleep 0.12
-  _set_bg "${prefix}_b1.png";  sleep 0.15
-  # Brighten: dim → bright
-  _set_bg "${prefix}_b2.png";  sleep 0.12
-  _set_bg "${prefix}_b3.png";  sleep 0.12
-  _set_bg "${prefix}_b4.png";  sleep 0.15
+  _osa_set_bg "${prefix}_b3.png";  sleep 0.12
+  _osa_set_bg "${prefix}_b2.png";  sleep 0.12
+  _osa_set_bg "${prefix}_b1.png";  sleep 0.15
+  _osa_set_bg "${prefix}_b2.png";  sleep 0.12
+  _osa_set_bg "${prefix}_b3.png";  sleep 0.12
+  _osa_set_bg "${prefix}_b4.png";  sleep 0.15
 done
 
 # Settle on tinted background
-_set_bg "${prefix}_b3.png";  sleep 0.10
-_set_bg "${prefix}_${tint_color}.png"
+_osa_set_bg "${prefix}_b3.png";  sleep 0.10
+_osa_set_bg "${prefix}_${tint_color}.png"
 
 # ── 5. Write marker for persistent state ────────────────
+# Line 1: original image path
+# Line 2: tint color
+# Line 3: TTY path (for reset targeting)
 echo "${orig_image}" > "$MARKER"
 echo "${tint_color}" >> "$MARKER"
+echo "${my_tty}" >> "$MARKER"
 
 # ── 6. Focus watcher (defocus → refocus transition) ─────
-# Tracks state: must see "not focused" THEN "focused" before resetting.
-# Prevents premature reset when user is already looking at the session.
 (
-  # $TTY env var works in subshells; $(tty) does not
-  [[ -z "$my_tty" ]] && my_tty="$TTY"
-  [[ -z "$my_tty" || "$my_tty" == "not a tty" ]] && exit 0
-
   local state="init"
   local focused_tty
 
@@ -111,21 +130,16 @@ echo "${tint_color}" >> "$MARKER"
     case "$state" in
       init)
         if [[ "$focused_tty" == "$my_tty" ]]; then
-          # Currently focused — wait for user to leave first
           state="wait_defocus"
         else
-          # Already away — wait for user to return
           state="wait_refocus"
         fi
         ;;
       wait_defocus)
-        if [[ "$focused_tty" != "$my_tty" ]]; then
-          state="wait_refocus"
-        fi
+        [[ "$focused_tty" != "$my_tty" ]] && state="wait_refocus"
         ;;
       wait_refocus)
         if [[ "$focused_tty" == "$my_tty" ]]; then
-          # User returned — trigger reset
           sleep 0.3
           local reset_script="$HOME/.my_commands/iterm-notify-reset"
           [[ -f "$reset_script" ]] && zsh "$reset_script"
