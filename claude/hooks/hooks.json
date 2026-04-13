@@ -3,6 +3,17 @@
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/scripts/hooks/iterm-tab-reset.sh",
+            "timeout": 3
+          }
+        ],
+        "description": "Reset iTerm2 tab color (#6495ED) from command completion notification on next Claude Code action"
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
@@ -335,6 +346,18 @@
       }
     ],
     "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/scripts/hooks/iterm-stop-notify.sh",
+            "async": true,
+            "timeout": 15
+          }
+        ],
+        "description": "Fire iTerm2 pulsing notification (bg pulse + tab #6495ED) when Claude Code finishes a response"
+      },
       {
         "matcher": "*",
         "hooks": [

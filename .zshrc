@@ -226,9 +226,11 @@ if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
 fi
 
 # ── ポケモン背景 (iTerm2 / cmux/Ghostty) ────────────────────
-# 起動時にランダム選出。`poke -n <name>` で即時変更。
-# cmux: config-file + `cmux themes set` で即時リロード。
-if [[ "$TERM_PROGRAM" == "iTerm.app" || "$TERM_PROGRAM" == "ghostty" ]] && command -v pokemon &>/dev/null; then
+# 新規シェル起動時のみランダム選出。source での再読み込み時は実行しない。
+# `poke -n <name>` で手動変更可能。
+if [[ -o interactive && -z "$_POKE_DONE" ]] \
+   && [[ "$TERM_PROGRAM" == "iTerm.app" || "$TERM_PROGRAM" == "ghostty" ]] \
+   && command -v pokemon &>/dev/null; then
   _poke_favorites=(
     gliscor froslass butterfree exploud volbeat poochyena starmie
     woobat swalot blastoise aurorus grumpig diggersby klink pangoro
@@ -236,6 +238,7 @@ if [[ "$TERM_PROGRAM" == "iTerm.app" || "$TERM_PROGRAM" == "ghostty" ]] && comma
   )
   poke -n "${_poke_favorites[RANDOM % ${#_poke_favorites[@]} + 1]}"
   unset _poke_favorites
+  typeset -g _POKE_DONE=1
 fi
 
 # Resize handler: re-prepare background at new dimensions
@@ -245,6 +248,66 @@ if [[ "$TERM_PROGRAM" == "ghostty" ]]; then
     current=$(cat ~/.cache/poke-current 2>/dev/null)
     [[ -n "$current" ]] && poke -n "$current" 2>/dev/null
   }
+fi
+
+# ── コマンド完了通知 (iTerm2) ─────────────────────────────
+# 10秒超のコマンド完了時: 背景のグラデーションパルス + 青/赤 tint で持続表示
+# アニメーション: iterm-notify-glow（パルス+tint定着）
+# リセット: フォーカスウォッチャーが自動検知（タブ復帰時）
+if [[ "$TERM_PROGRAM" == "iTerm.app" ]]; then
+  zmodload zsh/datetime
+
+  typeset -g _ITERM_NOTIFY_THRESHOLD=10
+
+  typeset -ga _ITERM_NOTIFY_EXCLUDE=(
+    vim nvim vi less more man top htop btop watch
+    fg bg ssh tmux screen tail zsh bash
+    python3 python node irb pry claude
+  )
+
+  _iterm_preexec() {
+    _iterm_cmd_start=$EPOCHSECONDS
+    _iterm_cmd_name="${1%% *}"
+    _iterm_cmd_full="$1"
+  }
+
+  _iterm_precmd() {
+    local last_exit=$?
+    [[ -z "$_iterm_cmd_start" ]] && return
+
+    local elapsed=$(( EPOCHSECONDS - _iterm_cmd_start ))
+    local cmd_name="$_iterm_cmd_name"
+    local cmd_full="$_iterm_cmd_full"
+    unset _iterm_cmd_start _iterm_cmd_name _iterm_cmd_full
+
+    (( elapsed < _ITERM_NOTIFY_THRESHOLD )) && return
+
+    local excl
+    for excl in "${_ITERM_NOTIFY_EXCLUDE[@]}"; do
+      [[ "$cmd_name" == "$excl" ]] && return
+    done
+
+    local display_time
+    if (( elapsed >= 3600 )); then
+      display_time="$(( elapsed / 3600 ))h$(( (elapsed % 3600) / 60 ))m"
+    elif (( elapsed >= 60 )); then
+      display_time="$(( elapsed / 60 ))m$(( elapsed % 60 ))s"
+    else
+      display_time="${elapsed}s"
+    fi
+
+    # Kill any previous glow animation
+    if [[ -n "$_ITERM_GLOW_PID" ]] && kill -0 "$_ITERM_GLOW_PID" 2>/dev/null; then
+      kill "$_ITERM_GLOW_PID" 2>/dev/null
+    fi
+
+    # Launch gradual pulse + tint settle in background
+    iterm-notify-glow "$display_time" "$last_exit" "$cmd_full" "$TTY" &!
+    _ITERM_GLOW_PID=$!
+  }
+
+  add-zsh-hook preexec _iterm_preexec
+  add-zsh-hook precmd  _iterm_precmd
 fi
 
 # bun completions
