@@ -1,21 +1,16 @@
 #!/bin/zsh
-# iterm-notify-glow — iTerm2 gradual pulse notification + persistent tint
+# iterm-notify-glow — iTerm2 notification via Pokemon background swap
 # Usage: iterm-notify-glow [<display_time>] [<exit_code>] [<command_text>] [<tty>]
 #
-# iTerm2 constraints:
-#   - ONLY 'set background image' is safe (OSC/tab color/badge clear bg)
-#   - Profile Blend=0.40 darkens all images: effective = pixel × 0.60
-#
-# All osascript calls target the session by TTY (not current focus).
-# Animation is focus-aware: aborts and restores if user returns mid-animation.
+# Notification = swap through ~15 random Pokemon, then hold the last one.
+# On session return, restore the original Pokemon instantly.
+# No brightness/tint/blend manipulation — only image path swaps.
 
-local display_time="${1:-}"
 local exit_code="${2:-0}"
-local cmd_text="${3:-}"
 local my_tty="${4:-$TTY}"
-local CACHE_DIR="$HOME/.cache/poke-notify"
 local MARKER="/tmp/.iterm-notify-active"
 local WATCHER_PID_FILE="/tmp/.iterm-notify-watcher-pid"
+local POKE_DIR="$HOME/.local/lib/python3.11/site-packages/pokemonterminal/Images"
 
 [[ -z "$my_tty" || "$my_tty" == "not a tty" ]] && return 0
 
@@ -63,72 +58,28 @@ tell application \"iTerm2\"
 end tell" 2>/dev/null)
 
 [[ -z "$orig_image" || "$orig_image" == "missing value" ]] && return 0
-[[ "$orig_image" == *"poke-notify"* ]] && return 0
 
-# ── 2. Determine tint color ─────────────────────────────
-local tint_color="blue"
-(( exit_code != 0 )) && tint_color="red"
+# ── 2. Pick 15 random Pokemon (excluding current) ───────
+local -a swap_pool
+swap_pool=( $(find "$POKE_DIR" -name "*.jpg" 2>/dev/null | grep -v "$(basename "$orig_image")" | sort -R | head -15) )
+(( ${#swap_pool[@]} == 0 )) && return 0
 
-# ── 3. Generate image variants (cached) ─────────────────
-mkdir -p "$CACHE_DIR"
-local img_hash
-img_hash=$(md5 -q "$orig_image" 2>/dev/null)
-[[ -z "$img_hash" ]] && return 0
-local prefix="$CACHE_DIR/${img_hash}"
-
-if [[ ! -f "${prefix}_blue.png" || ! -f "${prefix}_b1.png" ]]; then
-  python3 -c "
-from PIL import Image, ImageEnhance
-img = Image.open('${orig_image}').convert('RGB')
-w, h = img.size
-for idx, brt in [(1, 0.35), (2, 0.50), (3, 0.70), (4, 0.90)]:
-    ImageEnhance.Brightness(img).enhance(brt).save('${prefix}_b%d.png' % idx, 'PNG')
-dark = ImageEnhance.Brightness(img).enhance(0.50)
-blue = Image.new('RGB', (w, h), (170, 215, 255))
-Image.blend(dark, blue, 0.45).save('${prefix}_blue.png', 'PNG')
-red = Image.new('RGB', (w, h), (255, 160, 160))
-Image.blend(dark, red, 0.45).save('${prefix}_red.png', 'PNG')
-" 2>/dev/null || return 0
-fi
-
-# ── 4. Focus-aware pulse animation ───────────────────────
-# If user returns to this pane mid-animation, abort and restore immediately.
+# ── 3. Swap animation (focus-aware) ─────────────────────
 local aborted=0
-
-_pulse_step() {
-  # Check if user returned (pane regained focus) — if so, abort
+for img in "${swap_pool[@]}"; do
   if _is_focused; then
     _osa_set_bg "$orig_image"
     aborted=1
-    return 1
+    break
   fi
-  _osa_set_bg "$1"
-  sleep "$2"
-}
+  _osa_set_bg "$img"
+  sleep 0.3
+done
 
-# Only animate if pane is NOT focused (user is away)
-if _is_focused; then
-  # User is watching — skip animation, just settle on tint
-  _osa_set_bg "${prefix}_${tint_color}.png"
-else
-  # Minimal pulse: 2 cycles × 2 steps = 4 calls (not 12+)
-  # Fewer set-background-image calls = less profile divorce damage
-  for cycle in 1 2; do
-    _pulse_step "${prefix}_b1.png" 0.25 || break
-    _pulse_step "${prefix}_b4.png" 0.25 || break
-  done
-
-  if (( aborted == 0 )); then
-    _osa_set_bg "${prefix}_${tint_color}.png"
-  fi
-fi
-
-# If animation was aborted (user returned), we're done
 (( aborted )) && return 0
 
-# ── 5. Write marker + start watcher ─────────────────────
+# ── 4. Write marker + start watcher ─────────────────────
 echo "${orig_image}" > "$MARKER"
-echo "${tint_color}" >> "$MARKER"
 echo "${my_tty}" >> "$MARKER"
 
 (
