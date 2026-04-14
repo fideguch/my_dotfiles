@@ -46,7 +46,7 @@ For every modified file, check whether the git repo path equals the runtime refe
 - File is under a git repo (e.g., `~/my_dotfiles/claude/`) but referenced at runtime from a different path (e.g., `~/.claude/`)
 - Deploy/install scripts have `git pull` but no corresponding `cp`/`ln`/`scp` for the changed file
 - Symlinks exist but may be broken or stale (Claude Edit can replace symlinks with regular files)
-- hooks.json command paths differ from git repo file paths
+- settings.json hook command paths differ from git repo file paths
 
 **Verification steps:**
 1. For each changed file, identify the runtime reference path:
