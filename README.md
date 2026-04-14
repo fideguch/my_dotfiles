@@ -1,6 +1,6 @@
 # my_dotfiles
 
-macOS (Apple Silicon) 用の個人dotfiles。zsh, Vim, Starship を中心としたターミナル環境。
+macOS (Apple Silicon) 用の個人dotfiles。zsh, Neovim (LazyVim), Starship を中心としたターミナル環境。
 
 ## セットアップ
 
@@ -11,11 +11,11 @@ chmod +x set_up.sh
 ./set_up.sh
 ```
 
-スクリプトが Homebrew, Brewfile パッケージ, シンボリックリンク, vim-plug を自動セットアップ。
+スクリプトが Homebrew, Brewfile パッケージ, シンボリックリンク, LazyVim, vim-plug を自動セットアップ。
 
 セットアップ後:
 ```bash
-vim +PlugInstall +qall                    # Vimプラグイン
+nvim                                      # LazyVim 初回起動 (プラグイン自動インストール)
 $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 ```
 
@@ -24,7 +24,8 @@ $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 | ファイル | 説明 |
 |---|---|
 | `.zshrc` | Zsh設定 (ヒストリ, 補完, エイリアス, PATH) |
-| `.vimrc` | Vim設定 (プラグイン, キーマップ) |
+| `nvim/` | **Neovim (LazyVim) 設定** (メインエディタ) |
+| `.vimrc` | Vim設定 (レガシーフォールバック) |
 | `starship.toml` | Starshipプロンプト |
 | `Brewfile` | Homebrewパッケージ一覧 |
 | `.my_commands/` | 自作コマンド |
@@ -48,9 +49,11 @@ $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 
 | エイリアス | コマンド | 備考 |
 |---|---|---|
-| `v`, `vi` | vim | |
-| `vz` | vim ~/.zshrc | 設定編集用 |
-| `vv` | vim ~/.vimrc | 設定編集用 |
+| `v`, `vi` | nvim | メインエディタ |
+| `vz` | nvim ~/.zshrc | 設定編集用 |
+| `vv` | nvim ~/.vimrc | 設定編集用 |
+| `vn` | nvim ~/my_dotfiles/nvim/ | LazyVim設定編集 |
+| `oldvim` | command vim | 旧Vimフォールバック |
 | `sovz` | source ~/.zshrc | 設定反映 |
 | `g` | git | |
 | `d` / `dc` | docker / docker-compose | |
@@ -61,18 +64,31 @@ $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 | `ccp` | claude --print | 非対話モード |
 | `mkcd <dir>` | mkdir + cd | ディレクトリ作成&移動 |
 
-## Vimキーマップ
+## エディタキーマップ
+
+Neovim (LazyVim) と旧Vimで同じキーバインドが使える（筋肉記憶移行済み）。
+
+| キー | 動作 | Neovim | 旧Vim |
+|---|---|---|---|
+| `Ctrl+e` | ファイルツリー開閉 | Neo-tree | NERDTree |
+| `Ctrl+n` | ファイル検索 | Telescope | fzf |
+| `Ctrl+p` | バッファ一覧 | Telescope | fzf |
+| `Ctrl+z` | 最近開いたファイル | Telescope | fzf |
+| `Ctrl+g` | grep検索 | Telescope (live_grep) | fzf (ripgrep) |
+| `Tab+l/h` | タブ移動 | 共通 | 共通 |
+
+### LazyVim 固有キー
 
 | キー | 動作 |
 |---|---|
-| `Ctrl+e` | NERDTree開閉 |
-| `Ctrl+n` | ファイル検索 (fzf) |
-| `Ctrl+p` | バッファ一覧 (fzf) |
-| `Ctrl+z` | 最近開いたファイル (fzf) |
-| `Ctrl+g` | grep検索 (ripgrep) |
-| `Tab+l/h` | タブ移動 |
+| `Space` | which-key メニュー (全操作の入口) |
+| `<leader>gg` | lazygit 起動 |
+| `<leader>ha` / `<leader>1-4` | Harpoon (ファイル高速ジャンプ) |
+| `<leader>pk` | ポケモン背景変更 |
+| `gd` / `gr` / `K` | 定義ジャンプ / 参照一覧 / ホバードキュメント (LSP) |
+| `<leader>cf` | ファイルフォーマット |
 
-## ポケモン背景 (iTerm2 / cmux)
+## ポケモン背景 (iTerm2 / cmux / Neovim)
 
 [Pokemon-Terminal](https://github.com/LazoCoder/Pokemon-Terminal) でターミナル背景にポケモンを表示。
 ターミナル起動時に厳選22匹からランダムで1匹を設定。
@@ -92,6 +108,10 @@ poke --clear     # 背景クリア (cmux のみ)
 | cmux (Ghostty) | Kitty graphics protocol (z=-1, テキストの後ろに表示) |
 
 cmux ではウィンドウリサイズ時に `.zshrc` の `TRAPWINCH` が自動的に再描画する。
+
+### Neovim 統合
+
+Neovim (LazyVim) はカラースキーム (catppuccin-mocha) の `transparent_background = true` 設定により、ターミナルのポケモン背景がエディタ内で透けて見える。起動時のダッシュボードに現在のポケモン名を表示。`<leader>pk` でNeovim内からポケモン変更も可能。
 
 > Claude Code セッション中も `poke` コマンドで随時変更可能。
 
@@ -157,6 +177,7 @@ ECC (Everything Claude Code) 由来スキル、rules、agents、commands、hooks
 - **シンボリックリンク**: 既存リンクは削除→再作成、通常ファイルはタイムスタンプ付きバックアップ後にリンク作成
 - **ディレクトリ**: `mkdir -p` で既存なら何もしない
 - **vim-plug**: 存在チェック後にインストール
+- **Neovim/LazyVim**: `nvim/` をシンボリックリンク、ヘッドレスで `Lazy! sync` 実行（失敗してもスクリプト中断なし）
 - **Ghostty/cmux**: config はコピー、background はシードコピー（ランタイム状態）、cmux defaults はスクリプト実行
 - **iTerm2**: アプリ存在チェック後にセットアップ
 
@@ -167,7 +188,8 @@ ECC (Everything Claude Code) 由来スキル、rules、agents、commands、hooks
 ```bash
 cd ~/my_dotfiles && git pull
 brew bundle install --file=Brewfile
-vim +PlugUpdate +qall
+nvim --headless "+Lazy! sync" +qa        # LazyVim プラグイン更新
+vim +PlugUpdate +qall                    # 旧Vim プラグイン更新 (任意)
 ```
 
 ## 必要環境

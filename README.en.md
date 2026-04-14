@@ -1,6 +1,6 @@
 # my_dotfiles
 
-Personal dotfiles for macOS (Apple Silicon). A terminal environment centered around zsh, Vim, and Starship.
+Personal dotfiles for macOS (Apple Silicon). A terminal environment centered around zsh, Neovim (LazyVim), and Starship.
 
 ## Setup
 
@@ -11,11 +11,11 @@ chmod +x set_up.sh
 ./set_up.sh
 ```
 
-The script automatically sets up Homebrew, Brewfile packages, symlinks, and vim-plug.
+The script automatically sets up Homebrew, Brewfile packages, symlinks, LazyVim, and vim-plug.
 
 After setup:
 ```bash
-vim +PlugInstall +qall                    # Vim plugins
+nvim                                      # LazyVim first launch (auto-installs plugins)
 $(brew --prefix)/opt/fzf/install          # fzf keybindings (first time only)
 ```
 
@@ -24,11 +24,15 @@ $(brew --prefix)/opt/fzf/install          # fzf keybindings (first time only)
 | File | Description |
 |---|---|
 | `.zshrc` | Zsh config (history, completion, aliases, PATH) |
-| `.vimrc` | Vim config (plugins, keymaps) |
+| `nvim/` | **Neovim (LazyVim) config** (primary editor) |
+| `.vimrc` | Vim config (legacy fallback) |
 | `starship.toml` | Starship prompt |
 | `Brewfile` | Homebrew package list |
 | `.my_commands/` | Custom commands |
 | `.vim/` | Vim color scheme, vim-plug |
+| `ghostty/` | Ghostty/cmux config (Japanesque theme, font, keybindings) |
+| `cmux/` | cmux macOS defaults script |
+| `iterm2/` | iTerm2 Pokemon profile |
 | `set_up.sh` | Setup script |
 
 ## Custom Commands (.my_commands/)
@@ -45,9 +49,11 @@ $(brew --prefix)/opt/fzf/install          # fzf keybindings (first time only)
 
 | Alias | Command | Note |
 |---|---|---|
-| `v`, `vi` | vim | |
-| `vz` | vim ~/.zshrc | Edit config |
-| `vv` | vim ~/.vimrc | Edit config |
+| `v`, `vi` | nvim | Primary editor |
+| `vz` | nvim ~/.zshrc | Edit config |
+| `vv` | nvim ~/.vimrc | Edit config |
+| `vn` | nvim ~/my_dotfiles/nvim/ | Edit LazyVim config |
+| `oldvim` | command vim | Legacy Vim fallback |
 | `sovz` | source ~/.zshrc | Reload config |
 | `g` | git | |
 | `d` / `dc` | docker / docker-compose | |
@@ -58,27 +64,45 @@ $(brew --prefix)/opt/fzf/install          # fzf keybindings (first time only)
 | `ccp` | claude --print | Non-interactive mode |
 | `mkcd <dir>` | mkdir + cd | Create directory & cd into it |
 
-## Vim Keymaps
+## Editor Keymaps
+
+Same keybindings work in both Neovim (LazyVim) and legacy Vim (muscle memory preserved).
+
+| Key | Action | Neovim | Legacy Vim |
+|---|---|---|---|
+| `Ctrl+e` | File tree toggle | Neo-tree | NERDTree |
+| `Ctrl+n` | File search | Telescope | fzf |
+| `Ctrl+p` | Buffer list | Telescope | fzf |
+| `Ctrl+z` | Recent files | Telescope | fzf |
+| `Ctrl+g` | Grep search | Telescope (live_grep) | fzf (ripgrep) |
+| `Tab+l/h` | Tab navigation | shared | shared |
+
+### LazyVim-specific Keys
 
 | Key | Action |
 |---|---|
-| `Ctrl+e` | Toggle NERDTree |
-| `Ctrl+n` | File search (fzf) |
-| `Ctrl+p` | Buffer list (fzf) |
-| `Ctrl+z` | Recent files (fzf) |
-| `Ctrl+g` | Grep search (ripgrep) |
-| `Tab+l/h` | Tab navigation |
+| `Space` | which-key menu (entry point for all commands) |
+| `<leader>gg` | lazygit |
+| `<leader>ha` / `<leader>1-4` | Harpoon (fast file jump) |
+| `<leader>pk` | Change Pokemon background |
+| `gd` / `gr` / `K` | Go to definition / references / hover docs (LSP) |
+| `<leader>cf` | Format file |
 
-## Pokemon Background (iTerm2)
+## Pokemon Background (iTerm2 / cmux / Neovim)
 
-Displays Pokemon as iTerm2 background using [Pokemon-Terminal](https://github.com/LazoCoder/Pokemon-Terminal).
+Displays Pokemon as terminal background using [Pokemon-Terminal](https://github.com/LazoCoder/Pokemon-Terminal).
 On terminal startup, randomly selects from a curated list of 22 dark-toned Pokemon.
 
 ```bash
 poke -n gliscor  # Switch to Gliscor
 poke 150         # Mewtwo
 poke             # Random from all Pokemon
+poke --clear     # Clear background (cmux only)
 ```
+
+### Neovim Integration
+
+Neovim (LazyVim) uses catppuccin-mocha with `transparent_background = true`, so the Pokemon terminal background shows through the editor. The dashboard displays the current Pokemon name on startup. Press `<leader>pk` to change Pokemon from within Neovim.
 
 > You can also change the background during a Claude Code session via the `poke` command.
 
@@ -144,6 +168,7 @@ Installed via `npx skills add`: PM skills (45+), Vercel Labs skills, official pl
 - **Symlinks**: Existing links are removed and recreated; regular files are backed up with timestamp before linking
 - **Directories**: `mkdir -p` does nothing if already exists
 - **vim-plug**: Checks existence before installing
+- **Neovim/LazyVim**: Symlinks `nvim/` directory, runs headless `Lazy! sync` (failure doesn't abort script)
 - **iTerm2**: Checks app existence before setup
 
 Re-run after `git pull` to safely apply configuration updates.
@@ -153,10 +178,13 @@ Re-run after `git pull` to safely apply configuration updates.
 ```bash
 cd ~/my_dotfiles && git pull
 brew bundle install --file=Brewfile
-vim +PlugUpdate +qall
+nvim --headless "+Lazy! sync" +qa        # LazyVim plugin update
+vim +PlugUpdate +qall                    # Legacy Vim plugin update (optional)
 ```
 
 ## Requirements
 
 - macOS (Apple Silicon)
 - [Nerd Font](https://www.nerdfonts.com) (for icon display)
+- Terminal: [cmux](https://www.cmux.dev/) (recommended) or [iTerm2](https://iterm2.com/)
+- Pokemon background: `pip3 install --user git+https://github.com/LazoCoder/Pokemon-Terminal.git`
