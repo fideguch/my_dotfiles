@@ -62,6 +62,7 @@ link_file "$DOTPATH/.zshrc"         "$HOME/.zshrc"
 link_file "$DOTPATH/starship.toml"  "$HOME/.config/starship.toml"
 link_file "$DOTPATH/.my_commands"   "$HOME/.my_commands"
 link_file "$DOTPATH/.vim"           "$HOME/.vim"
+link_file "$DOTPATH/nvim"           "$HOME/.config/nvim"
 
 info "シンボリックリンク作成完了"
 
@@ -160,6 +161,15 @@ else
   info "vim-plug インストール完了"
 fi
 
+# ── 6b. Neovim / LazyVim セットアップ ────────────────────
+if command -v nvim &>/dev/null; then
+  info "Neovim が検出されました — LazyVim プラグインを同期します"
+  nvim --headless "+Lazy! sync" +qa 2>/dev/null || true
+  info "LazyVim プラグイン同期完了"
+else
+  warn "Neovim が未インストールです。brew bundle を先に実行してください。"
+fi
+
 # ── 7. Ghostty / cmux セットアップ ────────────────────────
 GHOSTTY_CFG_DIR="$HOME/.config/ghostty"
 mkdir -p "$GHOSTTY_CFG_DIR"
@@ -203,7 +213,8 @@ fi
 echo ""
 echo "セットアップ完了！ 以下を実行してください:"
 echo "  1. ターミナルを再起動するか: source ~/.zshrc"
-echo "  2. Vimを開いて :PlugInstall を実行"
+echo "  2. Vimを開いて :PlugInstall を実行 (旧Vim用)"
+echo "  2b. nvim を起動して LazyVim が自動セットアップされることを確認"
 echo "  3. iTerm2 で Pokemon プロファイルをデフォルトに設定"
 echo "  4. Claude Code 外部スキルをインストール: cat ~/my_dotfiles/claude/INSTALL_SKILLS.md"
 echo "  5. settings.local.json のプレースホルダーを実際の値に置換"

@@ -13,6 +13,10 @@ setopt IGNOREEOF
 # 日本語を使用
 export LANG=ja_JP.UTF-8
 
+# デフォルトエディタ (git commit, crontab 等で使用)
+export EDITOR=nvim
+export VISUAL=nvim
+
 # colors関数を読み込む
 autoload -Uz colors
 colors
@@ -146,10 +150,12 @@ alias mkdir='mkdir -p'
 # ショートカット
 alias so='source'
 alias sovz='source ~/.zshrc'
-alias v='vim'
-alias vi='vim'
-alias vz='vim ~/my_dotfiles/.zshrc'
-alias vv='vim ~/my_dotfiles/.vimrc'
+alias v='nvim'
+alias vi='nvim'
+alias vz='nvim ~/my_dotfiles/.zshrc'
+alias vv='nvim ~/my_dotfiles/.vimrc'
+alias vn='nvim ~/my_dotfiles/nvim/'
+alias oldvim='command vim'
 alias c='cat'
 alias g='git'
 alias d='docker'
