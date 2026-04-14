@@ -17,7 +17,7 @@ TypeScript/JavaScript（メイン）。
 | Rules | `~/.claude/rules/` | コーディング、テスト、セキュリティ、Git の規約 |
 | Skills | `~/.claude/skills/` | タスク別の詳細リファレンス |
 | Agents | `~/.claude/agents/` | 専門サブエージェント |
-| Hooks | `~/.claude/hooks/hooks.json` | 自動化ワークフロー（pre/post-tool） |
+| Hooks | `~/.claude/settings.json` (`hooks` key) | 自動化ワークフロー（pre/post-tool） |
 
 ## Git
 - コミットメッセージは英語、Conventional Commits 形式（詳細は `rules/common/git-workflow.md`）

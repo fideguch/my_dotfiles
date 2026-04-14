@@ -1,6 +1,5 @@
 # === Secrets & credentials ===
 settings.local.json
-mcp-configs/
 channels/
 
 # === Session data (personal, large, ephemeral) ===
@@ -24,21 +23,9 @@ telemetry/
 
 # === Plugin runtime (regenerated) ===
 plugins/
-ecc/install-state.json
 
 # === Plans (session-specific) ===
 plans/
 
 # === Personal memory & learning ===
 memory/
-learned-skills/
-
-# === IDE integrations (environment-specific) ===
-.cursor/
-.opencode/
-.agents/
-.codex/
-.ecc-mode
-
-# === Skills archive ===
-skills-archive/
