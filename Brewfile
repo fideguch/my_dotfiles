@@ -7,11 +7,14 @@
 tap "homebrew/cask-fonts"
 
 # ── CLI ツール ────────────────────────────────────────────
-brew "vim"
+brew "vim"                       # レガシーフォールバック
+brew "neovim"                    # メインエディタ (LazyVim)
 brew "starship"
 brew "fzf"                   # ファジーファインダー (Vim + シェルで使用)
 brew "ripgrep"               # 高速grep (fzf.vimの:Rgで使用)
-brew "bat"                   # catの代替 (シンタックスハイライト付き)
+brew "bat"                       # catの代替 (シンタックスハイライト付き)
+brew "fd"                        # Telescope ファイル検索用 (find より高速)
+brew "lazygit"                   # LazyVim の Git UI 統合
 
 # ── Git ───────────────────────────────────────────────────
 brew "git"
