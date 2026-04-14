@@ -1,197 +1,218 @@
 # Claude Code 設定 (my_dotfiles/claude)
 
-Claude Code の全グローバル設定を管理する dotfiles ディレクトリ。
-`~/.claude/` にシンボリックリンクまたはコピーして使用する。
+Claude Code の全グローバル設定を dotfiles で一元管理するディレクトリ。
+`~/.claude/` からシンボリックリンクで参照し、**実体は常にこちら**に置く。
 
 ## ディレクトリ構成
 
 ```
 claude/
 ├── CLAUDE.md              # グローバル指示（全プロジェクト共通）
-├── settings.json          # Claude Code 本体設定
-├── scripts/hooks/         # settings.json の hooks から呼び出される実行スクリプト群
+├── settings.json          # 本体設定 + フック定義（Claude Code が直接読む唯一の設定）
+├── settings.local.template.json  # settings.local.json のテンプレート（実体は Git 管理外）
+├── .gitignore             # ランタイムデータの除外設定
+├── mcp-configs/           # MCP サーバー接続設定（プレースホルダー値で管理）
+│   └── mcp-servers.json
+├── skills-manifest.json   # 全スキルの一覧マニフェスト
+├── scripts/hooks/         # フックスクリプト（settings.json から参照）
 ├── rules/                 # コーディング規約（common/ + 言語別）
 ├── skills/                # スキル定義（SKILL.md ベース）
-├── agents/                # サブエージェント定義（29種）
+├── agents/                # サブエージェント定義
 ├── commands/              # スラッシュコマンド定義
 └── templates/             # プロジェクトテンプレート
 ```
 
-## 自作スキル
+## 管理方針
 
-以下は自分で作成・カスタマイズしたスキル。ECC (Everything Claude Code) 同梱スキルとは別に管理。
+### dotfiles で管理するもの（Git 追跡対象）
+
+| 対象 | 理由 |
+|------|------|
+| settings.json（hooks 含む） | Claude Code の全設定。フック定義もここに集約 |
+| scripts/hooks/ | フックスクリプト本体 |
+| rules/, agents/, commands/ | コーディング規約、エージェント、コマンド |
+| skills/ | 自作スキル（Git リポジトリなし）＋ ECC 由来スキル |
+| mcp-configs/ | MCP 接続先テンプレート（実キーは入れない） |
+| CLAUDE.md, README.md 等 | ドキュメント |
+
+### dotfiles で管理しないもの（Git 追跡外）
+
+| 対象 | 理由 | 管理方法 |
+|------|------|---------|
+| settings.local.json | マシン固有の許可リスト（340+エントリ） | ローカルのみ |
+| bochi-data/ | bochi の永続データ | S3 同期 |
+| projects/ | プロジェクト別メモリ | セッション固有 |
+| sessions/, plans/ | セッション履歴 | ランタイムデータ |
+| plugins/ | プラグインキャッシュ | 再インストールで復元 |
+| channels/ | Discord Bot 設定（トークン含む） | ローカルのみ |
+| history.jsonl, file-history/ | 会話・編集履歴 | ランタイムデータ |
+
+### スキルの管理体系
+
+| 種別 | 管理方法 | 例 |
+|------|---------|-----|
+| **自作スキル（Git リポジトリあり）** | 個別リポジトリが本体。`~/.claude/skills/` に clone | bochi, my_pm_tools, forge_ace, figma-refine 等 |
+| **自作スキル（Git リポジトリなし）** | dotfiles 配下で管理 | aidesigner-frontend |
+| **ECC 由来スキル** | dotfiles 配下で管理 | coding-standards, tdd-workflow 等 |
+
+## フック体系
+
+`settings.json` の `hooks` キーに全13エントリを集約。
+Claude Code はこのキーからのみフックを読み込む。
+
+### PreToolUse（5個）
+
+| Hook | Matcher | 目的 |
+|------|---------|------|
+| block-no-verify | Bash | `git --no-verify` をブロック |
+| pm-pipeline-guard | Write | designs/ なしで plan.md 作成をブロック |
+| forge-ace-dispatch-guard | Agent | forge_ace エージェント順序強制 |
+| gatekeeper-pre-edit-guard | Edit\|Write | HG-1 未通過で src/ 編集ブロック |
+| bochi-s3-pull-on-read | Read\|Grep | bochi データの S3 同期（読み取り前） |
+
+### SessionStart（2個）
+
+| Hook | Matcher | 目的 |
+|------|---------|------|
+| bochi-s3-pull | * | bochi データの S3 同期（セッション起動時） |
+| skill-health-check | * | スキル/symlink の健全性チェック |
+
+### PostToolUse（2個）
+
+| Hook | Matcher | 目的 |
+|------|---------|------|
+| bochi-feedback-capture | Write\|Edit | ユーザーフィードバック記録 |
+| bochi-s3-push | Write\|Edit | bochi データの S3 同期（書き込み後） |
+
+### Stop（4個）
+
+| Hook | Matcher | 目的 |
+|------|---------|------|
+| **claude-stop-notify** | * | **macOS 通知バナー + Glass 音（terminal-notifier）** |
+| forge-ace-session-complete | * | forge_ace セッション完了確認 |
+| gatekeeper-stop-check | * | gatekeeper HG-5 verdict 未報告警告 |
+| gatekeeper-session-rotate | * | gatekeeper セッション履歴ローテーション |
+
+## 自作スキル
 
 ### forge_ace — 5-Agent Quality Gate
 
 | 項目 | 内容 |
 |------|------|
 | 起動 | `/forge_ace` |
-| 目的 | コード修正の品質保証。Writer/Guardian/Overseer/PM-Admin/Designer の5エージェントが順序通りにレビュー |
+| 目的 | コード修正の品質保証。Writer → Guardian → Overseer → PM-Admin → Designer の5エージェントゲート |
 | Tier | Standard（コードのみ）/ Full（UI あり） |
-| 特徴 | セッション状態管理（`.forge-ace-session.json`）、dispatch-guard hook による順序強制、8軸品質評価 |
-| hooks | `forge-ace-dispatch-guard.js`（PreToolUse）、`forge-ace-session-complete.js`（Stop） |
-| テスト | `tests/test-dispatch-guard.sh`（14件）、`tests/test-state-machine.sh`（12件） |
+| リポジトリ | GitHub（個別管理） |
 
 ### gatekeeper — 実装品質ゲート
 
 | 項目 | 内容 |
 |------|------|
 | 起動 | `/gatekeeper` |
-| 目的 | forge_ace が検出できない「実機で動くか」を保証。仕様確認・推測修正禁止・仮説固執防止・実機検証を強制 |
-| 連携 | forge_ace Full とペアで使用（forge_ace の前後にゲートを配置） |
-| HARD GATE | HG-1 仕様確認 / HG-2 品質踏襲 / HG-3 推測修正禁止 / HG-4 仮説固執防止 / HG-5 実機検証 |
-| hooks | `gatekeeper-pre-edit-guard.js`（PreToolUse: src/ 編集ブロック）、`gatekeeper-stop-check.js`（Stop: 完了チェック） |
-| 設計根拠 | RIPER-5 (2,590+)、trailofbits/skills (4,466+)、devin.cursorrules (5,962+)、CodeScene、Stripe/Airbnb harness、ACM認知バイアス研究 |
-| テスト | `tests/test-gate-compliance.sh`（10件）、`tests/test-hooks.sh`（8件）、`test-scenarios/`（3シナリオ） |
+| 目的 | 「実機で動くか」を保証。仕様確認・推測修正禁止・仮説固執防止・実機検証を強制 |
+| 連携 | forge_ace Full とペアで使用 |
+| HARD GATE | HG-1 仕様確認 / HG-1.5 UX 思考 / HG-2 品質踏襲 / HG-3 推測修正禁止 / HG-4 仮説固執防止 / HG-5 実機検証 |
 
 ### bochi — PM の外部脳
 
 | 項目 | 内容 |
 |------|------|
-| 起動 | `/bochi`、「考えて」「まとめて」「整理して」等の日本語トリガー |
-| 目的 | 思考・アイデア・コンテキスト追跡。S3同期で永続化 |
-| hooks | `bochi-s3-pull.sh`、`bochi-s3-push.sh`、`bochi-feedback-capture.sh` |
+| 起動 | `/bochi`、「考えて」「まとめて」「整理して」等 |
+| 目的 | 思考・アイデア・コンテキスト追跡。S3 同期で永続化 |
+| リポジトリ | GitHub（個別管理）、データは S3 管理 |
 
 ### requirements_designer — 要件定義
 
 | 項目 | 内容 |
 |------|------|
 | 起動 | `/requirements_designer` |
-| 目的 | インタラクティブ Q&A で要件定義。designs/ に15ファイル生成 |
-| 統合 | Figma MCP でデザインシステム・ワイヤーフレーム生成 |
+| 目的 | インタラクティブ Q&A で要件定義 → designs/ に15ファイル生成 → Figma MCP 連携 |
 
 ### my_pm_tools — GitHub Projects PM
 
 | 項目 | 内容 |
 |------|------|
 | 起動 | `/my_pm_tools` |
-| 目的 | GitHub Projects V2 のPM支援。14ステータス・6ビュー・13ラベル構築、Sprint管理、分析 |
+| 目的 | GitHub Projects V2 のPM支援。構築・運用・分析・移行を統合サポート |
 
 ### speckit-bridge — 要件→仕様変換
 
 | 項目 | 内容 |
 |------|------|
 | 起動 | `/speckit-bridge` |
-| 目的 | requirements_designer の出力（designs/）を spec-kit 形式（spec.md）に変換 |
+| 目的 | requirements_designer の出力を spec-kit 形式（spec.md + constitution.md）に変換 |
 
 ### figma-refine — Figma デザイン改善
 
 | 項目 | 内容 |
 |------|------|
 | 起動 | `/figma-refine` |
-| 目的 | Figma MCP + AIDesigner で designs/ のプロジェクトアイデンティティに沿ったデザイン改善 |
+| 目的 | Figma MCP + AIDesigner でデザイン改善。Level A/B 分類 + 3層検証 |
 
 ### pm-ad-analysis — 広告分析
 
 | 項目 | 内容 |
 |------|------|
 | 起動 | `/pm-ad-analysis` |
-| 目的 | Google Ads / Meta Ads / Apple Search Ads / TikTok Ads の横断分析 |
+| 目的 | Google/Meta/Apple/TikTok 広告の横断分析。15機能 × 5チャネル |
 
 ### pm-data-analysis — データ分析
 
 | 項目 | 内容 |
 |------|------|
 | 起動 | `/pm-data-analysis` |
-| 目的 | CSV/JSON/画像/MCP データソースからの GAFA 水準分析。バイアス検出・因果推論 |
+| 目的 | CSV/JSON/画像/MCP からの GAFA 水準分析。バイアス検出・因果推論 |
 
-### save-session / resume-session — セッション管理
-
-| 項目 | 内容 |
-|------|------|
-| 起動 | `/save-session`、`/resume-session`、「引き継ぎ」「保存して終了」 |
-| 目的 | セッション状態を `~/.claude/sessions/` に保存・復元。ハンドオフ用 |
-
-### google-workspace — Google 連携
+### aidesigner-frontend — UI 生成
 
 | 項目 | 内容 |
 |------|------|
-| 起動 | `/google-workspace`、「メール」「予定」「ファイル」 |
-| 目的 | Gmail / Calendar / Drive / Sheets / Docs / Tasks の CLI 操作 |
-
-## Hooks 体系
-
-`settings.json` の `hooks` キーで定義。全セッションで自動実行される。
-
-### PreToolUse hooks
-
-| Hook | Matcher | 目的 |
-|------|---------|------|
-| block-no-verify | Bash | git --no-verify をブロック |
-| auto-tmux-dev | Bash | dev サーバーを tmux で自動起動 |
-| tmux-reminder | Bash | 長時間コマンドに tmux 推奨 |
-| git-push-reminder | Bash | git push 前の確認 |
-| doc-file-warning | Write | 不要なドキュメント作成を警告 |
-| suggest-compact | Edit/Write | コンテキスト圧縮タイミング提案 |
-| config-protection | Write/Edit | linter/formatter 設定の変更をブロック |
-| pm-pipeline-guard | Write | designs/ なしで plan.md 作成をブロック |
-| forge-ace-dispatch-guard | Agent | forge_ace エージェント順序強制 |
-| **gatekeeper-pre-edit-guard** | Edit/Write | **HG-1 未通過で src/ 編集ブロック** |
-
-### PostToolUse hooks
-
-| Hook | Matcher | 目的 |
-|------|---------|------|
-| post-edit-format | Edit | JS/TS 自動フォーマット |
-| post-edit-typecheck | Edit | TypeScript 型チェック |
-| quality-gate | Edit/Write | 品質ゲートチェック |
-| bochi-s3-push | Write/Edit | bochi データ S3 同期 |
-
-### Stop hooks
-
-| Hook | Matcher | 目的 |
-|------|---------|------|
-| check-console-log | * | console.log 残存チェック |
-| forge-ace-session-complete | * | forge_ace セッション完了確認 |
-| **gatekeeper-stop-check** | * | **HG-5 verdict 未報告警告** |
-| cost-tracker | * | トークン・コスト追跡 |
-
-## Rules 体系
-
-`rules/` に共通ルール（`common/`）と言語別ルール（`typescript/`, `python/` 等）を配置。
-
-| ルール | 内容 |
-|--------|------|
-| coding-style.md | 不変性、ファイルサイズ、エラーハンドリング |
-| git-workflow.md | Conventional Commits、PR ワークフロー |
-| testing.md | 80%+ カバレッジ、TDD 必須 |
-| security.md | シークレット管理、OWASP Top 10 |
-| performance.md | モデル選択戦略、コンテキスト管理 |
-| development-workflow.md | リサーチ→計画→TDD→レビュー→コミット |
-| quality-review.md | 8軸品質評価、VP-1〜VP-5 検証プロトコル |
-| output-language.md | 日本語出力、英語コード |
-
-## Agents
-
-`agents/` に29種のサブエージェント定義。主要なもの:
-
-| Agent | 目的 |
-|-------|------|
-| planner | 実装計画策定 |
-| architect | システム設計 |
-| code-reviewer | コードレビュー |
-| tdd-guide | TDD 支援 |
-| security-reviewer | セキュリティ分析 |
-| build-error-resolver | ビルドエラー解決 |
+| 起動 | `/aidesigner-frontend` |
+| 目的 | AIDesigner MCP でフロントエンド・LP・ダッシュボード生成 |
+| 管理 | dotfiles 配下（Git リポジトリなし） |
 
 ## セットアップ
 
+新しいマシンに環境を構築する場合:
+
 ```bash
-# シンボリックリンクで ~/.claude に接続（実体は常に my_dotfiles 側）
+# 1. dotfiles を clone
+git clone git@github.com:fideguch/my_dotfiles.git ~/my_dotfiles
+
+# 2. Claude Code 設定をシンボリックリンクで接続
 ln -sf ~/my_dotfiles/claude/settings.json ~/.claude/settings.json
+ln -sf ~/my_dotfiles/claude/CLAUDE.md ~/.claude/CLAUDE.md
+ln -sf ~/my_dotfiles/claude/README.md ~/.claude/README.md
+ln -sf ~/my_dotfiles/claude/AGENTS.md ~/.claude/AGENTS.md
+ln -sf ~/my_dotfiles/claude/.gitignore ~/.claude/.gitignore
 ln -sf ~/my_dotfiles/claude/scripts ~/.claude/scripts
 ln -sf ~/my_dotfiles/claude/rules ~/.claude/rules
+ln -sf ~/my_dotfiles/claude/agents ~/.claude/agents
+ln -sf ~/my_dotfiles/claude/commands ~/.claude/commands
+ln -sf ~/my_dotfiles/claude/templates ~/.claude/templates
+ln -sf ~/my_dotfiles/claude/mcp-configs ~/.claude/mcp-configs
+ln -sf ~/my_dotfiles/claude/skills-manifest.json ~/.claude/skills-manifest.json
 
-# スキルもシンボリックリンク（二重管理を防止）
+# 3. dotfiles 管理のスキルをシンボリックリンク
 for skill in ~/my_dotfiles/claude/skills/*/; do
   name=$(basename "$skill")
   ln -sf "$skill" ~/.claude/skills/"$name"
 done
+
+# 4. 自作スキル（個別リポジトリ）を clone して symlink
+for repo in bochi my_pm_tools forge_ace figma-refine speckit-bridge pm-data-analysis pm-ad-analysis requirements_designer; do
+  git clone "git@github.com:fideguch/${repo}.git" ~/.claude/skills/"$repo" 2>/dev/null || true
+done
+
+# 5. settings.local.json をテンプレートからコピー（マシン固有設定）
+cp ~/my_dotfiles/claude/settings.local.template.json ~/.claude/settings.local.json
+
+# 6. mcp-configs の実キーを設定（プレースホルダーを置き換え）
+# ~/.claude/mcp-configs/mcp-servers.json の YOUR_*_HERE を実際の値に編集
+
+# 7. terminal-notifier をインストール（Stop hook 通知用）
+brew install terminal-notifier
 ```
 
-**注意**: `cp` ではなく `ln -sf` を使用する。コピーすると同期が切れて二重管理になる。
+**原則**: `cp` ではなく `ln -sf` を使う。コピーすると同期が切れて二重管理になる。
 実体は必ず `my_dotfiles/` 側に置き、`~/.claude/` からシンボリックリンクで参照する。
-
-## プラグインマニフェストの注意点
-
-`.claude-plugin/plugin.json` を編集する場合、Claude プラグインバリデータには未ドキュメントの厳密な制約がある。`agents` はディレクトリではなく明示的なファイルパスを使用する必要があり、`version` フィールドが必須。詳細は `PLUGIN_SCHEMA_NOTES.md` を参照。
