@@ -263,3 +263,9 @@ fi
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+
+# ── iTerm2 Shell Integration ────────────────────────────────
+# ペイン分割時のCWD引き継ぎ、コマンドマーカー等を提供
+[[ "$TERM_PROGRAM" == "iTerm.app" ]] \
+  && [[ -f "$HOME/.iterm2_shell_integration.zsh" ]] \
+  && source "$HOME/.iterm2_shell_integration.zsh"
