@@ -1,0 +1,24 @@
+{
+  "showdown_commit": "808f8584298878b2eb5d8dd3638d660877b5d4cf",
+  "showdown_commit_date": "2026-04-26T21:12:21-06:00",
+  "showdown_repo": "https://github.com/smogon/pokemon-showdown",
+  "smogon_calc_version": "^0.11.0",
+  "pokeapi_csv_source": "https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv",
+  "pokeapi_jp_lang_id": "1",
+  "generated_at": "2026-04-28T08:24:10.677Z",
+  "counts": {
+    "pokemon": 1516,
+    "moves": 954,
+    "abilities": 318,
+    "items": 583,
+    "learnsets": 1287,
+    "natures": 25,
+    "ja_names_pokemon": 1221,
+    "ja_names_moves": 937,
+    "ja_names_abilities": 311,
+    "ja_names_items": 2103,
+    "ja_names_types": 21,
+    "jp_form_matched": 196,
+    "jp_form_missed": 295
+  }
+}
