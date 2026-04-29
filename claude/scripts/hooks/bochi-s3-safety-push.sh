@@ -41,7 +41,7 @@ fi
 
 # Write Ownership: Mac pushes only memos/index/context-seeds,
 # Lightsail pushes only topics/newspaper/conversations/reflections/seen
-EXCLUDE_COMMON=(--exclude ".DS_Store" --exclude "*.tmp" --exclude "*.lock" --exclude "bochi-data/")
+EXCLUDE_COMMON=(--exclude ".DS_Store" --exclude "*.tmp" --exclude "*.lock" --exclude "bochi-data/*")
 
 if [ "$(uname)" = "Darwin" ]; then
   EXCLUDE_OWNERSHIP=(--exclude "topics/*" --exclude "newspaper/*" --exclude "conversations/*" --exclude "reflections/*" --exclude "seen.jsonl" --exclude "sources/*" --exclude "stats/*" --exclude "user-profile.yaml" --exclude "cache/*")
