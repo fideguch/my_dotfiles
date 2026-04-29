@@ -13,9 +13,14 @@ command -v aws &>/dev/null || exit 0
 # Safety: broken symlink check
 if [ -L "$DATA_DIR" ] && [ ! -d "$DATA_DIR" ]; then exit 0; fi
 
+# Pre-flight: warn on nested bochi-data (sync bug recurrence guard)
+if [ -d "$DATA_DIR/bochi-data" ]; then
+  echo "WARNING: nested bochi-data detected at $DATA_DIR/bochi-data — cleanup: rm -rf '$DATA_DIR/bochi-data'" >&2
+fi
+
 # Skip if no files modified since last push
 if [ -f "$MARKER" ]; then
-  NEWER=$(find "$DATA_DIR" -newer "$MARKER" -type f ! -name ".DS_Store" ! -name "*.tmp" ! -name "*.lock" 2>/dev/null | head -1)
+  NEWER=$(find -L "$DATA_DIR" -newer "$MARKER" -type f ! -name ".DS_Store" ! -name "*.tmp" ! -name "*.lock" 2>/dev/null | head -1)
   [ -z "$NEWER" ] && exit 0
 fi
 

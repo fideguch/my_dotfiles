@@ -14,6 +14,11 @@ fi
 [ -d "$DATA_DIR" ] || exit 0
 command -v aws &>/dev/null || exit 0
 
+# Pre-flight: warn on nested bochi-data (sync bug recurrence guard)
+if [ -d "$DATA_DIR/bochi-data" ]; then
+  echo "WARNING: nested bochi-data detected at $DATA_DIR/bochi-data — cleanup: rm -rf '$DATA_DIR/bochi-data'" >&2
+fi
+
 # Read stdin JSON from Claude Code hook
 INPUT_JSON=$(cat)
 

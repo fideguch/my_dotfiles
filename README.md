@@ -168,6 +168,39 @@ ECC (Everything Claude Code) 由来スキル、rules、agents、commands、hooks
 | `rules/`, `agents/`, `hooks/`, `commands/` | ディレクトリ単位シンボリックリンク | 一括管理 |
 | `skills/` | **スキル単位でマージ** | Layer 2/3 のスキルを壊さない |
 
+## bochi-data 双方向同期 (Mac ↔ S3 ↔ Discord/Lightsail)
+
+bochi スキルが生成するメモ・トピック・ニュースペーパー (`~/.claude/bochi-data/`) を、Mac CLI と Discord bot (Lightsail) で双方向同期する。S3 (`bochi-sync-fumito`, `ap-northeast-1`) を中継。
+
+### 同期スクリプト構成
+
+`claude/scripts/hooks/bochi-s3-*.sh` の5本でカバー:
+
+| Script | 役割 | 起動契機 |
+|--------|------|----------|
+| `bochi-s3-push.sh` | bochi-data の Write/Edit を S3 へ即時 push (async) | PostToolUse(Write\|Edit) hook |
+| `bochi-s3-pull.sh` | セッション開始時に S3 から pull | SessionStart hook |
+| `bochi-s3-pull-on-read.sh` | Read/Grep 前に S3 から pull (5秒 debounce) | PreToolUse(Read\|Grep) hook |
+| `bochi-s3-safety-push.sh` | 5分毎の冗長 push (cron, hook 失敗の保険) | cron `*/5 * * * *` |
+| `bochi-s3-safety-pull.sh` | 5分毎の冗長 pull (cron, 1分オフセット) | cron `1-56/5 * * * *` |
+
+全 hook 設定は `claude/settings.json` の `hooks` key に集約。
+
+### Write Ownership 分担
+
+衝突防止のため push 時に `uname` で判別し排他的にディレクトリを所有:
+
+| 環境 | 書き込み権 |
+|------|-----------|
+| Mac (`Darwin`) | `memos/`, `index.jsonl`, `context-seeds/` |
+| Lightsail (`Linux`) | `topics/`, `newspaper/`, `conversations/`, `reflections/`, `seen.jsonl`, `sources/`, `stats/`, `user-profile.yaml`, `cache/` |
+
+### 既知の不具合と対策（2026-04-30）
+
+- **BUG-1: `find` がシンボリックリンクを辿らない** → Lightsail の `~/.claude/bochi-data` は symlink のため push が3週間以上停止していた。`find -L` に修正で復旧
+- **BUG-2: 同サイズ・別内容ファイルの同期漏れ** → pull 系の `aws s3 sync` に `--exact-timestamps` を追加（mtime 比較で確実検知）
+- **ネスト構造 (`bochi-data/bochi-data/`) の再発防止** → 全 sync script の冒頭に pre-flight check を追加。検出時は stderr に WARNING を出力し、`rm -rf` を促す（abort はせず sync は継続）
+
 ## 再実行の安全性（Idempotency）
 
 `set_up.sh` は何度実行しても安全です:

@@ -14,6 +14,11 @@ if [ -L "$DATA_DIR" ] && [ ! -d "$DATA_DIR" ]; then
 fi
 [ -d "$DATA_DIR" ] || mkdir -p "$DATA_DIR"
 
+# Pre-flight: warn on nested bochi-data (sync bug recurrence guard)
+if [ -d "$DATA_DIR/bochi-data" ]; then
+  echo "WARNING: nested bochi-data detected at $DATA_DIR/bochi-data — cleanup: rm -rf '$DATA_DIR/bochi-data'" >&2
+fi
+
 # Stale lock cleanup (120s timeout)
 if [ -d "$LOCKFILE.d" ]; then
   LOCK_AGE=$(( $(date +%s) - $(stat -f %m "$LOCKFILE.d" 2>/dev/null || stat -c %Y "$LOCKFILE.d" 2>/dev/null || echo 0) ))
@@ -33,6 +38,7 @@ if aws s3 ls "s3://$BUCKET/" --region ap-northeast-1 &>/dev/null 2>&1; then
   aws s3 sync "s3://$BUCKET/bochi-data/" "$DATA_DIR/" \
     --exclude ".DS_Store" \
     --exclude "*.tmp" \
+    --exact-timestamps \
     --region ap-northeast-1 \
     --quiet
 
