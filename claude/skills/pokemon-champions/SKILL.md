@@ -256,9 +256,46 @@ from lib.visualizer import render_damage_table, render_type_matchup, render_usag
 | 層 | TTL | 鮮度マーク |
 |---|---|---|
 | **スピード層** | 1ヶ月 | 不要（種族値・タイプ・技・特性・道具・ダメ計式） |
-| **鮮度命層** | 6時間 | **必須**（使用率・上位構築・型・採用率・立ち回り） |
+| **鮮度命層** | **24時間** | **必須**（使用率・上位構築・型・採用率・立ち回り） |
 
 T3 応答は必ず `fetched_at` と `source_url` を引用。
+
+### HARD-GATE: 実装状況確認（2026-04-30 ユーザー指摘で追加）
+
+T2 / MIXED で**構築・型・持ち物**を提案する前に、必ず
+[references/implementation_status.md](references/implementation_status.md) で**実装/未実装**を確認。
+
+**未実装持ち物（提案禁止）**: ゴツゴツメット / こだわり鉢巻 / こだわり眼鏡 / いのちのたま / 突撃チョッキ / 厚底ブーツ / 弱点保険 / レッドカード / イバンの実 / だっしゅつボタン
+
+**実装済み持ち物**: きあいのタスキ / たべのこし / オボン / ラム / こだわりスカーフ / メガストーン / タイプ強化系 / 各種半減きのみ
+
+検証手順:
+```
+1. 持ち物 6 体 = 実装済みリストにあるか
+2. 技 24 個 = 削除技に該当しないか
+3. メガストーン対応ポケと一致するか
+4. ステロ被ダメは Champions 半減仕様前提か
+```
+
+### HARD-GATE: 権威ソース必須参照（ユーザー指定 / 2026-04-30 合意）
+
+T3 / MIXED 応答で**構築・型・メタ・流行**を語る際は、必ず以下の権威ソースリストから
+1 つ以上を 24h 以内に fetch して根拠とする。
+詳細・利用プロトコル: [references/authoritative_sources.md](references/authoritative_sources.md)
+
+**Tier S (必ず最初に当たる)**:
+- https://champs.pokedb.tokyo/ — Champions専用使用率/構築DB
+- https://pokechamdb.com/en?view=pokemon — Champions型分布
+- https://yakkun.com/ — ポケ徹育成論
+
+**Tier S 配信者・X (24h鮮度トレンド)**:
+- https://www.youtube.com/@Kuroko_965 — クロコ（シングル上位）
+- https://www.youtube.com/channel/UCmnZL4tFRl4sm-uJOxTLHmg
+- https://x.com/KYOUPOKEch — KYOUPOKE速報
+- https://www.youtube.com/@pokesol — ポケソル育成論
+
+**禁止事項**: 24h 以内の更新が無いソースのみで構築提案を完結させること。
+最低 1 つの 24-72h 以内の動画/X ポスト/note 記事を組み込むこと。
 
 ## 14. 起動依存ファイルマップ
 
