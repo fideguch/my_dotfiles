@@ -46,6 +46,11 @@ if [ -L "$DATA_DIR" ] && [ ! -d "$DATA_DIR" ]; then
 fi
 [ -d "$DATA_DIR" ] || mkdir -p "$DATA_DIR"
 
+# Pre-flight: warn on nested bochi-data (sync bug recurrence guard)
+if [ -d "$DATA_DIR/bochi-data" ]; then
+  echo "WARNING: nested bochi-data detected at $DATA_DIR/bochi-data — cleanup: rm -rf '$DATA_DIR/bochi-data'" >&2
+fi
+
 # AWS CLI must be available
 command -v aws &>/dev/null || exit 0
 
@@ -71,6 +76,7 @@ date +%s > "$DEBOUNCE_FILE"
 aws s3 sync "s3://$BUCKET/bochi-data/" "$DATA_DIR/" \
   --exclude ".DS_Store" \
   --exclude "*.tmp" \
+  --exact-timestamps \
   --region ap-northeast-1 \
   --quiet 2>/dev/null || true
 

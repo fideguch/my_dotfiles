@@ -159,6 +159,39 @@ Installed via `npx skills add`: PM skills (45+), Vercel Labs skills, official pl
 | `rules/`, `agents/`, `hooks/`, `commands/` | Per-directory symlinks | Bulk management |
 | `skills/` | **Per-skill merge** | Avoid breaking Layer 2/3 skills |
 
+## bochi-data Bidirectional Sync (Mac ↔ S3 ↔ Discord/Lightsail)
+
+Bidirectionally syncs the bochi skill's generated memos, topics, and newspapers (`~/.claude/bochi-data/`) between the Mac CLI and the Discord bot (Lightsail), via S3 (`bochi-sync-fumito`, `ap-northeast-1`).
+
+### Sync script layout
+
+Five scripts under `claude/scripts/hooks/bochi-s3-*.sh`:
+
+| Script | Role | Trigger |
+|--------|------|---------|
+| `bochi-s3-push.sh` | Push bochi-data Write/Edit to S3 immediately (async) | PostToolUse(Write\|Edit) hook |
+| `bochi-s3-pull.sh` | Pull from S3 on session start | SessionStart hook |
+| `bochi-s3-pull-on-read.sh` | Pull from S3 before Read/Grep (5s debounce) | PreToolUse(Read\|Grep) hook |
+| `bochi-s3-safety-push.sh` | Redundant 5-min cron push (covers hook failure) | cron `*/5 * * * *` |
+| `bochi-s3-safety-pull.sh` | Redundant 5-min cron pull (1-min offset) | cron `1-56/5 * * * *` |
+
+All hook bindings are consolidated in `claude/settings.json` under the `hooks` key.
+
+### Write Ownership
+
+To avoid push conflicts, the scripts split directory ownership by `uname`:
+
+| Environment | Owns (push only) |
+|-------------|------------------|
+| Mac (`Darwin`) | `memos/`, `index.jsonl`, `context-seeds/` |
+| Lightsail (`Linux`) | `topics/`, `newspaper/`, `conversations/`, `reflections/`, `seen.jsonl`, `sources/`, `stats/`, `user-profile.yaml`, `cache/` |
+
+### Known issues and fixes (2026-04-30)
+
+- **BUG-1: `find` does not follow symlinks** → On Lightsail, `~/.claude/bochi-data` is a symlink, so `find` returned empty and the push was silently halted for 3+ weeks. Fixed by switching to `find -L`
+- **BUG-2: same-size/different-content files were skipped by `aws s3 sync`** → Added `--exact-timestamps` to all pull scripts so mtime is also compared
+- **Nested-structure recurrence guard (`bochi-data/bochi-data/`)** → Added a pre-flight check to every sync script. On detection, emits a WARNING to stderr (sync continues; user is prompted to `rm -rf`)
+
 ## Re-run Safety (Idempotency)
 
 `set_up.sh` is safe to run multiple times:
