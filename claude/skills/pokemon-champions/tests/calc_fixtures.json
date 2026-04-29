@@ -1,0 +1,119 @@
+{
+  "comment": "10 fixtures covering core mechanics. percent_min/percent_max are observed values from @smogon/calc 0.11.0 against Showdown commit 808f8584 (gen 9). They serve as regression anchors. Expectation ranges allow ~3% drift to absorb future calc-lib stat tweaks.",
+  "generated_at": "2026-04-29",
+  "fixtures": [
+    {
+      "id": "01_band_garchomp_eq_vs_mimikyu",
+      "label": "鉢巻ガブEQ vs ミミッキュ (1HKO期待)",
+      "input": {
+        "gen": 9,
+        "attacker": { "name": "Garchomp", "item": "Choice Band", "nature": "Jolly", "evs": { "atk": 252, "spe": 252 }, "ability": "Rough Skin" },
+        "defender": { "name": "Mimikyu", "evs": { "hp": 4 }, "nature": "Jolly", "ability": "Disguise" },
+        "move": { "name": "Earthquake" }
+      },
+      "expect": { "percent_min_at_least": 115, "percent_max_at_most": 141, "ko_chance_n_at_most": 1, "describe_must_include": "guaranteed OHKO" }
+    },
+    {
+      "id": "02_lo_garchomp_eq_vs_clodsire",
+      "label": "珠ガブEQ vs HBドオー (毒地面1Hで超被弾)",
+      "input": {
+        "gen": 9,
+        "attacker": { "name": "Garchomp", "item": "Life Orb", "nature": "Jolly", "evs": { "atk": 252, "spe": 252 }, "ability": "Rough Skin" },
+        "defender": { "name": "Clodsire", "nature": "Careful", "evs": { "hp": 252, "spd": 252 }, "ability": "Unaware" },
+        "move": { "name": "Earthquake" }
+      },
+      "expect": { "percent_min_at_least": 135, "percent_max_at_most": 167, "describe_must_include": "guaranteed OHKO" }
+    },
+    {
+      "id": "03_tera_ground_garchomp_eq_resist",
+      "label": "テラ草ガブEQ → 元飛行タイプ非耐性で通常威力 (テラ分岐STAB上昇確認)",
+      "input": {
+        "gen": 9,
+        "attacker": { "name": "Garchomp", "item": "Life Orb", "nature": "Jolly", "evs": { "atk": 252, "spe": 252 }, "ability": "Rough Skin", "teraType": "Ground" },
+        "defender": { "name": "Clodsire", "nature": "Careful", "evs": { "hp": 252, "spd": 252 }, "ability": "Unaware" },
+        "move": { "name": "Earthquake" }
+      },
+      "expect": { "percent_min_at_least": 145, "describe_must_include": "Tera Ground Garchomp" }
+    },
+    {
+      "id": "04_singles_format_no_spread",
+      "label": "シングル前提 (スプレッド技0.75倍補正なし)",
+      "input": {
+        "gen": 9,
+        "format": "Singles",
+        "attacker": { "name": "Garchomp", "item": "Choice Band", "nature": "Jolly", "evs": { "atk": 252, "spe": 252 } },
+        "defender": { "name": "Garganacl", "nature": "Careful", "evs": { "hp": 252, "spd": 252 } },
+        "move": { "name": "Earthquake" }
+      },
+      "expect": { "percent_min_at_least": 92, "percent_max_at_most": 120 }
+    },
+    {
+      "id": "05_mega_mawile_play_rough",
+      "label": "メガクチート ばかぢから vs HBドヒドイデ (gen 7メガ機構)",
+      "input": {
+        "gen": 7,
+        "attacker": { "name": "Mawile-Mega", "item": "Mawilite", "nature": "Adamant", "evs": { "atk": 252, "hp": 252 }, "ability": "Huge Power" },
+        "defender": { "name": "Toxapex", "nature": "Bold", "evs": { "hp": 252, "def": 252 }, "ability": "Regenerator" },
+        "move": { "name": "Play Rough" }
+      },
+      "expect": { "percent_min_at_least": 22, "percent_max_at_most": 32, "describe_must_include": "Mawile-Mega" }
+    },
+    {
+      "id": "06_z_hydro_vortex",
+      "label": "Z技ハイドロベスター (gen 7 Z)",
+      "input": {
+        "gen": 7,
+        "attacker": { "name": "Greninja", "item": "Waterium Z", "nature": "Timid", "evs": { "spa": 252, "spe": 252 }, "ability": "Protean" },
+        "defender": { "name": "Tapu Koko", "nature": "Timid", "evs": { "hp": 252, "spd": 252 }, "ability": "Electric Surge" },
+        "move": { "name": "Hydro Pump", "useZ": true }
+      },
+      "expect": { "percent_min_at_least": 60, "percent_max_at_most": 100 }
+    },
+    {
+      "id": "07_dynamax_max_geyser",
+      "label": "ダイマックス ダイストリーム (gen 8)",
+      "input": {
+        "gen": 8,
+        "attacker": { "name": "Urshifu-Rapid-Strike", "isDynamaxed": true, "dynamaxLevel": 10, "nature": "Jolly", "evs": { "atk": 252, "spe": 252 }, "ability": "Unseen Fist" },
+        "defender": { "name": "Zacian-Crowned", "nature": "Jolly", "evs": { "hp": 4 }, "ability": "Intrepid Sword", "item": "Rusted Sword" },
+        "move": { "name": "Surging Strikes", "useMax": true }
+      },
+      "expect": { "percent_min_at_least": 50, "percent_max_at_most": 80 }
+    },
+    {
+      "id": "08_burn_halves_physical_attack",
+      "label": "やけど物理半減 (やけどガブ vs ドオー、#02と比較で約半分)",
+      "input": {
+        "gen": 9,
+        "attacker": { "name": "Garchomp", "item": "Life Orb", "nature": "Jolly", "evs": { "atk": 252, "spe": 252 }, "ability": "Rough Skin", "status": "brn" },
+        "defender": { "name": "Clodsire", "nature": "Careful", "evs": { "hp": 252, "spd": 252 }, "ability": "Unaware" },
+        "move": { "name": "Earthquake" }
+      },
+      "expect": { "percent_min_at_least": 65, "percent_max_at_most": 85, "describe_must_include": "burned" }
+    },
+    {
+      "id": "09_sun_boost_overheat",
+      "label": "晴れ オーバーヒート 1.5倍補正",
+      "input": {
+        "gen": 9,
+        "attacker": { "name": "Heatran", "item": "Heat Rock", "nature": "Modest", "evs": { "spa": 252, "hp": 252 }, "ability": "Flash Fire" },
+        "defender": { "name": "Garganacl", "nature": "Careful", "evs": { "hp": 252, "spd": 252 }, "ability": "Purifying Salt" },
+        "move": { "name": "Overheat" },
+        "field": { "weather": "Sun" }
+      },
+      "expect": { "percent_min_at_least": 30, "percent_max_at_most": 45, "describe_must_include": "Sun" }
+    },
+    {
+      "id": "10_crit_with_stealth_rock",
+      "label": "クリティカル + ステロ込み (繰り出し前提)",
+      "input": {
+        "gen": 9,
+        "attacker": { "name": "Iron Valiant", "item": "Booster Energy", "nature": "Naive", "evs": { "atk": 4, "spa": 252, "spe": 252 }, "ability": "Quark Drive" },
+        "defender": { "name": "Dragapult", "nature": "Jolly", "evs": { "hp": 4, "spe": 252 }, "ability": "Infiltrator" },
+        "move": { "name": "Moonblast", "isCrit": true },
+        "field": { "defenderSide": { "isSR": true } }
+      },
+      "expect": { "percent_min_at_least": 170, "percent_max_at_most": 220, "describe_must_include": "critical hit" }
+    }
+  ]
+}
