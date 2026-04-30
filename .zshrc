@@ -231,6 +231,10 @@ if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
   source /opt/homebrew/opt/fzf/shell/completion.zsh
 fi
 
+# ── cargo PATH (Rust crates: pokeget 等) ────────────────────
+# Pokemon Terminal v2.0 が pokeget を呼ぶので MOTD block より前に追加必須
+[[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:$PATH"
+
 # ── ポケモン背景 (iTerm2 / cmux/Ghostty) ────────────────────
 # 新規シェル起動時のみランダム選出。source での再読み込み時は実行しない。
 # `poke -n <name>` で手動変更可能。
@@ -252,6 +256,16 @@ if [[ -o interactive && -z "$_POKE_DONE" ]] \
   poke -n "${_poke_favorites[RANDOM % ${#_poke_favorites[@]} + 1]}"
   unset _poke_favorites
   typeset -g _POKE_DONE=1
+fi
+
+# ── Pokemon SSOT: per-session pokemon picker (Phase β prerequisite) ──
+# Picks ONCE per shell, writes ~/.cache/poke-session-current.json (5-field) +
+# ~/.cache/poke-session-art.txt (krabby pre-render). All consumers (motd, starship,
+# claude statusline) READ from cache → consistent partner across UIs, fast prompt.
+if [[ -o interactive && -z "$_POKE_SESSION_DONE" ]] \
+   && [[ "$TERM_PROGRAM" == "iTerm.app" || "$TERM_PROGRAM" == "ghostty" ]] \
+   && [[ -f "$HOME/my_dotfiles/pokemon-terminal/lib/session-pokemon.sh" ]]; then
+  source "$HOME/my_dotfiles/pokemon-terminal/lib/session-pokemon.sh"
 fi
 
 # ── Pokemon Daily Greeting MOTD (Phase β) ───────────────

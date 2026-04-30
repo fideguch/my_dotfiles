@@ -5,6 +5,7 @@
 
 # ── Taps ──────────────────────────────────────────────────
 tap "homebrew/cask-fonts"
+tap "yannjor/krabby"             # Pokemon Terminal v2.0 community tap (krabby formula)
 
 # ── CLI ツール ────────────────────────────────────────────
 brew "vim"                       # レガシーフォールバック
@@ -40,5 +41,9 @@ brew "cocoapods"
 cask "font-hack-nerd-font"
 
 # ── Pokemon Terminal v2.0 ────────────────────────────────
-brew "pokeget-rs"   # Living Prompt 用 5ms ASCII
-brew "krabby"       # MOTD 用 多形態網羅 sprite
+# krabby: pre-rendered ASCII silhouette for starship right_format (per-session SSOT)
+brew "krabby"       # via yannjor/krabby tap (above)
+
+# pokeget: MOTD greeting image. No working brew formula exists; install via cargo.
+# After running `brew bundle install`, also run: cargo install pokeget
+# (PATH `~/.cargo/bin` is wired in .zshrc — see cargo block)
