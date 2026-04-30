@@ -1,6 +1,6 @@
 # ==========================================================
 # Starship プロンプト設定 — Pokemon Terminal v2.0
-# Pokemon Trainer Card 風: 各セグメントをタイプカラーで色分け
+# Pokemon Trainer Card 風: タイプカラー segment + sharp Powerline chevron
 # 参考: 公式タイプ別カラーチャート (Pokemon Aaah Type Icons)
 # ==========================================================
 
@@ -38,28 +38,30 @@ $docker_context\
 $line_break\
 $character"""
 
-right_format = """
-$custom.pokemon\
-$time"""
+right_format = "$time"
 
-# ── トレーナー名 (でんきタイプ・ピカチュウ黄) ─────────
+# ── トレーナー名 (でんきタイプ) ──── chain → directory ─
+# username -> directory は常に連続なので chevron で seamless 結合
 [username]
-format = "[ ⚡$user ](bold fg:text_black bg:type_electric)"
+format = "[ ⚡$user ](bold fg:text_black bg:type_electric)[](fg:type_electric bg:type_water)"
 show_always = true
 
-# ── 現在地 (みずタイプ・カスミブルー) ───────────────────
+# ── 現在地 (みずタイプ) ──── chain 終端、terminal bg へ ─
 [directory]
-format = "[ 📁 $path ](bold fg:text_white bg:type_water)"
+format = "[ 📁 $path ](bold fg:text_white bg:type_water)[](fg:type_water)"
 truncation_length = 4
 truncation_symbol = "…/"
 
-# ── Git ブランチ (くさタイプ・ツタの蔓) ─────────────────
+# ── 以下は条件付 segment (独立 sharp-triangle pill) ─────
+# 欠けても chain を壊さない設計。各 segment が左右 sharp 三角で完結。
+
+# ── Git ブランチ (くさタイプ) ──────────────────────────
 [git_branch]
 symbol = "🌿"
-format = "[ $symbol $branch ](bold fg:text_white bg:type_grass)"
+format = "[](fg:type_grass)[ $symbol $branch ](bold fg:text_white bg:type_grass)[](fg:type_grass)"
 
 [git_status]
-format = '([ $all_status$ahead_behind](bold fg:text_white bg:type_grass))'
+format = '([](fg:type_grass)[ $all_status$ahead_behind ](bold fg:text_white bg:type_grass)[](fg:type_grass))'
 conflicted = "= "
 ahead = "⇡ "
 behind = "⇣ "
@@ -68,42 +70,39 @@ modified = "! "
 staged = "+ "
 deleted = "✘ "
 
-# ── 言語 (エスパー pink でレベル感) ──────────────────────
+# ── 言語 (エスパー pink) ──────────────────────────────
 [python]
 symbol = "🐍"
-format = "[ $symbol $version ](bold fg:text_white bg:type_psychic)"
+format = "[](fg:type_psychic)[ $symbol $version ](bold fg:text_white bg:type_psychic)[](fg:type_psychic)"
 
 [nodejs]
 symbol = "⬢"
-format = "[ $symbol $version ](bold fg:text_white bg:type_grass)"
+format = "[](fg:type_grass)[ $symbol $version ](bold fg:text_white bg:type_grass)[](fg:type_grass)"
 
-# ── AWS (ほのおタイプ・リザードン橙) ────────────────────
+# ── AWS (ほのおタイプ) ────────────────────────────────
 [aws]
 symbol = "☁"
-format = "[ $symbol $profile ](bold fg:text_white bg:type_fire)"
+format = "[](fg:type_fire)[ $symbol $profile ](bold fg:text_white bg:type_fire)[](fg:type_fire)"
 [aws.region_aliases]
 ap-northeast-1 = "jp"
 
-# ── Docker (みずタイプ) ──────────────────────────────────
+# ── Docker (みずタイプ) ────────────────────────────────
 [docker_context]
 symbol = "🐳"
-format = "[ $symbol $context ](bold fg:text_white bg:type_water)"
+format = "[](fg:type_water)[ $symbol $context ](bold fg:text_white bg:type_water)[](fg:type_water)"
 
-# ── 時間 (right_format、でんき色テキストのみ) ───────────
+# ── 時間 (right_format、でんき色テキストのみ) ──────────
 [time]
 disabled = false
 format = "[ $time](bold fg:type_electric)"
 time_format = "%H:%M"
 
-# ── プロンプト ◉ モンスターボール (純赤) ────────────────
+# ── プロンプト ◉ モンスターボール (純赤、NF v2 互換) ──
 [character]
 success_symbol = "[ ◉](bold fg:#EE1515)"
 error_symbol   = "[ ✗](bold fg:#FF4444)"
 
-# ── Living Prompt: 右下に krabby silhouette (Phase γ) ──
-[custom.pokemon]
-description = "Living Prompt: 右下に krabby silhouette"
-when = true
-command = "krabby random --no-title -s 2>/dev/null | head -3 || echo ''"
-format = "[$output](fg:type_grass)"
-shell = ["bash", "--noprofile", "--norc"]
+# Phase γ Living Prompt の krabby silhouette は v2.1 で廃止。
+# 理由: starship right_format は単行出力前提で、krabby の3行 ASCII art は
+# レイアウトが壊れる。代替: motd.sh が pokeget で全身 ASCII を起動時1回表示。
+# 必要なら別の precmd hook で復活可。
