@@ -254,6 +254,14 @@ if [[ -o interactive && -z "$_POKE_DONE" ]] \
   typeset -g _POKE_DONE=1
 fi
 
+# ── Pokemon Daily Greeting MOTD (Phase β) ───────────────
+if [[ -o interactive && -z "$_POKE_MOTD_DONE" ]] \
+   && [[ "$TERM_PROGRAM" == "iTerm.app" || "$TERM_PROGRAM" == "ghostty" ]] \
+   && [[ -f "$HOME/my_dotfiles/pokemon-terminal/motd.sh" ]]; then
+  source "$HOME/my_dotfiles/pokemon-terminal/motd.sh"
+  typeset -g _POKE_MOTD_DONE=1
+fi
+
 # Resize handler: re-prepare background at new dimensions
 if [[ "$TERM_PROGRAM" == "ghostty" ]]; then
   TRAPWINCH() {
