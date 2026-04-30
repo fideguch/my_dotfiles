@@ -116,6 +116,20 @@ Neovim (LazyVim) はカラースキーム (catppuccin-mocha) の `transparent_ba
 
 > Claude Code セッション中も `poke` コマンドで随時変更可能。
 
+## Pokemon Terminal v2.0 (`pokemon-terminal/`)
+
+ピカチュウテーマで iTerm2 / Ghostty / tmux / LazyVim / Claude Code を統合するスキン。
+
+| Phase | 役割 |
+|-------|------|
+| α (Skin) | starship `pokemon` palette + ◉ モンスターボールプロンプト |
+| β (MOTD) | 起動時の今日のパートナー (15体ローテ、`date +%j` シード) |
+| γ (Living Prompt) | starship `right_format` で `krabby` silhouette |
+| δ (LazyVim) | dashboard ヘッダー + ⚡ 時計 lualine + `:PokemonRandom` |
+| Claude | `cc` alias で `pokeclaude` wrapper、statusLine + SessionStart hook |
+
+詳細は [pokemon-terminal/README.md](pokemon-terminal/README.md) を参照。
+
 ## Claude Code (`claude/`)
 
 Claude Code の設定一式。`set_up.sh` で `~/.claude/` にシンボリックリンクが張られる。
