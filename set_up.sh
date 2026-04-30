@@ -219,3 +219,7 @@ echo "  3. iTerm2 で Pokemon プロファイルをデフォルトに設定"
 echo "  4. Claude Code 外部スキルをインストール: cat ~/my_dotfiles/claude/INSTALL_SKILLS.md"
 echo "  5. settings.local.json のプレースホルダーを実際の値に置換"
 echo ""
+
+# Pokemon Terminal v2.0
+[[ -f "$HOME/my_dotfiles/pokemon-terminal/install.sh" ]] && \
+  bash "$HOME/my_dotfiles/pokemon-terminal/install.sh"
