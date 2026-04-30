@@ -291,10 +291,26 @@ if [[ "$TERM_PROGRAM" == "ghostty" ]]; then
   TRAPWINCH() {
     local current
     current=$(cat ~/.cache/poke-current 2>/dev/null)
-    [[ -n "$current" ]] && poke -n "$current" 2>/dev/null
+    [[ -n "$current" ]] && command poke -n "$current" >/dev/null 2>&1
   }
 fi
 
+# ── poke コマンド wrapper (Master Ball box) ──────────────────
+# 関数定義を startup block より後に置く理由:
+#   - .zshrc 読み込み中の startup `poke -n` は binary 直接 (関数未定義)
+#   - シェル起動完了後のユーザー呼び出しは ↓ の関数経由で Master Ball box
+# 関数内部は `command poke` で関数自身を bypass する
+function poke() {
+  echo ""
+  printf '\033[48;2;126;31;134m\033[1;38;2;255;255;255m\033[K\033[0m\n'
+  printf '\033[48;2;126;31;134m\033[1;38;2;255;255;255m  🖼  poke   \033[1;38;2;255;105;180mM\033[1;38;2;255;255;255m\033[K\033[0m\n'
+  printf '\033[48;2;0;0;0m\033[K\033[0m\n'
+  command poke "$@" 2>&1 | while IFS= read -r line; do
+    printf '\033[48;2;245;245;245m\033[38;2;26;18;0m  %s\033[K\033[0m\n' "$line"
+  done
+  printf '\033[48;2;245;245;245m\033[K\033[0m\n'
+  echo ""
+}
 
 # bun completions
 [ -s "/Users/fumito_ideguchi/.bun/_bun" ] && source "/Users/fumito_ideguchi/.bun/_bun"
