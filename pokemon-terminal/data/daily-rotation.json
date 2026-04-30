@@ -1,0 +1,19 @@
+{
+  "partners": [
+    {"en": "garchomp", "jp": "ガブリアス", "id": 445, "type": "ドラゴン/じめん"},
+    {"en": "charizard", "jp": "リザードン", "id": 6, "type": "ほのお/ひこう"},
+    {"en": "pikachu", "jp": "ピカチュウ", "id": 25, "type": "でんき"},
+    {"en": "gengar", "jp": "ゲンガー", "id": 94, "type": "ゴースト/どく"},
+    {"en": "dragonite", "jp": "カイリュー", "id": 149, "type": "ドラゴン/ひこう"},
+    {"en": "scizor", "jp": "ハッサム", "id": 212, "type": "むし/はがね"},
+    {"en": "lucario", "jp": "ルカリオ", "id": 448, "type": "かくとう/はがね"},
+    {"en": "umbreon", "jp": "ブラッキー", "id": 197, "type": "あく"},
+    {"en": "meganium", "jp": "メガニウム", "id": 154, "type": "くさ"},
+    {"en": "greninja", "jp": "ゲッコウガ", "id": 658, "type": "みず/あく"},
+    {"en": "hippowdon", "jp": "カバルドン", "id": 450, "type": "じめん"},
+    {"en": "rotom-wash", "jp": "ロトム(ウォッシュ)", "id": 479, "type": "でんき/みず"},
+    {"en": "delphox", "jp": "マフォクシー", "id": 655, "type": "ほのお/エスパー"},
+    {"en": "florges", "jp": "フラージェス", "id": 671, "type": "フェアリー"},
+    {"en": "weavile", "jp": "マニューラ", "id": 461, "type": "あく/こおり"}
+  ]
+}
