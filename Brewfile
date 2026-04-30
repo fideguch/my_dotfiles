@@ -38,3 +38,7 @@ brew "cocoapods"
 
 # ── フォント (Nerd Font - Starship/Vim-devicons用) ───────
 cask "font-hack-nerd-font"
+
+# ── Pokemon Terminal v2.0 ────────────────────────────────
+brew "pokeget-rs"   # Living Prompt 用 5ms ASCII
+brew "krabby"       # MOTD 用 多形態網羅 sprite
