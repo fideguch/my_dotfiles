@@ -27,8 +27,19 @@ if command -v pokeget >/dev/null 2>&1; then
   pokeget --hide-name "$EN" 2>/dev/null | sed 's/^/    /' || true
 fi
 
+# Pokeball-themed partner box: 上半赤 (Red cap) + 黒帯 (Equator) + 下半白 (White body)
+# ANSI \033[K (Erase to End of Line) で背景色をターミナル端まで延長
+POKEBALL_RED='\033[48;2;238;21;21m\033[1;38;2;255;255;255m'   # red bg + bold white fg
+POKEBALL_BLACK='\033[48;2;0;0;0m'                              # equator black bg
+POKEBALL_WHITE='\033[48;2;245;245;245m\033[38;2;26;18;0m'      # off-white bg + dark fg
+RESET='\033[0m'
+EOL='\033[K'
+
 echo ""
-echo "  このセッションのパートナー: $JP"
-echo "  ぜんこくずかん No.$PADDED_ID  ▼$TYPE"
-echo "  🔗 $URL"
+printf "%b\n" "${POKEBALL_RED}${EOL}${RESET}"
+printf "%b\n" "${POKEBALL_RED}  このセッションのパートナー: ${JP}${EOL}${RESET}"
+printf "%b\n" "${POKEBALL_BLACK}${EOL}${RESET}"
+printf "%b\n" "${POKEBALL_WHITE}  ぜんこくずかん No.${PADDED_ID}  ▼${TYPE}${EOL}${RESET}"
+printf "%b\n" "${POKEBALL_WHITE}  🔗 ${URL}${EOL}${RESET}"
+printf "%b\n" "${POKEBALL_WHITE}${EOL}${RESET}"
 echo ""
