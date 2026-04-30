@@ -1,32 +1,34 @@
 #!/usr/bin/env bash
 # Pokemon Terminal — Session Greeting MOTD (Phase β)
-# シェル起動毎にランダム: $RANDOM を seed に partners ローテ
+# Reads partner from SSOT cache populated by lib/session-pokemon.sh.
+# Output: pokeget sprite + 3-line greeting (partner / dex no. / zukan URL).
 # 出典: tkyko13 (公式図鑑URL連携) + sergicalsix (カタカナ名)
 
 set -e
-DATA="$HOME/my_dotfiles/pokemon-terminal/data/daily-rotation.json"
-[[ ! -f "$DATA" ]] && exit 0
+CACHE="$HOME/.cache/poke-session-current.json"
+[[ ! -f "$CACHE" ]] && exit 0
 command -v jq >/dev/null 2>&1 || exit 0
 
-COUNT=$(jq '.partners | length' "$DATA")
-IDX=$(( RANDOM % COUNT ))
-EN=$(jq -r ".partners[$IDX].en" "$DATA")
-JP=$(jq -r ".partners[$IDX].jp" "$DATA")
-ID=$(jq -r ".partners[$IDX].id" "$DATA")
-TYPE=$(jq -r ".partners[$IDX].type" "$DATA")
+EN=$(jq -r '.en'   "$CACHE")
+JP=$(jq -r '.jp'   "$CACHE")
+ID=$(jq -r '.id'   "$CACHE")
+TYPE=$(jq -r '.type' "$CACHE")
+URL=$(jq -r '.url' "$CACHE")
 PADDED_ID=$(printf "%04d" "$ID")
 
-# Cache for current shell session (read by claude statusline within same TTY)
-CACHE_DIR="$HOME/.cache"
-mkdir -p "$CACHE_DIR"
-echo "{\"en\":\"$EN\",\"jp\":\"$JP\",\"id\":$ID,\"type\":\"$TYPE\"}" > "$CACHE_DIR/poke-session-current.json"
+# url field is the SSOT default; fall back to format if cache predates schema.
+[[ "$URL" == "null" || -z "$URL" ]] && URL="https://zukan.pokemon.co.jp/detail/${PADDED_ID}/"
 
 if command -v pokeget >/dev/null 2>&1; then
-  pokeget "$EN" 2>/dev/null || true
+  echo ""
+  echo ""
+  # --hide-name: 英語名ヘッダーを非表示 (下で日本語名 greeting で代替)
+  # sed indent: 各行を 4 スペース左パディング
+  pokeget --hide-name "$EN" 2>/dev/null | sed 's/^/    /' || true
 fi
 
 echo ""
 echo "  このセッションのパートナー: $JP"
 echo "  ぜんこくずかん No.$PADDED_ID  ▼$TYPE"
-echo "  🔗 https://zukan.pokemon.co.jp/detail/$PADDED_ID/"
+echo "  🔗 $URL"
 echo ""
