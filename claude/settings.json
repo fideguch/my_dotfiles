@@ -1,9 +1,4 @@
 {
-  "enabledPlugins": {
-    "skill-creator@claude-plugins-official": true,
-    "discord@claude-plugins-official": true
-  },
-  "skipDangerousModePermissionPrompt": true,
   "hooks": {
     "PreToolUse": [
       {
@@ -13,8 +8,7 @@
             "type": "command",
             "command": "npx block-no-verify@1.1.2"
           }
-        ],
-        "description": "Block git hook-bypass flag to protect pre-commit, commit-msg, and pre-push hooks from being skipped"
+        ]
       },
       {
         "matcher": "Write",
@@ -24,8 +18,7 @@
             "command": "node ~/.claude/scripts/hooks/pm-pipeline-guard.js",
             "timeout": 5
           }
-        ],
-        "description": "PM Pipeline Guard: Block plan.md/tasks.md creation without completed requirements (designs/ with FR-001+)"
+        ]
       },
       {
         "matcher": "Agent",
@@ -35,8 +28,7 @@
             "command": "node ~/.claude/scripts/hooks/forge-ace-dispatch-guard.js",
             "timeout": 5
           }
-        ],
-        "description": "forge_ace: Enforce agent dispatch sequence (Writer→Guardian→Overseer→PM-Admin→Designer)"
+        ]
       },
       {
         "matcher": "Edit|Write",
@@ -46,8 +38,7 @@
             "command": "node ~/.claude/scripts/hooks/gatekeeper-pre-edit-guard.js",
             "timeout": 5
           }
-        ],
-        "description": "gatekeeper: Block src/ edits before HG-1 (designs/ + Figma) completion"
+        ]
       },
       {
         "matcher": "Read|Grep",
@@ -57,8 +48,7 @@
             "command": "bash ~/.claude/scripts/hooks/bochi-s3-pull-on-read.sh",
             "timeout": 10
           }
-        ],
-        "description": "bochi: pull latest bochi-data from S3 before reading/grepping (5s debounce)"
+        ]
       }
     ],
     "SessionStart": [
@@ -68,11 +58,10 @@
           {
             "type": "command",
             "command": "bash ~/.claude/scripts/hooks/bochi-s3-pull.sh",
-            "async": true,
-            "timeout": 30
+            "timeout": 30,
+            "async": true
           }
-        ],
-        "description": "bochi: pull latest bochi-data from S3 on session start"
+        ]
       },
       {
         "matcher": "*",
@@ -82,8 +71,18 @@
             "command": "bash ~/.claude/scripts/hooks/skill-health-check.sh",
             "timeout": 5
           }
-        ],
-        "description": "Skill/symlink health check on session start"
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $HOME/my_dotfiles/pokemon-terminal/claude/session-start.sh",
+            "async": true,
+            "timeout": 3
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -93,11 +92,10 @@
           {
             "type": "command",
             "command": "bash ~/.claude/scripts/hooks/bochi-feedback-capture.sh",
-            "async": true,
-            "timeout": 10
+            "timeout": 10,
+            "async": true
           }
-        ],
-        "description": "bochi: auto-capture user feedback on source quality"
+        ]
       },
       {
         "matcher": "Write|Edit",
@@ -105,11 +103,10 @@
           {
             "type": "command",
             "command": "bash ~/.claude/scripts/hooks/bochi-s3-push.sh",
-            "async": true,
-            "timeout": 30
+            "timeout": 30,
+            "async": true
           }
-        ],
-        "description": "bochi: sync bochi-data to S3 after writes (async, non-blocking)"
+        ]
       }
     ],
     "Stop": [
@@ -119,11 +116,10 @@
           {
             "type": "command",
             "command": "bash ~/.claude/scripts/hooks/claude-stop-notify.sh",
-            "async": true,
-            "timeout": 10
+            "timeout": 10,
+            "async": true
           }
-        ],
-        "description": "macOS Notification Center alert when Claude Code stops (terminal-notifier + Glass sound)"
+        ]
       },
       {
         "matcher": "*",
@@ -133,8 +129,7 @@
             "command": "node ~/.claude/scripts/hooks/forge-ace-session-complete.js",
             "timeout": 10
           }
-        ],
-        "description": "forge_ace: Save session outcome and warn on incomplete sessions"
+        ]
       },
       {
         "matcher": "*",
@@ -144,8 +139,7 @@
             "command": "node ~/.claude/scripts/hooks/gatekeeper-stop-check.js",
             "timeout": 10
           }
-        ],
-        "description": "gatekeeper: Warn on incomplete session (HG-5 verdict missing)"
+        ]
       },
       {
         "matcher": "*",
@@ -155,9 +149,18 @@
             "command": "node ~/.claude/scripts/hooks/gatekeeper-session-rotate.js",
             "timeout": 10
           }
-        ],
-        "description": "gatekeeper: Rotate completed sessions to history (max 3 generations)"
+        ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "skill-creator@claude-plugins-official": true,
+    "discord@claude-plugins-official": true
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "statusLine": {
+    "type": "command",
+    "command": "bash $HOME/my_dotfiles/pokemon-terminal/claude/statusline.sh",
+    "padding": 0
   }
 }
