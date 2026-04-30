@@ -3,6 +3,7 @@
     {
       "Name": "Pokemon",
       "Guid": "pokemon-terminal-profile-001",
+      "Rewritable": false,
 
       "Blend": 0.40,
       "Minimum Contrast": 0.85,
@@ -45,7 +46,9 @@
         "Color Space": "sRGB"
       },
 
-      "Normal Font": "HackNerdFont-Regular 14",
+      "Normal Font": "HackNerdFontComplete-Regular 14",
+      "Non Ascii Font": "HackNerdFontComplete-Regular 14",
+      "Use Non-ASCII Font": true,
 
       "Use Bold Font": true,
       "Use Bright Bold": true,
