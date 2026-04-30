@@ -253,10 +253,18 @@ if [[ -o interactive && -z "$_POKE_DONE" ]] \
     kangaskhan  meganium    greninja   florges    venusaur
     weavile     volcarona   clefable
   )
+  # Master Ball box: 上半紫キャップ + 黒帯赤道 + 下半白ボディ + ピンク M マーク
+  _POKE_BG_CHOICE="${_poke_favorites[RANDOM % ${#_poke_favorites[@]} + 1]}"
   echo ""
-  echo "🖼  背景画像 (Background):"
-  poke -n "${_poke_favorites[RANDOM % ${#_poke_favorites[@]} + 1]}"
-  unset _poke_favorites
+  printf '\033[48;2;126;31;134m\033[1;38;2;255;255;255m\033[K\033[0m\n'
+  printf '\033[48;2;126;31;134m\033[1;38;2;255;255;255m  🖼  背景画像 (Background)   \033[1;38;2;255;105;180mM\033[1;38;2;255;255;255m\033[K\033[0m\n'
+  printf '\033[48;2;0;0;0m\033[K\033[0m\n'
+  poke -n "$_POKE_BG_CHOICE" 2>&1 | while IFS= read -r line; do
+    printf '\033[48;2;245;245;245m\033[38;2;26;18;0m  %s\033[K\033[0m\n' "$line"
+  done
+  printf '\033[48;2;245;245;245m\033[K\033[0m\n'
+  echo ""
+  unset _POKE_BG_CHOICE _poke_favorites
   typeset -g _POKE_DONE=1
 fi
 
