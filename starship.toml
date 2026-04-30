@@ -77,16 +77,16 @@ ap-northeast-1 = "jp"
 symbol = " "
 format = "[ $symbol$context ](fg:#FFFFFF bg:champion_dark)"
 
-# ── 時間 (right_format に移動) ─────────────────────────
+# ── 時間 (right_format) ───────────────────────────────
 [time]
 disabled = false
-format = "[ $time ](bold fg:pika_yellow bg:champion_dark)"
+format = "[$time](bold fg:pika_yellow)"
 time_format = "%H:%M"
 
-# ── プロンプト (◉ モンスターボール) ────────────────────
+# ── プロンプト (◉ モンスターボール、透明背景) ──────────
 [character]
-success_symbol = "[](fg:champion_dark)[ ◉](bold fg:gym_red bg:champion_dark)[](fg:champion_dark)"
-error_symbol   = "[](fg:fire_red)[ ✗](bold fg:#FF4444 bg:fire_red)[](fg:fire_red)"
+success_symbol = "[◉](bold fg:gym_red)"
+error_symbol   = "[✗](bold fg:#FF4444)"
 
 # ── Living Prompt: 右下に krabby silhouette (Phase γ) ──
 [custom.pokemon]
