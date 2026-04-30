@@ -253,6 +253,8 @@ if [[ -o interactive && -z "$_POKE_DONE" ]] \
     kangaskhan  meganium    greninja   florges    venusaur
     weavile     volcarona   clefable
   )
+  echo ""
+  echo "🖼  背景画像 (Background):"
   poke -n "${_poke_favorites[RANDOM % ${#_poke_favorites[@]} + 1]}"
   unset _poke_favorites
   typeset -g _POKE_DONE=1
