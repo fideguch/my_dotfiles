@@ -3,3 +3,9 @@
 
 # Claude Code runtime artifacts (worktrees, local settings)
 .claude/
+
+# Claude Code skill transient artifacts (playwright temp scripts, etc.)
+**/.temp-execution-*.js
+
+# bochi S3 hook logs (runtime state, not synced)
+claude/logs/

@@ -55,8 +55,53 @@ else
   EXCLUDE_OWNERSHIP=(--exclude "context-seeds/*")
 fi
 
+# Logging setup (additive — preserves async hook contract: never fail caller)
+LOG_FILE="$HOME/.claude/logs/bochi-s3-push.log"
+LOG_MAX_SIZE=$((10 * 1024 * 1024))  # 10MB
+mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || true
+
+# Rotate if oversize (Mac stat -f %z, Linux stat -c %s)
+if [ -f "$LOG_FILE" ]; then
+  LOG_SIZE=$(stat -f %z "$LOG_FILE" 2>/dev/null || stat -c %s "$LOG_FILE" 2>/dev/null || echo 0)
+  if [ "$LOG_SIZE" -gt "$LOG_MAX_SIZE" ]; then
+    mv "$LOG_FILE" "$LOG_FILE.1" 2>/dev/null || true
+    gzip -f "$LOG_FILE.1" 2>/dev/null || true
+  fi
+fi
+
+# Capture sync result without propagating failure (async contract)
+TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+SYNC_STDERR=$(mktemp -t bochi-sync.XXXXXX)
+set +e
 aws s3 sync "$DATA_DIR/" "s3://$BUCKET/bochi-data/" \
   "${EXCLUDE_COMMON[@]}" \
   "${EXCLUDE_OWNERSHIP[@]}" \
   --region ap-northeast-1 \
-  --quiet
+  --quiet 2>"$SYNC_STDERR"
+SYNC_EXIT=$?
+set -e
+
+if [ "$SYNC_EXIT" -ne 0 ]; then
+  STDERR_SNIPPET=$(head -c 2000 "$SYNC_STDERR" 2>/dev/null | tr '\n' ' ' | tr -d '\r' || echo "")
+  printf '%s exit=%d stderr=%s\n' "$TIMESTAMP" "$SYNC_EXIT" "$STDERR_SNIPPET" >> "$LOG_FILE"
+
+  # Threshold: 3+ failures in last 60 minutes → notify (cooldown 1h)
+  ONE_HOUR_AGO=$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "")
+  if [ -n "$ONE_HOUR_AGO" ]; then
+    RECENT_FAILS=$(awk -v cutoff="$ONE_HOUR_AGO" '$1 >= cutoff' "$LOG_FILE" 2>/dev/null | wc -l | tr -d ' ')
+  else
+    RECENT_FAILS=0
+  fi
+  NOTIFY_MARKER="/tmp/bochi-s3-notify-last"
+  NOTIFY_AGE=999999
+  if [ -f "$NOTIFY_MARKER" ]; then
+    NOTIFY_AGE=$(( $(date +%s) - $(stat -f %m "$NOTIFY_MARKER" 2>/dev/null || stat -c %Y "$NOTIFY_MARKER" 2>/dev/null || echo 0) ))
+  fi
+  if [ "$RECENT_FAILS" -ge 3 ] && [ "$NOTIFY_AGE" -gt 3600 ]; then
+    osascript -e "display notification \"bochi S3 sync failed ${RECENT_FAILS}x in last hour. Check ~/.claude/logs/bochi-s3-push.log\" with title \"bochi S3 Sync Alert\"" 2>/dev/null || true
+    touch "$NOTIFY_MARKER"
+  fi
+fi
+
+rm -f "$SYNC_STDERR" 2>/dev/null || true
+exit 0  # async hook contract: never block caller
