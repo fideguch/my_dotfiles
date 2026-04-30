@@ -1,12 +1,21 @@
 # ==========================================================
-# Starship プロンプト設定
-# ピカチュウテーマ: 暗色帯 + 白テキスト + ⚡プロンプト
+# Starship プロンプト設定 — Pokemon Terminal v2.0
+# ピカチュウ + poshmon ジムバッジ palette + Living Prompt
 # ==========================================================
 
 "$schema" = "https://starship.rs/config-schema.json"
+palette = "pokemon"
+
+[palettes.pokemon]
+champion_dark = "#1A1200"
+pika_yellow   = "#FFD700"
+gym_teal      = "#2e9599"
+gym_red       = "#D51111"
+gym_gold      = "#c19c00"
+fire_red      = "#8B0000"
 
 format = """
-[](fg:#1A1200)\
+[](fg:champion_dark)\
 $username\
 $directory\
 $git_branch\
@@ -15,29 +24,32 @@ $python\
 $nodejs\
 $aws\
 $docker_context\
-$time\
-[](fg:#1A1200)\
+[](fg:champion_dark)\
 $line_break\
 $character"""
 
+right_format = """
+$custom.pokemon\
+$time"""
+
 # ── ユーザー ─────────────────────────────────────────────
 [username]
-format = "[ $user ](bold fg:#FFFFFF bg:#1A1200)"
+format = "[ $user ](bold fg:#FFFFFF bg:champion_dark)"
 show_always = true
 
 # ── ディレクトリ ─────────────────────────────────────────
 [directory]
-format = "[ $path ](bold fg:#FFFFFF bg:#1A1200)"
+format = "[ $path ](bold fg:#FFFFFF bg:champion_dark)"
 truncation_length = 4
 truncation_symbol = "…/"
 
 # ── Git ──────────────────────────────────────────────────
 [git_branch]
 symbol = " "
-format = "[  $symbol$branch ](bold fg:#FFFFFF bg:#1A1200)"
+format = "[  $symbol$branch ](bold fg:#FFFFFF bg:champion_dark)"
 
 [git_status]
-format = '([$all_status$ahead_behind](bold fg:#FFFFFF bg:#1A1200))'
+format = '([$all_status$ahead_behind](bold fg:#FFFFFF bg:champion_dark))'
 conflicted = "= "
 ahead = "⇡ "
 behind = "⇣ "
@@ -49,29 +61,37 @@ deleted = "✘ "
 # ── サービスアイコン ─────────────────────────────────────
 [python]
 symbol = " "
-format = "[ $symbol$version ](fg:#FFFFFF bg:#1A1200)"
+format = "[ $symbol$version ](fg:#FFFFFF bg:champion_dark)"
 
 [nodejs]
 symbol = " "
-format = "[ $symbol$version ](fg:#FFFFFF bg:#1A1200)"
+format = "[ $symbol$version ](fg:#FFFFFF bg:champion_dark)"
 
 [aws]
 symbol = " "
-format = "[ $symbol$profile ](fg:#FFFFFF bg:#1A1200)"
+format = "[ $symbol$profile ](fg:#FFFFFF bg:champion_dark)"
 [aws.region_aliases]
 ap-northeast-1 = "jp"
 
 [docker_context]
 symbol = " "
-format = "[ $symbol$context ](fg:#FFFFFF bg:#1A1200)"
+format = "[ $symbol$context ](fg:#FFFFFF bg:champion_dark)"
 
-# ── 時間 ─────────────────────────────────────────────────
+# ── 時間 (right_format に移動) ─────────────────────────
 [time]
 disabled = false
-format = "[ $time ](bold fg:#FFFFFF bg:#1A1200)"
+format = "[ $time ](bold fg:pika_yellow bg:champion_dark)"
 time_format = "%H:%M"
 
-# ── プロンプト (⚡ 10まんボルト) ─────────────────────────
+# ── プロンプト (◉ モンスターボール) ────────────────────
 [character]
-success_symbol = "[](fg:#1A1200)[ ⚡](bold fg:#FFD700 bg:#1A1200)[](fg:#1A1200)"
-error_symbol = "[](fg:#8B0000)[ ⚡](bold fg:#FF4444 bg:#8B0000)[](fg:#8B0000)"
+success_symbol = "[](fg:champion_dark)[ ◉](bold fg:gym_red bg:champion_dark)[](fg:champion_dark)"
+error_symbol   = "[](fg:fire_red)[ ✗](bold fg:#FF4444 bg:fire_red)[](fg:fire_red)"
+
+# ── Living Prompt: 右下に krabby silhouette (Phase γ) ──
+[custom.pokemon]
+description = "Living Prompt: 右下に krabby silhouette"
+when = true
+command = "krabby random --no-title -s 2>/dev/null | head -3 || echo ''"
+format = "[$output](fg:gym_gold)"
+shell = ["bash", "--noprofile", "--norc"]
