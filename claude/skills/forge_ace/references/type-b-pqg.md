@@ -71,8 +71,34 @@ Terms that should be unified must be consistent across all files.
 
 Evidence: `grep -rn "[term_variant]" [project_root]` showing unified usage.
 
+### 6. Default-Permissive Audit (anti-pattern #13 prevention)
+
+Newly added or modified gate functions (lookup, permission check, feature flag,
+validation) must have their default-input behavior justified.
+
+```
+[ ] List every new/modified function returning a status (bool / multi-value)
+[ ] For each: what does it return when input is unregistered/None/missing?
+[ ] If default is permissive (True/grant/allow/proceed):
+    [ ] Justify why permissive is safer than restrictive in this context
+    [ ] Document the choice in the affected file (data/README.md or equivalent)
+[ ] If function returns multi-value (Pending/TBD/Unknown/Partial):
+    [ ] Grep for `bool(x)` / `if x:` / `not x` callsites — flag truthy collapse risk
+    [ ] Plan must include strict comparison (`is True` / `== "TBD"`) where multi-value matters
+[ ] Plan must include 1+ E2E test for unregistered-input behavior
+```
+
+Evidence:
+- Function signatures and default returns enumerated
+- Justification paragraph per permissive default
+- Grep output for callsite truthy-coercion risks
+- E2E test file path with the unregistered-input case
+
+Reference: anti-patterns.md #13 (Default-Permissive Trap).
+Real-world failure: ai-pokemen v0.3.1 → v0.3.2 (chienpao misjudgment).
+
 ## Pass/Fail
 
-- **All 5 PASS**: Proceed to Writer dispatch
+- **All 6 PASS**: Proceed to Writer dispatch
 - **Any FAIL**: Planner revises (max 2 iterations), then human decides
-- Evidence carry-forward: SSOT map + reference list -> Writer (context) + Guardian (verification)
+- Evidence carry-forward: SSOT map + reference list + default-surface map -> Writer (context) + Guardian (verification)

@@ -1,6 +1,6 @@
 # forge_ace Anti-Patterns Reference Card
 
-12 structural failure patterns detected across all forge_ace agents.
+13 structural failure patterns detected across all forge_ace agents.
 Each agent's Anti-Patterns section references this file for full definitions.
 
 ## Anti-Patterns (HARD-GATE — detect and act)
@@ -97,3 +97,42 @@ E2E 振る舞い証拠なし。
   2. "確定 Tier" はユーザー指定がある場合そちらが優先（Classifier は advisory）
   3. "ユーザー確認: PENDING" を解決してから agent dispatch
   4. 逸脱がある場合はユーザーに選択肢を提示して承認を得る
+
+### 13. Default-Permissive Trap (許可側デフォルトの罠)
+未登録/未定義の入力に対するデフォルト挙動が **permissive (許可・成功・存在側)**
+に倒れており、データ層の網羅漏れがアプリ層で検出されない。OWASP "Fail-Safe Defaults"
+原則違反の構造パターン。型強制 (`bool("TBD") == True`) で truthy/falsy が潰れて
+3 値以上の状態を 2 値に圧縮する亜種を含む。
+
+**Real-world example (2026-04-30, ai-pokemen v0.3.1)**:
+```python
+def is_implemented(category, sid) -> bool:
+    entry = impl.get(category, {}).get(sid)
+    if entry is None:
+        return True   # ← Default-Permissive
+    return bool(entry.get("implemented", True))  # ← bool("TBD") == True で潰れる
+```
+データ層に登録漏れがあった `chienpao` (パオジアン) が True を返し、構築提案で
+"Tier S 環境最強格" と誤評価された。Champions Reg M-A 規格外の可能性が高いポケモン。
+
+**Detection**:
+- 新規/変更された lookup・判定・gate 関数の **未登録/未定義入力時のデフォルト戻り値**
+- `if entry is None: return True/proceed/grant/allow` 等のパターン
+- `bool(value)` / `if value:` 等で多値ステータス (Pending/TBD/Unknown) が True 化
+- whitelist 方式 vs blacklist 方式の選択根拠が文書化されていない
+- 「未登録 = 暗黙的に安全」を仮定したコメント
+
+**Action**:
+  1. **Default surface 列挙**: 変更で追加/修正された全 gate 関数 (lookup/permission/feature flag/validation) のデフォルト戻り値を列挙
+  2. **Permissive justification**: デフォルトが許可側 (True/grant/proceed) ならば
+     「なぜ拒否側 (False/deny/TBD) より安全か」を 1 段落で justify。
+     justify 不能なら **fail-safe (拒否側) に変更**
+  3. **Truthy collapse check**: 多値ステータスを返す関数で `bool(x)` / `if x:` の
+     呼び出し箇所を grep。罠があれば 3 値返却 + 厳密判定 (`is True`) に書き換え
+  4. **Unregistered-input E2E**: 「データ層に登録されていない入力を投入した時、
+     gate がどう振る舞うか」のテストを 1 件以上追加 (registration drift 検知)
+  5. **Whitelist vs Blacklist 文書化**: data/README.md 等にどちらの方式かと
+     その理由 (UX vs Security トレードオフ) を明記
+
+**Severity**: HIGH (誤判定が実害につながる場合) / MEDIUM (内部ツール) /
+LOW (ログ・統計のみ)。今回事例は MEDIUM (個人スキル・実害無し)。
