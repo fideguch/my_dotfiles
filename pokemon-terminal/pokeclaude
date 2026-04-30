@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Pokemon Claude wrapper (Phase Claude)
+# Each invocation rolls a new partner (per-session randomness)
 DATA="$HOME/my_dotfiles/pokemon-terminal/data/daily-rotation.json"
 if [[ -f "$DATA" ]] && command -v pokeget >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-  DAY=$(date +%j)
   COUNT=$(jq '.partners | length' "$DATA")
-  IDX=$(( 10#$DAY % COUNT ))
+  IDX=$(( RANDOM % COUNT ))
   EN=$(jq -r ".partners[$IDX].en" "$DATA")
   pokeget "$EN" 2>/dev/null || true
 fi
