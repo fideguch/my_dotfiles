@@ -12,7 +12,7 @@ opt.laststatus = 3 -- UPGRADE: global statusline
 opt.title = true
 opt.showcmd = true
 opt.number = true
-opt.relativenumber = true -- UPGRADE: relative line numbers
+opt.relativenumber = false -- DISABLED: keeps absolute line numbers fixed (no shift on cursor move)
 opt.showmatch = true
 opt.list = true
 opt.listchars = { tab = "» ", extends = "…", trail = "·" }

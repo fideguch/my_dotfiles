@@ -237,10 +237,17 @@ fi
 if [[ -o interactive && -z "$_POKE_DONE" ]] \
    && [[ "$TERM_PROGRAM" == "iTerm.app" || "$TERM_PROGRAM" == "ghostty" ]] \
    && command -v pokemon &>/dev/null; then
+  # Pokemon Champions シーズンM-1 (Reg M-A) 環境TOP30 のうち
+  # pokemon-terminal が画像対応している 23 体。
+  # 未対応 (第7世代以降): primarina/corviknight/baxcalibur/meowscarada/
+  #                       ursaluna/mimikyu/dudunsparce 等
+  # 出典: champs.pokedb.tokyo (last_updated 2026-04-28)
   _poke_favorites=(
-    gliscor froslass butterfree exploud volbeat poochyena starmie
-    woobat swalot blastoise aurorus grumpig diggersby klink pangoro
-    arbok pidove palkia dustox registeel spheal suicune mightyena
+    garchomp    charizard   hippowdon  gengar     dragonite
+    aegislash   scizor      arcanine   lopunny    hydreigon
+    rotom-wash  umbreon     lucario    delphox    gyarados
+    kangaskhan  meganium    greninja   florges    venusaur
+    weavile     volcarona   clefable
   )
   poke -n "${_poke_favorites[RANDOM % ${#_poke_favorites[@]} + 1]}"
   unset _poke_favorites
@@ -269,3 +276,6 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 [[ "$TERM_PROGRAM" == "iTerm.app" ]] \
   && [[ -f "$HOME/.iterm2_shell_integration.zsh" ]] \
   && source "$HOME/.iterm2_shell_integration.zsh"
+
+# mobile-dev-bridge: auto-attach tmux on SSH login
+if [[ -n $SSH_CONNECTION && -z $TMUX ]]; then tmux new -A -s main; fi
