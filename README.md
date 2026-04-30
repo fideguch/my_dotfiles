@@ -33,6 +33,7 @@ $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 | `ghostty/` | Ghostty/cmux 設定 (Japanesque テーマ, フォント, キーバインド) |
 | `cmux/` | cmux macOS defaults スクリプト |
 | `iterm2/` | iTerm2 Pokemon プロファイル |
+| `LaunchAgents/` | macOS launchd plist（bochi S3 セーフティネット & 週次ヘルスチェック） |
 | `set_up.sh` | セットアップスクリプト |
 
 ## 自作コマンド (.my_commands/)
@@ -174,17 +175,18 @@ bochi スキルが生成するメモ・トピック・ニュースペーパー (
 
 ### 同期スクリプト構成
 
-`claude/scripts/hooks/bochi-s3-*.sh` の5本でカバー:
+`claude/scripts/hooks/bochi-s3-*.sh` の6本 + launchd 2基でカバー:
 
 | Script | 役割 | 起動契機 |
 |--------|------|----------|
-| `bochi-s3-push.sh` | bochi-data の Write/Edit を S3 へ即時 push (async) | PostToolUse(Write\|Edit) hook |
+| `bochi-s3-push.sh` | bochi-data の Write/Edit を S3 へ即時 push (async)。失敗時はログ追記+3+/h で macOS 通知 | PostToolUse(Write\|Edit) hook |
 | `bochi-s3-pull.sh` | セッション開始時に S3 から pull | SessionStart hook |
 | `bochi-s3-pull-on-read.sh` | Read/Grep 前に S3 から pull (5秒 debounce) | PreToolUse(Read\|Grep) hook |
-| `bochi-s3-safety-push.sh` | 5分毎の冗長 push (cron, hook 失敗の保険) | cron `*/5 * * * *` |
+| `bochi-s3-safety-push.sh` | 10分毎の冗長 push (bash redirect 等 hook バイパスの救済) | launchd `StartInterval=600` |
 | `bochi-s3-safety-pull.sh` | 5分毎の冗長 pull (cron, 1分オフセット) | cron `1-56/5 * * * *` |
+| `bochi-s3-healthcheck.sh` | 月曜 09:00 JST に Lightsail へ SSH してラウンドトリップテスト | launchd `StartCalendarInterval` |
 
-全 hook 設定は `claude/settings.json` の `hooks` key に集約。
+全 hook 設定は `claude/settings.json` の `hooks` key に集約。launchd plist は `LaunchAgents/com.fideguch.bochi-*.plist` に格納し、`launchctl load -w` で有効化（詳細は `claude/scripts/hooks/README-launchd.md`）。
 
 ### Write Ownership 分担
 
@@ -200,6 +202,24 @@ bochi スキルが生成するメモ・トピック・ニュースペーパー (
 - **BUG-1: `find` がシンボリックリンクを辿らない** → Lightsail の `~/.claude/bochi-data` は symlink のため push が3週間以上停止していた。`find -L` に修正で復旧
 - **BUG-2: 同サイズ・別内容ファイルの同期漏れ** → pull 系の `aws s3 sync` に `--exact-timestamps` を追加（mtime 比較で確実検知）
 - **ネスト構造 (`bochi-data/bochi-data/`) の再発防止** → 全 sync script の冒頭に pre-flight check を追加。検出時は stderr に WARNING を出力し、`rm -rf` を促す（abort はせず sync は継続）
+- **BUG-3: `cat > file` 等 bash redirect は PostToolUse hook をバイパス** → `bochi-s3-safety-push.sh` を launchd 10 分間隔で起動し構造的に救済
+- **BUG-4: `--quiet` 起因の silent failure** → `bochi-s3-push.sh` で stderr 捕捉し `~/.claude/logs/bochi-s3-push.log` に ISO8601 timestamp + exit code + stderr を追記。直近 1 時間で 3 回以上失敗時のみ macOS 通知（1h cooldown）。10MB で `.log.1.gz` に rotate
+- **BUG-5: ラウンドトリップテストの実行漏れ** → `bochi-s3-healthcheck.sh` を launchd 週次（月曜 09:00 JST）で起動し `s3-sync-test.sh` を Lightsail に SSH 投入
+
+### launchd 有効化（新マシン or 初回のみ）
+
+`set_up.sh` に未統合のため、以下を手動実行:
+
+```bash
+mkdir -p ~/Library/LaunchAgents ~/.claude/logs
+ln -sf ~/my_dotfiles/LaunchAgents/com.fideguch.bochi-safety-push.plist ~/Library/LaunchAgents/
+ln -sf ~/my_dotfiles/LaunchAgents/com.fideguch.bochi-healthcheck.plist ~/Library/LaunchAgents/
+launchctl load -w ~/Library/LaunchAgents/com.fideguch.bochi-safety-push.plist
+launchctl load -w ~/Library/LaunchAgents/com.fideguch.bochi-healthcheck.plist
+launchctl list | grep com.fideguch.bochi   # 2行表示されれば成功
+```
+
+トラブルシュート（aws PATH、SSH 公開鍵、AWS SSO 期限切れ等）は `claude/scripts/hooks/README-launchd.md` を参照。
 
 ## 再実行の安全性（Idempotency）
 
