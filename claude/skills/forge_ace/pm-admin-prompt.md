@@ -179,6 +179,22 @@ print(f'Rejection hotspots: {json.dumps(rejections)}')
          FAIL -> revert to REJECTED despite all approvals.
          ```
 
+    5. **Default-Permissive Audit (AP#13):**
+       Required when change adds/modifies any gate function (lookup, permission,
+       feature flag, validation, status query).
+       - Default surface enumerated by Writer/Guardian: PRESENT/MISSING
+       - Permissive defaults justified in writing: YES/NO/N-A
+       - Truthy collapse risk grep run on multi-value returns: PRESENT/MISSING
+       - Unregistered-input E2E test exists: YES/NO
+       - ANY gap -> add to E2E Execution Mandate as Scenario+1:
+         ```
+         E2E SCENARIO (Default-Permissive):
+         Invoke gate function with input that is NOT in the data layer.
+         Expected: fail-safe response (False/deny/TBD with warning).
+         Forbidden: silent True / silent grant / silent proceed.
+         FAIL -> revert to REJECTED.
+         ```
+
     **PM-Admin cannot output YES without Bash execution evidence.**
 
     ---
