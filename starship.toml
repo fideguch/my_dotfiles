@@ -1,21 +1,32 @@
 # ==========================================================
 # Starship プロンプト設定 — Pokemon Terminal v2.0
-# ピカチュウ + poshmon ジムバッジ palette + Living Prompt
+# Pokemon Trainer Card 風: 各セグメントをタイプカラーで色分け
+# 参考: 公式タイプ別カラーチャート (Pokemon Aaah Type Icons)
 # ==========================================================
 
 "$schema" = "https://starship.rs/config-schema.json"
 palette = "pokemon"
 
 [palettes.pokemon]
-champion_dark = "#1A1200"
-pika_yellow   = "#FFD700"
-gym_teal      = "#2e9599"
-gym_red       = "#D51111"
-gym_gold      = "#c19c00"
+# Pokemon タイプカラー (公式)
+type_electric = "#F8D030"
+type_fire     = "#F08030"
+type_water    = "#6890F0"
+type_grass    = "#78C850"
+type_psychic  = "#F85888"
+type_dragon   = "#7038F8"
+type_ground   = "#E0C068"
+type_steel    = "#B8B8D0"
+type_fighting = "#C03028"
+type_dark     = "#705848"
+# テキスト
+text_black    = "#1A1200"
+text_white    = "#FFFFFF"
+# 失敗時
 fire_red      = "#8B0000"
 
+# 多段プロンプト: トレーナー情報 → ◉ ポケボール
 format = """
-[](fg:champion_dark)\
 $username\
 $directory\
 $git_branch\
@@ -24,7 +35,6 @@ $python\
 $nodejs\
 $aws\
 $docker_context\
-[](fg:champion_dark)\
 $line_break\
 $character"""
 
@@ -32,24 +42,24 @@ right_format = """
 $custom.pokemon\
 $time"""
 
-# ── ユーザー ─────────────────────────────────────────────
+# ── トレーナー名 (でんきタイプ・ピカチュウ黄) ─────────
 [username]
-format = "[ $user ](bold fg:#FFFFFF bg:champion_dark)"
+format = "[ ⚡$user ](bold fg:text_black bg:type_electric)"
 show_always = true
 
-# ── ディレクトリ ─────────────────────────────────────────
+# ── 現在地 (みずタイプ・カスミブルー) ───────────────────
 [directory]
-format = "[ $path ](bold fg:#FFFFFF bg:champion_dark)"
+format = "[ 󰉋 $path ](bold fg:text_white bg:type_water)"
 truncation_length = 4
 truncation_symbol = "…/"
 
-# ── Git ──────────────────────────────────────────────────
+# ── Git ブランチ (くさタイプ・ツタの蔓) ─────────────────
 [git_branch]
-symbol = " "
-format = "[  $symbol$branch ](bold fg:#FFFFFF bg:champion_dark)"
+symbol = ""
+format = "[ $symbol $branch ](bold fg:text_white bg:type_grass)"
 
 [git_status]
-format = '([$all_status$ahead_behind](bold fg:#FFFFFF bg:champion_dark))'
+format = '([ $all_status$ahead_behind](bold fg:text_white bg:type_grass))'
 conflicted = "= "
 ahead = "⇡ "
 behind = "⇣ "
@@ -58,40 +68,42 @@ modified = "! "
 staged = "+ "
 deleted = "✘ "
 
-# ── サービスアイコン ─────────────────────────────────────
+# ── 言語 (エスパー pink でレベル感) ──────────────────────
 [python]
-symbol = " "
-format = "[ $symbol$version ](fg:#FFFFFF bg:champion_dark)"
+symbol = "󰌠"
+format = "[ $symbol $version ](bold fg:text_white bg:type_psychic)"
 
 [nodejs]
-symbol = " "
-format = "[ $symbol$version ](fg:#FFFFFF bg:champion_dark)"
+symbol = "󰎙"
+format = "[ $symbol $version ](bold fg:text_white bg:type_grass)"
 
+# ── AWS (ほのおタイプ・リザードン橙) ────────────────────
 [aws]
-symbol = " "
-format = "[ $symbol$profile ](fg:#FFFFFF bg:champion_dark)"
+symbol = "󰸏"
+format = "[ $symbol $profile ](bold fg:text_white bg:type_fire)"
 [aws.region_aliases]
 ap-northeast-1 = "jp"
 
+# ── Docker (みずタイプ) ──────────────────────────────────
 [docker_context]
-symbol = " "
-format = "[ $symbol$context ](fg:#FFFFFF bg:champion_dark)"
+symbol = "󰡨"
+format = "[ $symbol $context ](bold fg:text_white bg:type_water)"
 
-# ── 時間 (right_format) ───────────────────────────────
+# ── 時間 (right_format、でんき色テキストのみ) ───────────
 [time]
 disabled = false
-format = "[$time](bold fg:pika_yellow)"
+format = "[ $time](bold fg:type_electric)"
 time_format = "%H:%M"
 
-# ── プロンプト (◉ モンスターボール、透明背景) ──────────
+# ── プロンプト ◉ モンスターボール (ほのお赤) ────────────
 [character]
-success_symbol = "[◉](bold fg:gym_red)"
-error_symbol   = "[✗](bold fg:#FF4444)"
+success_symbol = "[ ◉](bold fg:type_fire)"
+error_symbol   = "[ ✗](bold fg:fire_red)"
 
 # ── Living Prompt: 右下に krabby silhouette (Phase γ) ──
 [custom.pokemon]
 description = "Living Prompt: 右下に krabby silhouette"
 when = true
 command = "krabby random --no-title -s 2>/dev/null | head -3 || echo ''"
-format = "[$output](fg:gym_gold)"
+format = "[$output](fg:type_grass)"
 shell = ["bash", "--noprofile", "--norc"]
