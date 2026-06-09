@@ -229,6 +229,10 @@ eval "$(starship init zsh)"
 if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
   source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
   source /opt/homebrew/opt/fzf/shell/completion.zsh
+  # fzf-completion が ^I (Tab) を上書きするため、日本語IME変換後のTab送出で
+  # fzf が異常終了しシェルが落ちる問題を防ぐ。標準のzsh補完に戻す。
+  # fzf補完は ** トリガー (例: git **<Tab>) で引き続き使用可能。
+  bindkey '^I' expand-or-complete
 fi
 
 # ── cargo PATH (Rust crates: pokeget 等) ────────────────────
