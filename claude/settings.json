@@ -79,8 +79,19 @@
           {
             "type": "command",
             "command": "bash $HOME/my_dotfiles/pokemon-terminal/claude/session-start.sh",
-            "async": true,
-            "timeout": 3
+            "timeout": 3,
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/scripts/hooks/pokechamp-ensure-schedule.sh",
+            "timeout": 10,
+            "async": true
           }
         ]
       }
@@ -153,14 +164,15 @@
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "bash $HOME/my_dotfiles/pokemon-terminal/claude/statusline.sh",
+    "padding": 0
+  },
   "enabledPlugins": {
     "skill-creator@claude-plugins-official": true,
     "discord@claude-plugins-official": true
   },
   "skipDangerousModePermissionPrompt": true,
-  "statusLine": {
-    "type": "command",
-    "command": "bash $HOME/my_dotfiles/pokemon-terminal/claude/statusline.sh",
-    "padding": 0
-  }
+  "effortLevel": "xhigh"
 }
