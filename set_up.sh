@@ -124,19 +124,27 @@ echo "自作スキルリポジトリを clone します..."
 
 # ~/.claude/skills/ 内に直接 clone
 clone_skill_repo "fideguch/bochi"             "$CLAUDE_DST/skills/bochi"
-clone_skill_repo "fideguch/pm_data_analysis"  "$CLAUDE_DST/skills/pm-data-analysis"
+clone_skill_repo "fideguch/pm-data-analysis"  "$CLAUDE_DST/skills/pm-data-analysis"
 clone_skill_repo "fideguch/speckit-bridge"    "$CLAUDE_DST/skills/speckit-bridge"
-clone_skill_repo "fideguch/my_pm_tools"      "$CLAUDE_DST/skills/my_pm_tools"
+clone_skill_repo "fideguch/my_pm_tools"       "$CLAUDE_DST/skills/my_pm_tools"
+clone_skill_repo "fideguch/figma-refine"      "$CLAUDE_DST/skills/figma-refine"
+clone_skill_repo "fideguch/claude-to-codex"   "$CLAUDE_DST/skills/claude-to-codex"
 
 # 別ディレクトリに clone → symlink
 clone_skill_repo "fideguch/pm_ad_analysis"    "$HOME/pm_ad_analysis"
-if [[ ! -e "$CLAUDE_DST/skills/pm-ad-analysis" ]]; then
-  ln -sv "$HOME/pm_ad_analysis" "$CLAUDE_DST/skills/pm-ad-analysis"
+if [[ -d "$HOME/pm_ad_analysis" ]]; then
+  link_file "$HOME/pm_ad_analysis" "$CLAUDE_DST/skills/pm-ad-analysis"
 fi
 
 clone_skill_repo "fideguch/google-workspace"  "$HOME/google_mcps"
-if [[ ! -e "$CLAUDE_DST/skills/google-workspace" ]]; then
-  ln -sv "$HOME/google_mcps/google-workspace" "$CLAUDE_DST/skills/google-workspace"
+if [[ -d "$HOME/google_mcps/google-workspace" ]]; then
+  link_file "$HOME/google_mcps/google-workspace" "$CLAUDE_DST/skills/google-workspace"
+fi
+
+# pokemon-champions スキル: ~/ai-pokemen に clone → symlink
+clone_skill_repo "fideguch/ai-pokemen"        "$HOME/ai-pokemen"
+if [[ -d "$HOME/ai-pokemen" ]]; then
+  link_file "$HOME/ai-pokemen" "$CLAUDE_DST/skills/pokemon-champions"
 fi
 
 # requirements_designer は npx skills add 経由でインストール
