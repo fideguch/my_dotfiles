@@ -13,6 +13,12 @@
 const fs = require("fs");
 const path = require("path");
 
+// The Discord bridge session is a conversational companion, not a PM pipeline
+// context — plan.md writes there are meeting notes, not implementation plans.
+if (process.env.CLAUDE_BRIDGE === "1") {
+  process.exit(0);
+}
+
 const TOOL_INPUT = JSON.parse(process.env.TOOL_INPUT || "{}");
 const filePath = TOOL_INPUT.file_path || "";
 

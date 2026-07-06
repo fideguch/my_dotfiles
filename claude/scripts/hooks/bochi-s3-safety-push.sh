@@ -44,7 +44,8 @@ fi
 EXCLUDE_COMMON=(--exclude ".DS_Store" --exclude "*.tmp" --exclude "*.lock" --exclude "bochi-data/*")
 
 if [ "$(uname)" = "Darwin" ]; then
-  EXCLUDE_OWNERSHIP=(--exclude "topics/*" --exclude "newspaper/*" --exclude "conversations/*" --exclude "reflections/*" --exclude "seen.jsonl" --exclude "sources/*" --exclude "stats/*" --exclude "user-profile.yaml" --exclude "cache/*")
+  # v2.6: seen.jsonl co-owned (union-merged on pull) — not excluded
+  EXCLUDE_OWNERSHIP=(--exclude "topics/*" --exclude "newspaper/*" --exclude "conversations/*" --exclude "reflections/*" --exclude "sources/*" --exclude "stats/*" --exclude "user-profile.yaml" --exclude "cache/*")
 else
   EXCLUDE_OWNERSHIP=(--exclude "context-seeds/*")
 fi
