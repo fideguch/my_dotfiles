@@ -49,7 +49,9 @@ EXCLUDE_COMMON=(--exclude ".DS_Store" --exclude "*.tmp" --exclude "*.lock" --exc
 
 if [ "$(uname)" = "Darwin" ]; then
   # Mac CLI: exclude Lightsail-owned directories
-  EXCLUDE_OWNERSHIP=(--exclude "topics/*" --exclude "newspaper/*" --exclude "conversations/*" --exclude "reflections/*" --exclude "seen.jsonl" --exclude "sources/*" --exclude "stats/*" --exclude "user-profile.yaml" --exclude "cache/*")
+  # v2.6: seen.jsonl is co-owned (Mac bridge + Lightsail newspaper) — both
+  # sides push it and pull merges it (union), so it is NOT excluded here.
+  EXCLUDE_OWNERSHIP=(--exclude "topics/*" --exclude "newspaper/*" --exclude "conversations/*" --exclude "reflections/*" --exclude "sources/*" --exclude "stats/*" --exclude "user-profile.yaml" --exclude "cache/*")
 else
   # Lightsail: exclude Mac-owned directories
   EXCLUDE_OWNERSHIP=(--exclude "context-seeds/*")

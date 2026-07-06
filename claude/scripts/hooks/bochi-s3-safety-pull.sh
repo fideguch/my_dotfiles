@@ -31,9 +31,9 @@ else
   trap 'rmdir "$LOCKFILE.d" 2>/dev/null' EXIT
 fi
 
-# Pull from S3
+# Pull from S3 (seen.jsonl excluded — union-merged below, v2.6)
 aws s3 sync "s3://$BUCKET/bochi-data/" "$DATA_DIR/" \
-  --exclude ".DS_Store" --exclude "*.tmp" \
+  --exclude ".DS_Store" --exclude "*.tmp" --exclude "seen.jsonl" \
   --exact-timestamps \
   --region ap-northeast-1 --quiet 2>/dev/null || true
 
@@ -63,3 +63,39 @@ with open('$LOCAL_INDEX', 'w') as f:
     rm -f "$REMOTE_INDEX"
   fi
 fi
+
+# v2.6: seen.jsonl co-owned (Mac bridge + Lightsail) — union-merge
+LOCAL_SEEN="$DATA_DIR/seen.jsonl"
+REMOTE_SEEN="/tmp/bochi-seen-remote-$$.jsonl"
+aws s3 cp "s3://$BUCKET/bochi-data/seen.jsonl" "$REMOTE_SEEN" \
+  --region ap-northeast-1 --quiet 2>/dev/null || true
+if [ -f "$REMOTE_SEEN" ] && [ -s "$REMOTE_SEEN" ]; then
+  python3 - "$LOCAL_SEEN" "$REMOTE_SEEN" <<'PYEOF' || true
+import json, os, sys
+local, remote = sys.argv[1], sys.argv[2]
+keys, out = set(), []
+def keyof(line):
+    try:
+        e = json.loads(line)
+        return e.get('url') or e.get('id') or line
+    except Exception:
+        return line
+for p in (local, remote):
+    if not os.path.exists(p):
+        continue
+    try:
+        for line in open(p):
+            line = line.rstrip('\n')
+            if not line.strip():
+                continue
+            k = keyof(line)
+            if k not in keys:
+                keys.add(k)
+                out.append(line)
+    except Exception:
+        pass
+with open(local, 'w') as f:
+    f.write('\n'.join(out) + ('\n' if out else ''))
+PYEOF
+fi
+rm -f "$REMOTE_SEEN" 2>/dev/null || true
