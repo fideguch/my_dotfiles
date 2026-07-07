@@ -1,5 +1,5 @@
 {
-  "model": "opus-4-7[1m]",
+  "model": "claude-fable-5[1m]",
   "hooks": {
     "PreToolUse": [
       {
@@ -95,6 +95,16 @@
             "async": true
           }
         ]
+      },
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -d \"${CLAUDE_PROJECT_DIR:-.}/.fable\" ] || exit 0; cat \"$HOME/.claude/skills/fable-for-opus/hooks/fable-core-card.md\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -117,6 +127,17 @@
             "command": "bash ~/.claude/scripts/hooks/bochi-s3-push.sh",
             "timeout": 30,
             "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -d \"${CLAUDE_PROJECT_DIR:-.}/.fable\" ] || exit 0; bash \"$HOME/.claude/skills/fable-for-opus/hooks/fable-post-edit.sh\"",
+            "timeout": 60,
+            "statusMessage": "fable post-edit check"
           }
         ]
       }
@@ -162,6 +183,17 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/skills/fable-for-opus/hooks/fable-stop-gate.sh\"",
+            "timeout": 10,
+            "statusMessage": "fable stop gate"
+          }
+        ]
       }
     ]
   },
@@ -172,9 +204,11 @@
   },
   "enabledPlugins": {
     "skill-creator@claude-plugins-official": true,
-    "discord@claude-plugins-official": true
+    "discord@claude-plugins-official": true,
+    "swift-lsp@claude-plugins-official": true
   },
-  "effortLevel": "ultracode",
+  "effortLevel": "xhigh",
   "tui": "fullscreen",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true
 }
