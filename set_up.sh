@@ -129,6 +129,7 @@ clone_skill_repo "fideguch/speckit-bridge"    "$CLAUDE_DST/skills/speckit-bridge
 clone_skill_repo "fideguch/my_pm_tools"       "$CLAUDE_DST/skills/my_pm_tools"
 clone_skill_repo "fideguch/figma-refine"      "$CLAUDE_DST/skills/figma-refine"
 clone_skill_repo "fideguch/claude-to-codex"   "$CLAUDE_DST/skills/claude-to-codex"
+clone_skill_repo "fideguch/fable-for-opus"    "$CLAUDE_DST/skills/fable-for-opus"
 
 # 別ディレクトリに clone → symlink
 clone_skill_repo "fideguch/pm_ad_analysis"    "$HOME/pm_ad_analysis"
@@ -145,6 +146,16 @@ fi
 clone_skill_repo "fideguch/ai-pokemen"        "$HOME/ai-pokemen"
 if [[ -d "$HOME/ai-pokemen" ]]; then
   link_file "$HOME/ai-pokemen" "$CLAUDE_DST/skills/pokemon-champions"
+fi
+
+clone_skill_repo "fideguch/mobile-dev-bridge" "$HOME/mobile-dev-bridge"
+if [[ -d "$HOME/mobile-dev-bridge" ]]; then
+  link_file "$HOME/mobile-dev-bridge" "$CLAUDE_DST/skills/mobile-dev-bridge"
+fi
+
+clone_skill_repo "fideguch/specs-evals"       "$HOME/specs-evals"
+if [[ -d "$HOME/specs-evals" ]]; then
+  link_file "$HOME/specs-evals" "$CLAUDE_DST/skills/specs-evals"
 fi
 
 # requirements_designer は npx skills add 経由でインストール
