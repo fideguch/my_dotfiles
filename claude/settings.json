@@ -204,7 +204,7 @@
   },
   "enabledPlugins": {
     "skill-creator@claude-plugins-official": true,
-    "discord@claude-plugins-official": true,
+    "discord@claude-plugins-official": false,
     "swift-lsp@claude-plugins-official": true
   },
   "effortLevel": "xhigh",
