@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# awesome-design-md (https://github.com/VoltAgent/awesome-design-md) から
+# ブランドの DESIGN.md をカレントディレクトリに取得するヘルパー。
+#
+# Usage:
+#   design-md list              # 収録ブランド一覧を表示
+#   design-md <brand>           # ./DESIGN.md にコピー（既存があればバックアップ）
+#   design-md update            # ローカルキャッシュを git pull
+set -euo pipefail
+
+REPO_DIR="$HOME/awesome-design-md"
+REPO_URL="https://github.com/VoltAgent/awesome-design-md.git"
+
+ensure_repo() {
+  if [[ ! -d "$REPO_DIR" ]]; then
+    echo "awesome-design-md を $REPO_DIR に clone します..."
+    git clone --depth 1 "$REPO_URL" "$REPO_DIR"
+  fi
+}
+
+usage() {
+  sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+case "${1:-}" in
+  "" )
+    usage
+    exit 1
+    ;;
+  list )
+    ensure_repo
+    ls "$REPO_DIR/design-md"
+    ;;
+  update )
+    ensure_repo
+    git -C "$REPO_DIR" pull --ff-only
+    ;;
+  * )
+    ensure_repo
+    brand="$1"
+    src="$REPO_DIR/design-md/$brand/DESIGN.md"
+    if [[ ! -f "$src" ]]; then
+      echo "'$brand' の DESIGN.md が見つかりません。'design-md list' で収録ブランドを確認してください。" >&2
+      exit 1
+    fi
+    if [[ -f "./DESIGN.md" ]]; then
+      mv "./DESIGN.md" "./DESIGN.md.backup.$(date +%Y%m%d%H%M%S)"
+      echo "既存の DESIGN.md をバックアップしました"
+    fi
+    cp "$src" "./DESIGN.md"
+    echo "$brand の DESIGN.md を ./DESIGN.md にコピーしました"
+    ;;
+esac
