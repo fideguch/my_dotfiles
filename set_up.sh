@@ -170,6 +170,15 @@ if [[ -f "$DOTPATH/claude/scripts/sync-npx-skills.sh" ]]; then
   info "npx スキル同期完了"
 fi
 
+# ── 5d. awesome-design-md（DESIGN.md 参照コレクション）────
+if [[ -d "$HOME/awesome-design-md" ]]; then
+  info "awesome-design-md は既に存在 — スキップ（更新は design-md update）"
+else
+  echo "  Cloning VoltAgent/awesome-design-md → $HOME/awesome-design-md"
+  git clone --depth 1 "https://github.com/VoltAgent/awesome-design-md.git" "$HOME/awesome-design-md" \
+    || warn "Clone failed: awesome-design-md — 後で design-md list 実行時に再試行されます"
+fi
+
 # ── 6. Vim プラグインのインストール ──────────────────────
 if [[ -f "$HOME/.vim/autoload/plug.vim" ]]; then
   info "vim-plug は既にインストール済み"
