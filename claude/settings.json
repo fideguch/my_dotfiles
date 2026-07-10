@@ -50,6 +50,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Agent|Task|Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/fumito_ideguchi/token-guard/hooks/tg-record.sh",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -103,6 +113,16 @@
             "type": "command",
             "command": "[ -d \"${CLAUDE_PROJECT_DIR:-.}/.fable\" ] || exit 0; cat \"$HOME/.claude/skills/fable-for-opus/hooks/fable-core-card.md\"",
             "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/fumito_ideguchi/token-guard/hooks/tg-session-start.mjs",
+            "timeout": 10
           }
         ]
       }
@@ -192,6 +212,29 @@
             "command": "bash \"$HOME/.claude/skills/fable-for-opus/hooks/fable-stop-gate.sh\"",
             "timeout": 10,
             "statusMessage": "fable stop gate"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/fumito_ideguchi/token-guard/hooks/tg-stop-audit.mjs",
+            "timeout": 15,
+            "statusMessage": "token-guard audit"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /Users/fumito_ideguchi/token-guard/hooks/tg-prompt-gate.mjs",
+            "timeout": 5
           }
         ]
       }
