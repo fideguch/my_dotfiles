@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 
 /**
  * PM Pipeline Guard Hook (PreToolUse: Write)
@@ -13,13 +14,25 @@
 const fs = require("fs");
 const path = require("path");
 
+// Claude Code delivers the tool payload on stdin as JSON ({tool_name, tool_input, ...}),
+// NOT via a TOOL_INPUT env var (Claude Code never sets one). Read stdin, fail-open on error.
+function readToolInput() {
+  try {
+    const raw = fs.readFileSync(0, "utf8");
+    if (!raw) return {};
+    return JSON.parse(raw).tool_input || {};
+  } catch {
+    return {};
+  }
+}
+
 // The Discord bridge session is a conversational companion, not a PM pipeline
 // context — plan.md writes there are meeting notes, not implementation plans.
 if (process.env.CLAUDE_BRIDGE === "1") {
   process.exit(0);
 }
 
-const TOOL_INPUT = JSON.parse(process.env.TOOL_INPUT || "{}");
+const TOOL_INPUT = readToolInput();
 const filePath = TOOL_INPUT.file_path || "";
 
 // Only guard plan.md and tasks.md writes
@@ -31,8 +44,13 @@ if (!guardedFiles.includes(basename)) {
   process.exit(0);
 }
 
-// Check if we're in a specs/ directory (spec-kit output) — allow those
-if (filePath.includes("/specs/")) {
+// Allow spec-kit output (specs/) and agent-state files (.fable/, .claude/) — these
+// are not PM pipeline plans, so the designs/ gate must not block them.
+if (
+  filePath.includes("/specs/") ||
+  filePath.includes("/.fable/") ||
+  filePath.includes("/.claude/")
+) {
   process.exit(0);
 }
 
@@ -70,7 +88,13 @@ if (!fs.existsSync(frPath)) {
   process.exit(0);
 }
 
-const frContent = fs.readFileSync(frPath, "utf8");
+let frContent;
+try {
+  frContent = fs.readFileSync(frPath, "utf8");
+} catch {
+  // Can't read the requirements file (e.g. EACCES) — fail-open, never block the write.
+  process.exit(0);
+}
 
 if (!frContent.includes("FR-001")) {
   const result = {

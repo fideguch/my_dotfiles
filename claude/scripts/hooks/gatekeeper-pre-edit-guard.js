@@ -15,6 +15,18 @@
 const fs = require('fs');
 const path = require('path');
 
+// Claude Code delivers the tool payload on stdin as JSON ({tool_name, tool_input, ...}),
+// NOT via a TOOL_INPUT env var (Claude Code never sets one). Read stdin, fail-open on error.
+function readToolInput() {
+  try {
+    const raw = fs.readFileSync(0, 'utf8');
+    if (!raw) return {};
+    return JSON.parse(raw).tool_input || {};
+  } catch {
+    return {};
+  }
+}
+
 function resolveSessionDir() {
   // 1. Explicit env var (highest priority)
   if (process.env.GATEKEEPER_SESSION_DIR) {
@@ -49,7 +61,7 @@ try {
     process.exit(0);
   }
 
-  const toolInput = JSON.parse(process.env.TOOL_INPUT || '{}');
+  const toolInput = readToolInput();
   const filePath = toolInput.file_path || '';
 
   // Only guard src/ edits (implementation code)
@@ -59,7 +71,12 @@ try {
   }
 
   // HG-1 check
-  const hg1 = session.gates.hg1;
+  const hg1 = session.gates?.hg1;
+
+  if (!hg1) {
+    // Malformed session (missing hg1 gate) — fail-open, don't block the edit.
+    process.exit(0);
+  }
 
   if (hg1.status === 'PASS' || hg1.status === 'skipped') {
     // HG-1 passed or skipped (standalone bug fix mode)
