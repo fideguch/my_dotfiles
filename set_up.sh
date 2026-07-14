@@ -64,6 +64,12 @@ link_file "$DOTPATH/.my_commands"   "$HOME/.my_commands"
 link_file "$DOTPATH/.vim"           "$HOME/.vim"
 link_file "$DOTPATH/nvim"           "$HOME/.config/nvim"
 
+# Codex CLI config (default model pin gpt-5.6-sol; managed in dotfiles)
+if [[ -f "$DOTPATH/codex/config.toml" ]]; then
+  mkdir -p "$HOME/.codex"
+  link_file "$DOTPATH/codex/config.toml" "$HOME/.codex/config.toml"
+fi
+
 info "シンボリックリンク作成完了"
 
 # ── 5. Claude Code 設定 ───────────────────────────────────
@@ -130,6 +136,7 @@ clone_skill_repo "fideguch/my_pm_tools"       "$CLAUDE_DST/skills/my_pm_tools"
 clone_skill_repo "fideguch/figma-refine"      "$CLAUDE_DST/skills/figma-refine"
 clone_skill_repo "fideguch/claude-to-codex"   "$CLAUDE_DST/skills/claude-to-codex"
 clone_skill_repo "fideguch/fable-for-opus"    "$CLAUDE_DST/skills/fable-for-opus"
+clone_skill_repo "fideguch/model-director"    "$CLAUDE_DST/skills/model-director"
 
 # 別ディレクトリに clone → symlink
 clone_skill_repo "fideguch/pm_ad_analysis"    "$HOME/pm_ad_analysis"
