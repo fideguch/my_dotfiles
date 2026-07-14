@@ -16,6 +16,18 @@ const path = require('path');
 
 const SESSION_FILE = '/tmp/.forge-ace-session.json';
 
+// Claude Code delivers the tool payload on stdin as JSON ({tool_name, tool_input, ...}),
+// NOT via a TOOL_INPUT env var (Claude Code never sets one). Read stdin, fail-open on error.
+function readToolInput() {
+  try {
+    const raw = fs.readFileSync(0, 'utf8');
+    if (!raw) return {};
+    return JSON.parse(raw).tool_input || {};
+  } catch {
+    return {};
+  }
+}
+
 // State prerequisites for each forge_ace agent
 // Patterns are broad (no colon required) to prevent bypass via alternative phrasing.
 // Order matters: more specific patterns first (PM-Admin before Admin).
@@ -35,7 +47,7 @@ try {
     process.exit(0);
   }
 
-  const toolInput = JSON.parse(process.env.TOOL_INPUT || '{}');
+  const toolInput = readToolInput();
   const description = toolInput.description || '';
 
   // Read session state
