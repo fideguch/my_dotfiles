@@ -1,0 +1,9 @@
+# Codex CLI configuration — managed in dotfiles, symlinked to ~/.codex/config.toml.
+#
+# Default model for bare `codex` / `codex exec` runs. model-director always
+# passes `-m <model>` explicitly (via claude-to-codex/codex-run.sh), so this
+# default only affects interactive or unspecified invocations.
+#
+# Note: verified that `-m gpt-5.6-sol` is accepted by Codex CLI >= 0.144.4
+# (older versions return HTTP 400 "requires a newer version of Codex").
+model = "gpt-5.6-sol"
