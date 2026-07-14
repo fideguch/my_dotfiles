@@ -29,3 +29,6 @@ plans/
 
 # === Personal memory & learning ===
 memory/
+
+# === Tool-generated backups (token-guard etc.) ===
+*.token-guard-backup.*
