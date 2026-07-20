@@ -5,6 +5,9 @@
       "Guid": "pokemon-terminal-profile-001",
       "Rewritable": false,
 
+      "Close Sessions On End": false,
+      "Prompt Before Closing 2": 0,
+
       "Blend": 0.40,
       "Minimum Contrast": 0.85,
       "Transparency": 0.0,

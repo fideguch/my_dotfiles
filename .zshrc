@@ -329,5 +329,22 @@ export PATH="$BUN_INSTALL/bin:$PATH"
   && [[ -f "$HOME/.iterm2_shell_integration.zsh" ]] \
   && source "$HOME/.iterm2_shell_integration.zsh"
 
+# ── Shell-death forensics ───────────────────────────────────
+# Logs why an interactive zsh exits (~/.cache/zsh-exit.log) so that
+# silent shell deaths (iTerm2 tab-close incidents) can be diagnosed
+# after the fact. zshexit does not fire when the shell is killed by
+# an uncaught signal, so HUP/TERM traps log first, then exit as usual.
+if [[ -o interactive ]]; then
+  _shell_death_log() {
+    local last
+    last=$(fc -ln -1 2>/dev/null)
+    print -r -- "$(date '+%F %T') pid=$$ reason=$1 term=${TERM_PROGRAM:-?} last=${last## }" \
+      >> ~/.cache/zsh-exit.log 2>/dev/null
+  }
+  zshexit()  { _shell_death_log "exit(status=$?)" }
+  TRAPHUP()  { _shell_death_log SIGHUP;  exit 129 }
+  TRAPTERM() { _shell_death_log SIGTERM; exit 143 }
+fi
+
 # mobile-dev-bridge: auto-attach tmux on SSH login
 if [[ -n $SSH_CONNECTION && -z $TMUX ]]; then tmux new -A -s main; fi
