@@ -9,3 +9,9 @@
 
 # bochi S3 hook logs (runtime state, not synced)
 claude/logs/
+
+# Codex CLI live config. Codex appends a [projects."<absolute path>"] trust_level
+# block for every directory you approve, and those paths carry client / project
+# names — this repo is public. Track codex/config.template.toml instead;
+# set_up.sh seeds the live file from it.
+codex/config.toml
