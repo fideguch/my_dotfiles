@@ -1,4 +1,4 @@
-# Failure Patterns — kireinavi Project (v28-v36)
+# Failure Patterns — Commercial Project (v28-v36)
 
 > Extracted from bochi reflection memos. 11 categories, 50+ incidents.
 > Each pattern includes detection signals and prevention gates.

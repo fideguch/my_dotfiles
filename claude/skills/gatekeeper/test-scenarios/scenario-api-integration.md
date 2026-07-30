@@ -43,7 +43,7 @@ All gates active — API integration requires HG-3 (facts before integrating ext
      country: 'JP',
      capabilities: { transfers: { requested: true } },
      business_type: 'individual',
-     business_profile: { mcc: '7349', url: 'https://kireinavi.jp' }
+     business_profile: { mcc: '7349', url: 'https://example.com' }
    }).then(a => console.log('OK:', a.id)).catch(e => console.log('ERROR:', e.message));
    "
    ```

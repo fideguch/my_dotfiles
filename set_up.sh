@@ -64,9 +64,16 @@ link_file "$DOTPATH/.my_commands"   "$HOME/.my_commands"
 link_file "$DOTPATH/.vim"           "$HOME/.vim"
 link_file "$DOTPATH/nvim"           "$HOME/.config/nvim"
 
-# Codex CLI config (default model pin gpt-5.6-sol; managed in dotfiles)
+# Codex CLI config (default model pin gpt-5.6-sol; managed in dotfiles).
+# config.toml is gitignored: Codex appends a [projects."<absolute path>"] block
+# for every directory you trust, and those paths carry client / project names —
+# this repo is public. Seed from the template on a fresh machine, then symlink.
+mkdir -p "$HOME/.codex"
+if [[ ! -f "$DOTPATH/codex/config.toml" ]] && [[ -f "$DOTPATH/codex/config.template.toml" ]]; then
+  cp "$DOTPATH/codex/config.template.toml" "$DOTPATH/codex/config.toml"
+  info "codex/config.toml をテンプレートから生成しました"
+fi
 if [[ -f "$DOTPATH/codex/config.toml" ]]; then
-  mkdir -p "$HOME/.codex"
   link_file "$DOTPATH/codex/config.toml" "$HOME/.codex/config.toml"
 fi
 

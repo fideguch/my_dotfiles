@@ -1,0 +1,15 @@
+# Codex CLI configuration — TEMPLATE.
+#
+# set_up.sh copies this to codex/config.toml on a fresh machine and symlinks it
+# to ~/.codex/config.toml. config.toml itself is gitignored on purpose: Codex
+# appends a `[projects."<absolute path>"] trust_level = ...` block for every
+# directory you approve, and those paths carry client / project names. This is a
+# public repo, so the live file must never be tracked.
+#
+# Default model for bare `codex` / `codex exec` runs. model-director always
+# passes `-m <model>` explicitly (via claude-to-codex/codex-run.sh), so this
+# default only affects interactive or unspecified invocations.
+#
+# Note: verified that `-m gpt-5.6-sol` is accepted by Codex CLI >= 0.144.4
+# (older versions return HTTP 400 "requires a newer version of Codex").
+model = "gpt-5.6-sol"

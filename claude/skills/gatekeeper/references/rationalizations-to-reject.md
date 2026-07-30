@@ -2,7 +2,7 @@
 
 > Based on trailofbits/skills fp-check pattern (4,466+ stars)
 > + verification-before-completion Rationalization Prevention
-> + kireinavi project failure patterns (v28-v36, 50+ incidents)
+> + commercial project failure patterns (v28-v36, 50+ incidents)
 
 ## How to Use This Document
 

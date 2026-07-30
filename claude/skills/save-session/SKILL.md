@@ -61,7 +61,7 @@ metadata:
 ~/.claude/projects/<project-slug>/memory/handoff_<branch>_<YYYY-MM-DD>_<session-short>.md
 ```
 
-- `<project-slug>` = cwd をスラッシュ→ハイフン変換したもの（例: `-Users-fumito-ideguchi-Desktop-start-work-medicavice-medicaviceLP`）。`ls ~/.claude/projects/` で実在ディレクトリを確認してから使う。
+- `<project-slug>` = cwd をスラッシュ→ハイフン変換したもの（例: `-Users-you-Desktop-work-acme-acmeLP`）。`ls ~/.claude/projects/` で実在ディレクトリを確認してから使う。
 - `<branch>` = `git rev-parse --abbrev-ref HEAD`（スラッシュは `-` に置換）。
 - `<session-short>` = `$CLAUDE_SESSION_ID` 先頭8文字。未設定なら transcript dir 名の UUID 先頭8文字、それも無ければ `date +%H%M%S`（衝突回避のため必ず一意化）。
 
