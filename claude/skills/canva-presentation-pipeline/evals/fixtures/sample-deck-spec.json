@@ -1,0 +1,13 @@
+{
+  "meta": {"title": "オーナー報告サポート ご提案", "client": "サンプル管理株式会社", "date": "2026-09-01", "aspect_ratio": "16:9", "language": "ja"},
+  "brand_spec": "canva/brand-spec.yaml",
+  "slides": [
+    {"id": 1, "archetype": "cover", "title": "オーナー報告サポート ご提案", "subtitle": "解約防止と追加受託を支える月次報告", "client": "サンプル管理株式会社", "date": "2026-09-01"},
+    {"id": 2, "archetype": "executive-summary", "title": "本日お伝えしたいこと", "bullets": ["オーナー離脱の主因は報告への不信", "月次報告を関係構築のサイクルに変える", "業務フローは変えずに担当者を強くする", "まず1物件から小さく始められる"]},
+    {"id": 3, "archetype": "big-number", "title": "オーナー1人の離脱の重み", "headline_value": "▲12戸", "bullets": ["複数物件保有オーナーの解約は管理戸数を一括で失う"]},
+    {"id": 4, "archetype": "two-column", "title": "現状とこれから", "columns": [{"heading": "AsIs", "bullets": ["報告作成に毎月工数", "内容が担当者ごとに差"]}, {"heading": "ToBe", "bullets": ["報告は自動で仕上がる", "担当者は対話に集中"]}]},
+    {"id": 5, "archetype": "evidence-chart", "title": "解約には予兆がある", "chart": {"type": "bar", "render": "png", "path": "assets/churn-signals.png", "claim": "解約オーナーの多くは数ヶ月前に空室・修繕のシグナルが出る"}},
+    {"id": 6, "archetype": "recommendation", "title": "ご提案", "bullets": ["月次報告の自動生成から開始", "翌月から提案トリガーを追加", "3ヶ月で反応率を計測"]},
+    {"id": 7, "archetype": "closing", "title": "まずは貴社データで診断から", "bullets": ["お問い合わせ: sales@example.com"]}
+  ]
+}

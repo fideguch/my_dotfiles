@@ -1,0 +1,32 @@
+# Copy this file into the project as canva/brand-spec.yaml and fill it in.
+# NEVER invent hex values or font names: take them from the Canva Brand Kit,
+# the company web site's CSS, or an existing approved deck. Unknown values
+# stay as "TODO: <how to obtain>" so they surface in review instead of hiding.
+
+brand:
+  company: "TODO: company name"
+  primary_colors:
+    - "TODO: main brand hex, e.g. #0F172A"
+  secondary_colors:
+    - "TODO: accent hex"
+  neutrals:
+    background: "#FFFFFF"
+    text: "TODO: body text hex"
+  fonts:
+    heading: "TODO: exact font name as it appears in Canva"
+    body: "TODO: exact font name as it appears in Canva"
+    substitutions: []   # record any Canva-availability substitutions here
+  logo:
+    file: "TODO: path or Canva asset id"
+    minimum_clear_space: "logo height x 0.5"
+    allowed_variants: [dark, light]
+  imagery:
+    style: "TODO: e.g. real product screenshots, no stock-photo handshakes"
+  tone:
+    preferred: [concise, evidence_based]
+    prohibited: [exaggerated_claims, unverifiable_superlatives]
+
+canva:
+  plan: "pro"            # pro | free | enterprise — decides route A availability
+  brand_kit_id: "TODO: if known"
+  brand_template_id: ""  # route A only (Enterprise)

@@ -15,3 +15,4 @@ claude/logs/
 # names — this repo is public. Track codex/config.template.toml instead;
 # set_up.sh seeds the live file from it.
 codex/config.toml
+__pycache__/

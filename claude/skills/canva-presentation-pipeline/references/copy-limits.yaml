@@ -1,0 +1,30 @@
+# Text limits in DISPLAY COLUMNS: ASCII = 1 column, CJK (East Asian W/F) = 2.
+# A Japanese title of 20 kanji = 40 columns. Enforced by check_copy_limits.py.
+# Why columns, not chars: mixed JP/EN strings overflow boxes at equal char
+# counts; column width tracks what the rendered slide actually does.
+
+limits:
+  title:
+    max_columns: 44          # ~22 JP chars — one line at 28-32pt
+  subtitle:
+    max_columns: 60
+  bullet:
+    max_columns: 64          # ~32 JP chars — one line at 16-18pt
+    max_lines_if_wrapped: 2  # advisory only — not machine-enforced (depends on box width)
+  bullets_per_slide_hard_max: 5   # top-level bullets only; column bullets are
+                                  # capped per column by the archetype rules
+  milestone_label:
+    max_columns: 48
+  insight_or_claim:
+    max_columns: 80
+  table_cell:
+    max_columns: 24
+  notes:                      # speaker notes are not rendered; generous
+    max_columns: 2000
+  headline_value:             # big-number archetype
+    max_columns: 12
+
+principles:
+  - One message per slide; if a slide needs a second paragraph it needs a second slide.
+  - Numbers carry the argument; adjectives do not. Prefer "解約予兆はY ヶ月前に出る" over "早期に".
+  - Cut particles before cutting nouns when trimming Japanese bullets.

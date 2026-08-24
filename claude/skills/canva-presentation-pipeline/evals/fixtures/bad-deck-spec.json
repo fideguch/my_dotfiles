@@ -1,0 +1,13 @@
+{
+  "meta": {"client": "no title co.", "date": "not-a-date", "aspect_ratio": "4:3"},
+  "slides": [
+    {"id": 1, "archetype": "executive-summary", "title": "この極端に長いタイトルは表示幅の上限を確実に超過するはずなので検査で検出されなければならない", "bullets": ["a", "b", "c", "d", "e", "f"]},
+    {"id": 1, "archetype": "hero-banner", "title": "unknown archetype + duplicate id"},
+    "this slide is a string, not an object",
+    {"archetype": "case-study", "title": "missing id, bullets is a string", "bullets": "not a list but a string"},
+    {"id": 3, "archetype": "evidence-chart", "title": "native chart", "chart": {"type": "bar", "render": "pptx-native", "path": "x", "claim": "ok"}},
+    {"id": 4, "archetype": "comparison", "title": "empty then oversized table", "table": {"headers": ["a", "b", "c", "d", "e", "f"], "rows": [["1", "2", "3", "4", "5", "6"], ["1", "2"]]}},
+    {"id": 5, "archetype": "two-column", "title": "no headings", "columns": [{"bullets": ["x"]}, {"bullets": [42]}]},
+    {"id": 6, "archetype": "timeline", "title": "too few milestones", "milestones": [{"date": "2026-09", "label": "start"}]}
+  ]
+}
