@@ -1,0 +1,93 @@
+# Approved slide archetypes. Every deck-spec slide must declare exactly one.
+# Constraints are enforced by scripts/validate_deck_spec.py.
+# Widths are display columns: CJK chars count as 2 (see copy-limits.yaml).
+
+archetypes:
+  cover:
+    purpose: Deck opener — client name, deck title, date, presenter
+    required_fields: [title]
+    optional_fields: [subtitle, client, date, presenter]
+    max_bullets: 0
+    images: 0-1        # logo / key visual only
+    charts: false
+  section-divider:
+    purpose: Chapter break with section number and title
+    required_fields: [title]
+    max_bullets: 1     # optional one-line framing sentence
+    images: 0
+    charts: false
+  executive-summary:
+    purpose: The whole argument on one slide
+    required_fields: [title, bullets]
+    max_bullets: 4
+    images: 0
+    charts: false
+  big-number:
+    purpose: One dominant metric with context line
+    required_fields: [title, headline_value]
+    max_bullets: 2
+    images: 0
+    charts: false
+  two-column:
+    purpose: Paired content (before/after, problem/solution, AsIs/ToBe)
+    required_fields: [title, columns]   # columns = exactly 2 entries
+    max_bullets: 4    # per column
+    images: 0-2
+    charts: false
+  image-and-insight:
+    purpose: Screenshot or photo with a single takeaway
+    required_fields: [title, image, insight]
+    max_bullets: 2
+    images: 1
+    charts: false
+  comparison:
+    purpose: Table comparing 2-4 options against criteria
+    required_fields: [title, table]
+    min_table_rows: 2
+    max_table_rows: 6
+    max_table_cols: 5
+    images: 0
+    charts: false
+  timeline:
+    purpose: Milestones over time, left to right
+    required_fields: [title, milestones]  # 3-6 entries
+    min_milestones: 3
+    max_milestones: 6
+    images: 0
+    charts: false
+  process:
+    purpose: Sequential steps (3-5) with one line each
+    required_fields: [title, steps]
+    min_steps: 3
+    max_steps: 5
+    images: 0
+    charts: false
+  evidence-chart:
+    purpose: One chart, one claim. Chart is pre-rendered PNG/SVG only.
+    required_fields: [title, chart, claim]
+    max_bullets: 2
+    images: 0
+    charts: true       # rendered image, never a native PPTX chart object
+  case-study:
+    purpose: Client example — situation, action, result
+    required_fields: [title, bullets]
+    max_bullets: 4
+    images: 0-1
+    charts: false
+  recommendation:
+    purpose: What we propose and what we ask of the audience
+    required_fields: [title, bullets]
+    max_bullets: 4
+    images: 0
+    charts: false
+  closing:
+    purpose: Contact / next step / thank-you
+    required_fields: [title]
+    max_bullets: 3
+    images: 0-1
+    charts: false
+
+layout_rules:
+  no_more_than_two_consecutive_same_archetype: true
+  first_slide_must_be: cover
+  last_slide_must_be: closing

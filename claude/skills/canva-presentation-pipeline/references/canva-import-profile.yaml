@@ -1,0 +1,32 @@
+# What may enter a Canva-bound PPTX. Canva's PowerPoint import silently drops
+# or substitutes anything in `forbidden`, so a deck that violates this profile
+# passes local QA and then breaks inside Canva — the worst failure mode.
+# Source: Canva PowerPoint import limitations (canva.com/help/powerpoint-import/).
+
+canva_import_profile:
+  allowed:
+    - text_boxes
+    - solid_shapes
+    - lines
+    - png
+    - jpeg
+    - svg
+  forbidden:
+    - native_powerpoint_charts   # render charts to PNG/SVG instead
+    - smartart
+    - wordart
+    - 3d_objects
+    - pattern_fills
+    - embedded_video
+    - animations_and_transitions # stripped on import; do not rely on them
+  fonts:
+    policy: use_only_fonts_available_in_canva_brand_kit
+    fallback: If a brand font is unavailable in Canva, pick the closest Canva
+      library font, record the substitution in brand-spec.yaml, and add it to
+      the manual-fix list for the user to confirm.
+  charts:
+    policy: render_as_svg_or_png_before_import
+    min_raster_width_px: 1600    # keeps charts crisp at full-slide size
+  gradients:
+    policy: flat colors preferred; simple 2-stop linear gradients usually
+      survive import but verify on the post-import thumbnail (rubric #8)
