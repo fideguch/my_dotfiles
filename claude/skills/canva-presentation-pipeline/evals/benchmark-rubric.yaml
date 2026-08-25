@@ -1,5 +1,5 @@
 # Scoring for skill evaluation runs. Each QA condition scores 0/1;
-# a run "passes" at 10/10 plus the completion contract items.
+# a run "passes" at 12/12 plus the completion contract items.
 conditions:
   - {id: 1,  weight: 1, check: brief coverage mapped point-by-slide}
   - {id: 2,  weight: 1, check: check_copy_limits.py exit 0 AND visual truncation scan}
@@ -11,6 +11,8 @@ conditions:
   - {id: 8,  weight: 1, check: zero forbidden import elements}
   - {id: 9,  weight: 1, check: all N thumbnails rendered and listed}
   - {id: 10, weight: 1, check: manual-fix list delivered (empty stated as empty)}
+  - {id: 11, weight: 2, check: side-by-side template match vs reference (tolerance ±2pt, deltas reported)}
+  - {id: 12, weight: 2, check: zero non-reference layouts (every slide maps to a reference template)}
 completion_contract:
   - deck-spec validated (validate_deck_spec.py exit 0)
   - Canva edit link OR QA-passed PPTX + import instructions delivered
