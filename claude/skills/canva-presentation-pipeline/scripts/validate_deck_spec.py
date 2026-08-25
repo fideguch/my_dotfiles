@@ -195,7 +195,7 @@ def validate_slide(slide, idx, rules, errors):
                           "(native PPTX charts break Canva import)")
 
 
-def validate(spec):
+def validate(spec, clone_mode=False):
     errors, warnings = [], []
     if not isinstance(spec, dict):
         return ["deck-spec root must be a JSON object"], warnings
@@ -222,16 +222,26 @@ def validate(spec):
             errors.append(f"slide[{idx}] (id={sid}): duplicate id")
         else:
             seen_ids.add(sid)
+        if clone_mode:
+            tid = slide.get("template_id")
+            if not isinstance(tid, str) or not tid.strip():
+                errors.append(f"slide[{idx}]: template_id is required in clone mode "
+                              "(every slide must map to a reference template — QA #12)")
+        if slide.get("archetype") is None and clone_mode:
+            # clone mode: layout comes from the reference template, archetype optional
+            if not slide.get("title"):
+                errors.append(f"slide[{idx}]: title is required")
+            continue
         validate_slide(slide, idx, rules, errors)
 
-    if dict_slides:
+    if dict_slides and not clone_mode:
         if dict_slides[0].get("archetype") != "cover":
             errors.append("first slide must be archetype 'cover'")
         if dict_slides[-1].get("archetype") != "closing":
             errors.append("last slide must be archetype 'closing'")
 
     run_arch, run_len = None, 0
-    for slide in dict_slides:
+    for slide in (dict_slides if not clone_mode else []):
         arch = slide.get("archetype")
         run_len = run_len + 1 if arch == run_arch else 1
         run_arch = arch
@@ -242,17 +252,19 @@ def validate(spec):
 
 
 def main(argv):
-    if len(argv) != 2:
-        print("usage: validate_deck_spec.py <deck-spec.json>", file=sys.stderr)
+    args = [a for a in argv[1:] if not a.startswith("--")]
+    clone_mode = "--clone-mode" in argv
+    if len(args) != 1:
+        print("usage: validate_deck_spec.py [--clone-mode] <deck-spec.json>", file=sys.stderr)
         return 2
     try:
-        spec = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
+        spec = json.loads(Path(args[0]).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         print(f"ERROR: cannot read deck-spec: {exc}", file=sys.stderr)
         return 2
 
     try:
-        errors, warnings = validate(spec)
+        errors, warnings = validate(spec, clone_mode=clone_mode)
     except Exception as exc:  # noqa: BLE001 — contract: never show a raw traceback
         print(f"ERROR: internal validator failure ({type(exc).__name__}: {exc}) — "
               "this is a validator bug, not a spec problem; report it", file=sys.stderr)

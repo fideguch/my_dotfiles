@@ -85,9 +85,14 @@ file opens in LibreOffice.
 Write a **template contract** per template ID (see
 `references/template-matching.md`): allowed content slots, forbidden changes,
 copy budget per slot (max lines / paragraphs / display columns), image-slot
-spec (aspect ratio, crop, focal area, mask). Then map every deck-spec slide
-to a template ID. Run the coverage diagnosis (needed archetypes vs available
-templates) BEFORE any generation; gaps follow template-matching.md rules.
+spec (aspect ratio, crop, focal area, mask), and a canonical reference slide.
+Then map every deck-spec slide to a template ID
+(`validate_deck_spec.py --clone-mode` enforces this) and write the
+**allocation manifest** (gen slide → template_id → canonical reference slide
+→ reuse|clone|remove) — R4 and compare_layout.py both consume it. Run the
+coverage diagnosis (needed purposes vs available templates) BEFORE any
+generation; gaps and slide-count changes follow template-matching.md
+(§3 ladder, §7 count procedure).
 
 ### R3 — Content fitting
 - Copy-budget screening first: template-contract budgets (slot-accurate)
@@ -104,7 +109,10 @@ templates) BEFORE any generation; gaps follow template-matching.md rules.
 - **PPTX route**: copy the reference file; replace text run-by-run inside
   slots, preserving run/paragraph properties (bodyPr, lstStyle, bullet
   format, spacing, anchor, autofit); swap images keeping srcRect. All slides
-  of one template are processed by the same routine (rule 3). Clean + pack
+  of one template are processed by ONE replacement routine written for this
+  run (rule 3) — that script is a required R4 artifact, not ad-hoc edits.
+  Slide count changes follow template-matching.md §7 (duplication via the
+  `pptx` skill's `add_slide.py`, removal with rels cleanup). Clean + pack
   with the `pptx` skill scripts, then OPEN-VERIFY: convert with LibreOffice;
   a file that renders all pages is the minimum bar.
 - **PDF/image route**: pptxgenjs rebuild from layout-spec values only.
@@ -112,9 +120,11 @@ templates) BEFORE any generation; gaps follow template-matching.md rules.
 ### R5 — QA gate
 All conditions in `references/qa-rubric.md`: the original ten (content-driven
 breakage can still occur after swapping) plus
-**(11) side-by-side template match** — each generated slide vs its reference
-template slide; measure offsets, tolerance ±2pt equivalent; report deltas —
-and **(12) zero non-reference layouts**. In faithful-clone mode,
+**(11) template match** — `compare_layout.py <ref> <gen> --map <manifest>`
+must exit 0 (±2pt; derived-template additions whitelisted explicitly) plus a
+visual side-by-side — and **(12) zero non-reference layouts** —
+`validate_deck_spec.py --clone-mode` exit 0 with derivation provenance for
+any derived template. In faithful-clone mode,
 reference-inherited defects are marked approved rather than "fixed";
 in minimal-fix mode, list every correction. Fresh-eyes subagent inspection
 as in the `pptx` skill.
@@ -131,23 +141,34 @@ checks are pending. Deliver with the manual-fix list (condition 10).
 
 ## Completion contract
 
-Done means: template inventory + contracts written · every slide mapped to a
-reference template · content fitted without slot changes · rubric 12/12 with
-evidence (or reference-inherited items marked per mode) · open-verified file ·
-Canva link or import instructions · manual-fix list explicit.
+Two completion states — never blur them:
+- **local-QA-complete**: template inventory + contracts + allocation manifest
+  written · every slide mapped · content fitted without slot changes · rubric
+  12/12 with evidence (or reference-inherited items marked per mode) ·
+  open-verified file · manual-fix list explicit.
+- **canva-QA-complete**: the above PLUS the deck imported into Canva and R7
+  re-checks passed. Delivering a PPTX with import instructions reaches only
+  local-QA-complete — say so explicitly; never report the pipeline as done
+  while R7 is pending.
 
 ## Validation status of extract_layout.py
 
-Tier 1 (pptxgenjs-made deck, known coordinates): automated check in
-`evals/`. Tier 2 (real deck with master/layout inheritance, theme colors,
-groups): runs against each real reference deck at R1 — treat extractor output
-on exotic constructs as needing spot verification until proven.
+`evals/run_extractor_evals.py` is the automated regression suite:
+inheritance fixture (tier 2) + adversarial probes (connectors, missing
+chOff, flips, unknown elements, theme-font fallback, group-inherited
+placeholders) + compare_layout smoke + schema conformance. Run it after any
+script change. Tier 1 (a pptxgenjs deck with known coordinates) is a manual
+spot-check, not automated. Real decks with exotic constructs (SmartArt,
+clrMapOvr, rotated groups): the extractor WARNS and degrades `confidence` —
+spot-verify warned slides at R1.
 
 ## File map
 
 | Path | Purpose |
 |---|---|
-| `scripts/extract_layout.py` | PPTX → layout-spec.json (inheritance-resolved geometry, theme colors, srcRect; stdlib only). PDF/image route source of truth; PPTX route measurement aid for QA #11 |
+| `scripts/extract_layout.py` | PPTX → layout-spec.json (inheritance-resolved geometry, theme colors/fonts, groups, srcRect, backgrounds, layout/master decorations; stdlib only). PPTX-only — for PDF/image references the layout-spec is hand-authored from measurements against the same schema (confidence: visual-estimate) |
+| `scripts/compare_layout.py` | QA #11: geometry/style diff generated vs reference (±2pt, manifest map, --allow-added for derived templates) |
+| `evals/run_extractor_evals.py` | Automated regression suite for the two scripts above |
 | `assets/layout-spec.schema.json` | layout-spec contract |
 | `references/template-matching.md` | Template IDs, contracts, nearest-template + duplication rules, coverage diagnosis, gap escalation |
 | `references/qa-rubric.md` | 12 completion conditions |
@@ -156,4 +177,5 @@ on exotic constructs as needing spot verification until proven.
 | `references/brand-spec.template.yaml` | Brand truth (fonts/subs recorded here) |
 | `references/canva-mcp-reference.md` | Canva plugin/MCP setup + Autofill notes |
 | `assets/deck-spec.schema.json` | Content contract (unchanged from v1) |
-| `scripts/validate_deck_spec.py` / `check_copy_limits.py` | Content validation (v1, retained) |
+| `scripts/validate_deck_spec.py` / `check_copy_limits.py` | Content validation. `--clone-mode` requires template_id per slide and drops v1's invented structure rules (cover/closing order) |
+| `references/slide-archetypes.yaml` | v1 archetype constraints — still read by the validator's non-clone mode |

@@ -3,43 +3,212 @@
   "title": "deck-spec",
   "description": "Contract between deck content and slide generation. Validated by scripts/validate_deck_spec.py (stdlib re-implementation; this file is the human/machine-readable reference).",
   "type": "object",
-  "required": ["meta", "slides"],
+  "required": [
+    "meta",
+    "slides"
+  ],
   "properties": {
     "meta": {
       "type": "object",
-      "required": ["title"],
+      "required": [
+        "title"
+      ],
       "properties": {
-        "title": {"type": "string"},
-        "client": {"type": "string"},
-        "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
-        "aspect_ratio": {"type": "string", "enum": ["16:9"]},
-        "language": {"type": "string"}
+        "title": {
+          "type": "string"
+        },
+        "client": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "enum": [
+            "16:9"
+          ]
+        },
+        "language": {
+          "type": "string"
+        }
       }
     },
-    "brand_spec": {"type": "string", "description": "Path to the project's brand-spec.yaml"},
+    "brand_spec": {
+      "type": "string",
+      "description": "Path to the project's brand-spec.yaml"
+    },
     "slides": {
       "type": "array",
       "minItems": 2,
       "items": {
         "type": "object",
-        "required": ["id", "archetype", "title"],
+        "required": [
+          "id",
+          "title"
+        ],
         "properties": {
-          "id": {"type": "integer"},
-          "archetype": {"type": "string", "enum": ["cover", "section-divider", "executive-summary", "big-number", "two-column", "image-and-insight", "comparison", "timeline", "process", "evidence-chart", "case-study", "recommendation", "closing"]},
-          "title": {"type": "string"},
-          "subtitle": {"type": "string"},
-          "bullets": {"type": "array", "items": {"type": "string"}},
-          "columns": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "object", "required": ["heading"], "properties": {"heading": {"type": "string"}, "bullets": {"type": "array", "items": {"type": "string"}}}}},
-          "table": {"type": "object", "required": ["headers", "rows"], "properties": {"headers": {"type": "array", "items": {"type": "string"}}, "rows": {"type": "array", "items": {"type": "array", "items": {"type": "string"}}}}},
-          "milestones": {"type": "array", "items": {"type": "object", "required": ["date", "label"], "properties": {"date": {"type": "string"}, "label": {"type": "string"}}}},
-          "steps": {"type": "array", "items": {"type": "string"}},
-          "chart": {"type": "object", "required": ["render", "path", "claim"], "properties": {"type": {"type": "string"}, "render": {"type": "string", "enum": ["png", "svg"]}, "path": {"type": "string"}, "claim": {"type": "string"}}},
-          "image": {"type": "object", "properties": {"path": {"type": "string"}, "alt": {"type": "string"}}},
-          "insight": {"type": "string"},
-          "headline_value": {"type": "string"},
-          "claim": {"type": "string"},
-          "presenter": {"type": "string"},
-          "notes": {"type": "string"}
+          "id": {
+            "type": "integer"
+          },
+          "archetype": {
+            "type": "string",
+            "enum": [
+              "cover",
+              "section-divider",
+              "executive-summary",
+              "big-number",
+              "two-column",
+              "image-and-insight",
+              "comparison",
+              "timeline",
+              "process",
+              "evidence-chart",
+              "case-study",
+              "recommendation",
+              "closing"
+            ],
+            "description": "v1 layout archetype. Required in v1 mode (validator default); optional in clone mode where layout comes from the reference template."
+          },
+          "title": {
+            "type": "string"
+          },
+          "subtitle": {
+            "type": "string"
+          },
+          "bullets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "columns": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "object",
+              "required": [
+                "heading"
+              ],
+              "properties": {
+                "heading": {
+                  "type": "string"
+                },
+                "bullets": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "table": {
+            "type": "object",
+            "required": [
+              "headers",
+              "rows"
+            ],
+            "properties": {
+              "headers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "milestones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "date",
+                "label"
+              ],
+              "properties": {
+                "date": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "chart": {
+            "type": "object",
+            "required": [
+              "render",
+              "path",
+              "claim"
+            ],
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "render": {
+                "type": "string",
+                "enum": [
+                  "png",
+                  "svg"
+                ]
+              },
+              "path": {
+                "type": "string"
+              },
+              "claim": {
+                "type": "string"
+              }
+            }
+          },
+          "image": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "alt": {
+                "type": "string"
+              }
+            }
+          },
+          "insight": {
+            "type": "string"
+          },
+          "headline_value": {
+            "type": "string"
+          },
+          "claim": {
+            "type": "string"
+          },
+          "presenter": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "template_id": {
+            "type": "string",
+            "description": "Reference template ID (T1..Tn) from the R2 template inventory. REQUIRED in clone mode (validate_deck_spec.py --clone-mode); QA #12 demands every slide resolve to a reference template."
+          }
         }
       }
     }
