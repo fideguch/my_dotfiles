@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "layout-spec",
+  "description": "Output of scripts/extract_layout.py: measured layout of a reference deck. Source of coordinates for the PDF/image rebuild route; geometry ground truth for QA condition 11 on the PPTX route.",
+  "type": "object",
+  "required": ["source", "slide_size", "slide_count", "slides"],
+  "properties": {
+    "source": {"type": "string"},
+    "slide_size": {"type": "object", "properties": {"w_in": {"type": "number"}, "h_in": {"type": "number"}}},
+    "slide_count": {"type": "integer"},
+    "fonts_used": {"type": "array", "items": {"type": "string"}},
+    "colors_used": {"type": "array", "items": {"type": "string"}},
+    "confidence": {"type": "string", "enum": ["measured", "measured-with-warnings", "visual-estimate"]},
+    "slides": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index", "shapes"],
+        "properties": {
+          "index": {"type": "integer"},
+          "part": {"type": "string"},
+          "layout": {"type": ["string", "null"]},
+          "template_id": {"type": "string", "description": "assigned during R2 template mapping"},
+          "shape_count": {"type": "integer"},
+          "warnings": {"type": "array", "items": {"type": "string"}},
+          "shapes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["kind", "x_in", "y_in", "w_in", "h_in", "geometry_from"],
+              "properties": {
+                "kind": {"type": "string", "enum": ["text", "shape", "image", "table", "graphicFrame"]},
+                "name": {"type": ["string", "null"]},
+                "placeholder": {"type": ["object", "null"], "properties": {"type": {"type": "string"}, "idx": {"type": "string"}}},
+                "geometry_from": {"type": "string", "enum": ["slide", "layout", "master"]},
+                "in_group": {"type": "boolean"},
+                "x_in": {"type": "number"}, "y_in": {"type": "number"},
+                "w_in": {"type": "number"}, "h_in": {"type": "number"},
+                "rot_deg": {"type": "number"},
+                "preset": {"type": ["string", "null"]},
+                "fill": {"type": ["string", "null"]},
+                "line": {"type": ["object", "null"]},
+                "text": {"type": ["object", "null"]},
+                "image": {"type": ["object", "null"], "properties": {"target": {"type": ["string", "null"]}, "srcRect_pct": {"type": ["object", "null"]}}}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
