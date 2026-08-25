@@ -4,14 +4,22 @@
 Purpose (skill v2): layouts are cloned, never invented. This tool provides
 the measured ground truth — for the PDF/image rebuild route it is the source
 of coordinates; for the PPTX direct-edit route it powers QA condition #11
-(template-match geometry diff).
+(template-match geometry diff, via compare_layout.py).
 
-Resolves the placeholder inheritance chain slide -> slideLayout ->
-slideMaster (geometry frequently lives on the layout/master, not the slide),
-theme scheme colors (via the master's clrMap), group transforms, and image
-crops (srcRect). Stdlib only.
+Resolves: placeholder inheritance (slide -> slideLayout -> slideMaster),
+theme scheme colors (via the master's clrMap), theme major/minor fonts,
+group transforms (nested, composed), image crops (srcRect), slide
+backgrounds, connectors, AlternateContent fallbacks, and layout/master
+decoration shapes (logos, footers) that render behind every slide.
+Unhandled constructs are WARNED, never silently dropped; any warning
+degrades `confidence`. Stdlib only.
 
-Exit codes: 0 ok, 2 unreadable input.
+Known limitations (documented, warned where detectable): color tint/shade/
+alpha modifiers, clrMapOvr, full OOXML placeholder-matching rules, affine
+composition for rotated/flipped nested groups (flip/rot are captured per
+shape, not composed through groups).
+
+Exit codes: 0 ok, 2 unreadable input or extractor failure.
 """
 import argparse
 import json
@@ -24,8 +32,10 @@ NS = {
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
     "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
     "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+    "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
 }
 EMU_PER_IN = 914400.0
+HANDLED = {"sp", "pic", "graphicFrame", "grpSp", "cxnSp", "nvGrpSpPr", "grpSpPr", "AlternateContent"}
 
 
 def q(tag):
@@ -34,7 +44,6 @@ def q(tag):
 
 
 def parse_rels(z, part_path):
-    """Return {rId: target} with targets resolved relative to the part's dir."""
     p = Path(part_path)
     rels_path = str(p.parent / "_rels" / (p.name + ".rels"))
     out = {}
@@ -42,15 +51,12 @@ def parse_rels(z, part_path):
         return out
     root = ET.fromstring(z.read(rels_path))
     for rel in root:
-        rid = rel.get("Id")
-        target = rel.get("Target")
+        rid, target = rel.get("Id"), rel.get("Target")
         if rel.get("TargetMode") == "External":
             out[rid] = target
             continue
-        base = p.parent
-        t = Path(target)
-        parts = list(base.parts)
-        for seg in t.parts:
+        parts = list(p.parent.parts)
+        for seg in Path(target).parts:
             if seg == "..":
                 parts.pop()
             elif seg != ".":
@@ -60,26 +66,32 @@ def parse_rels(z, part_path):
 
 
 def load_theme(z, theme_path):
-    scheme = {}
+    scheme, fonts = {}, {}
     if not theme_path or theme_path not in z.namelist():
-        return scheme
+        return scheme, fonts
     root = ET.fromstring(z.read(theme_path))
     clr = root.find(f"{q('a:themeElements')}/{q('a:clrScheme')}")
-    if clr is None:
-        return scheme
-    for child in clr:
-        name = child.tag.split("}")[1]
-        srgb = child.find(q("a:srgbClr"))
-        sysc = child.find(q("a:sysClr"))
-        if srgb is not None:
-            scheme[name] = srgb.get("val")
-        elif sysc is not None:
-            scheme[name] = sysc.get("lastClr", "000000")
-    return scheme
+    if clr is not None:
+        for child in clr:
+            name = child.tag.split("}")[1]
+            srgb, sysc = child.find(q("a:srgbClr")), child.find(q("a:sysClr"))
+            if srgb is not None:
+                scheme[name] = srgb.get("val")
+            elif sysc is not None:
+                scheme[name] = sysc.get("lastClr", "000000")
+    fs = root.find(f"{q('a:themeElements')}/{q('a:fontScheme')}")
+    if fs is not None:
+        for kind, tag in (("major", "a:majorFont"), ("minor", "a:minorFont")):
+            f = fs.find(q(tag))
+            if f is not None:
+                latin = f.find(q("a:latin"))
+                ea = f.find(q("a:ea"))
+                fonts[kind] = {"latin": latin.get("typeface") if latin is not None else None,
+                               "ea": ea.get("typeface") if ea is not None else None}
+    return scheme, fonts
 
 
 def resolve_color(elem, theme, clr_map, warnings):
-    """elem: parent that may contain srgbClr/schemeClr/sysClr. -> hex or None"""
     if elem is None:
         return None
     srgb = elem.find(q("a:srgbClr"))
@@ -88,6 +100,8 @@ def resolve_color(elem, theme, clr_map, warnings):
     sch = elem.find(q("a:schemeClr"))
     if sch is not None:
         val = sch.get("val")
+        if len(sch) > 0:
+            warnings.append(f"color modifiers (tint/shade/alpha) on schemeClr {val} not resolved")
         mapped = clr_map.get(val, val)
         hexv = theme.get(mapped)
         if hexv is None:
@@ -109,11 +123,10 @@ def get_xfrm(sp_pr):
     off, ext = xfrm.find(q("a:off")), xfrm.find(q("a:ext"))
     if off is None or ext is None:
         return None
-    return {
-        "x": int(off.get("x")), "y": int(off.get("y")),
-        "cx": int(ext.get("cx")), "cy": int(ext.get("cy")),
-        "rot": int(xfrm.get("rot", "0")),
-    }
+    return {"x": int(off.get("x")), "y": int(off.get("y")),
+            "cx": int(ext.get("cx")), "cy": int(ext.get("cy")),
+            "rot": int(xfrm.get("rot", "0")),
+            "flip_h": xfrm.get("flipH") == "1", "flip_v": xfrm.get("flipV") == "1"}
 
 
 def ph_key(nv_pr):
@@ -125,8 +138,7 @@ def ph_key(nv_pr):
     return (ph.get("type", "body"), ph.get("idx", "0"))
 
 
-def index_placeholders(z, part):
-    """(type, idx) -> xfrm dict, for a layout or master part."""
+def index_placeholders(z, part, warnings):
     out = {}
     if not part or part not in z.namelist():
         return out
@@ -138,11 +150,13 @@ def index_placeholders(z, part):
             continue
         xf = get_xfrm(sp.find(q("p:spPr")))
         if xf is not None:
+            if key in out:
+                warnings.append(f"duplicate placeholder {key} in {part} — later one wins")
             out[key] = xf
     return out
 
 
-def text_info(sp, theme, clr_map, warnings):
+def text_info(sp, theme, clr_map, theme_fonts, ph, fonts_seen, warnings):
     tx = sp.find(q("p:txBody"))
     if tx is None:
         return None
@@ -150,6 +164,8 @@ def text_info(sp, theme, clr_map, warnings):
     paras = tx.findall(q("a:p"))
     chars, first = 0, None
     has_bullet = False
+    theme_kind = "major" if ph and ph[0] in ("title", "ctrTitle") else "minor"
+    tf = theme_fonts.get(theme_kind, {})
     for para in paras:
         ppr = para.find(q("a:pPr"))
         if ppr is not None and (ppr.find(q("a:buChar")) is not None or ppr.find(q("a:buAutoNum")) is not None):
@@ -158,22 +174,25 @@ def text_info(sp, theme, clr_map, warnings):
             t = run.find(q("a:t"))
             text = t.text or "" if t is not None else ""
             chars += len(text)
+            rpr = run.find(q("a:rPr"))
+            latin = rpr.find(q("a:latin")).get("typeface") if rpr is not None and rpr.find(q("a:latin")) is not None else None
+            ea = rpr.find(q("a:ea")).get("typeface") if rpr is not None and rpr.find(q("a:ea")) is not None else None
+            for fname in (latin or tf.get("latin"), ea or tf.get("ea")):
+                if fname:
+                    fonts_seen.add(fname.replace("+mj-lt", tf.get("latin") or "").replace("+mn-lt", tf.get("latin") or "") or fname)
             if first is None and text.strip():
-                rpr = run.find(q("a:rPr"))
                 first = {
                     "size_pt": int(rpr.get("sz")) / 100 if rpr is not None and rpr.get("sz") else None,
                     "bold": rpr is not None and rpr.get("b") == "1",
                     "color": resolve_color(rpr.find(q("a:solidFill")) if rpr is not None else None, theme, clr_map, warnings),
-                    "font": (rpr.find(q("a:latin")).get("typeface") if rpr is not None and rpr.find(q("a:latin")) is not None else None),
-                    "font_ea": (rpr.find(q("a:ea")).get("typeface") if rpr is not None and rpr.find(q("a:ea")) is not None else None),
+                    "font": latin or tf.get("latin"),
+                    "font_ea": ea or tf.get("ea"),
+                    "font_from": "run" if latin else ("theme" if tf.get("latin") else None),
                 }
-    align = None
     p0 = paras[0].find(q("a:pPr")) if paras else None
-    if p0 is not None:
-        align = p0.get("algn")
     return {
         "first_run": first,
-        "align": align,
+        "align": p0.get("algn") if p0 is not None else None,
         "anchor": body_pr.get("anchor") if body_pr is not None else None,
         "wrap": body_pr.get("wrap") if body_pr is not None else None,
         "autofit": ("normAutofit" if body_pr is not None and body_pr.find(q("a:normAutofit")) is not None
@@ -191,29 +210,47 @@ def emu_box(xf, scale=None):
         x = gx + (x - chx) * sx
         y = gy + (y - chy) * sy
         cx, cy = cx * sx, cy * sy
-    return {
-        "x_in": round(x / EMU_PER_IN, 3), "y_in": round(y / EMU_PER_IN, 3),
-        "w_in": round(cx / EMU_PER_IN, 3), "h_in": round(cy / EMU_PER_IN, 3),
-        "rot_deg": round(xf.get("rot", 0) / 60000, 1),
-    }
+    box = {"x_in": round(x / EMU_PER_IN, 3), "y_in": round(y / EMU_PER_IN, 3),
+           "w_in": round(cx / EMU_PER_IN, 3), "h_in": round(cy / EMU_PER_IN, 3),
+           "rot_deg": round(xf.get("rot", 0) / 60000, 1)}
+    if xf.get("flip_h"):
+        box["flip_h"] = True
+    if xf.get("flip_v"):
+        box["flip_v"] = True
+    return box
 
 
-def walk_shapes(z, tree, theme, clr_map, layout_ph, master_ph, rels, warnings, scale=None, in_group=False):
+def src_rect_pct(el, warnings):
+    if el is None:
+        return None
+    vals = {k: int(el.get(k, "0")) / 1000 for k in ("l", "t", "r", "b")}
+    for k, v in vals.items():
+        if not (0 <= v <= 100):
+            warnings.append(f"srcRect.{k}={v} outside 0-100% — suspicious crop")
+    return vals
+
+
+def walk_shapes(z, tree, ctx, scale=None, in_group=False, layer="slide"):
+    theme, clr_map, theme_fonts, layout_ph, master_ph, rels, warnings, fonts_seen = ctx
     shapes = []
     for child in tree:
-        tag = child.tag
-        if tag == q("p:sp"):
+        local = child.tag.split("}")[1]
+        if child.tag == q("p:sp"):
             nv = child.find(f"{q('p:nvSpPr')}/{q('p:nvPr')}")
             name_el = child.find(f"{q('p:nvSpPr')}/{q('p:cNvPr')}")
             key = ph_key(nv)
             sp_pr = child.find(q("p:spPr"))
             xf = get_xfrm(sp_pr)
-            src = "slide"
+            src = layer
+            eff_scale = scale
             if xf is None and key is not None:
                 if key in layout_ph:
                     xf, src = layout_ph[key], "layout"
                 elif key in master_ph:
                     xf, src = master_ph[key], "master"
+                if xf is not None and in_group:
+                    warnings.append(f"placeholder {key} inside a group inherits slide-space geometry — group transform NOT applied")
+                    eff_scale = None
             if xf is None:
                 warnings.append(f"shape '{name_el.get('name') if name_el is not None else '?'}' has no resolvable geometry")
                 continue
@@ -224,33 +261,48 @@ def walk_shapes(z, tree, theme, clr_map, layout_ph, master_ph, rels, warnings, s
                 "kind": "text" if child.find(q("p:txBody")) is not None else "shape",
                 "name": name_el.get("name") if name_el is not None else None,
                 "placeholder": {"type": key[0], "idx": key[1]} if key else None,
-                "geometry_from": src, "in_group": in_group,
-                **emu_box(xf, scale),
+                "geometry_from": src, "layer": layer, "in_group": in_group,
+                **emu_box(xf, eff_scale),
                 "preset": geom.get("prst") if geom is not None else None,
                 "fill": fill,
                 "line": {"color": resolve_color(ln.find(q("a:solidFill")), theme, clr_map, warnings),
                          "w_pt": round(int(ln.get("w")) / 12700, 2) if ln.get("w") else None} if ln is not None else None,
-                "text": text_info(child, theme, clr_map, warnings),
+                "text": text_info(child, theme, clr_map, theme_fonts, key, fonts_seen, warnings),
             })
-        elif tag == q("p:pic"):
+        elif child.tag == q("p:cxnSp"):
+            name_el = child.find(f"{q('p:nvCxnSpPr')}/{q('p:cNvPr')}")
+            sp_pr = child.find(q("p:spPr"))
+            xf = get_xfrm(sp_pr)
+            if xf is None:
+                warnings.append("connector without geometry")
+                continue
+            ln = sp_pr.find(q("a:ln")) if sp_pr is not None else None
+            geom = sp_pr.find(q("a:prstGeom")) if sp_pr is not None else None
+            shapes.append({
+                "kind": "connector",
+                "name": name_el.get("name") if name_el is not None else None,
+                "geometry_from": layer, "layer": layer, "in_group": in_group,
+                **emu_box(xf, scale),
+                "preset": geom.get("prst") if geom is not None else None,
+                "line": {"color": resolve_color(ln.find(q("a:solidFill")), theme, clr_map, warnings),
+                         "w_pt": round(int(ln.get("w")) / 12700, 2) if ln.get("w") else None} if ln is not None else None,
+            })
+        elif child.tag == q("p:pic"):
             name_el = child.find(f"{q('p:nvPicPr')}/{q('p:cNvPr')}")
             xf = get_xfrm(child.find(q("p:spPr")))
             if xf is None:
                 warnings.append("picture without geometry")
                 continue
             blip = child.find(f"{q('p:blipFill')}/{q('a:blip')}")
-            src_rect = child.find(f"{q('p:blipFill')}/{q('a:srcRect')}")
             shapes.append({
                 "kind": "image",
                 "name": name_el.get("name") if name_el is not None else None,
-                "geometry_from": "slide", "in_group": in_group,
+                "geometry_from": layer, "layer": layer, "in_group": in_group,
                 **emu_box(xf, scale),
-                "image": {
-                    "target": rels.get(blip.get(q("r:embed"))) if blip is not None else None,
-                    "srcRect_pct": {k: int(src_rect.get(k, "0")) / 1000 for k in ("l", "t", "r", "b")} if src_rect is not None else None,
-                },
+                "image": {"target": rels.get(blip.get(q("r:embed"))) if blip is not None else None,
+                          "srcRect_pct": src_rect_pct(child.find(f"{q('p:blipFill')}/{q('a:srcRect')}"), warnings)},
             })
-        elif tag == q("p:graphicFrame"):
+        elif child.tag == q("p:graphicFrame"):
             xf_el = child.find(q("p:xfrm"))
             if xf_el is not None:
                 off, ext = xf_el.find(q("a:off")), xf_el.find(q("a:ext"))
@@ -258,24 +310,88 @@ def walk_shapes(z, tree, theme, clr_map, layout_ph, master_ph, rels, warnings, s
                       "cx": int(ext.get("cx")), "cy": int(ext.get("cy")), "rot": 0}
                 has_table = child.find(f".//{q('a:tbl')}") is not None
                 shapes.append({"kind": "table" if has_table else "graphicFrame",
-                               "geometry_from": "slide", "in_group": in_group, **emu_box(xf, scale)})
-        elif tag == q("p:grpSp"):
+                               "geometry_from": layer, "layer": layer, "in_group": in_group,
+                               **emu_box(xf, scale)})
+        elif child.tag == q("p:grpSp"):
             grp_pr = child.find(q("p:grpSpPr"))
             xfrm = grp_pr.find(q("a:xfrm")) if grp_pr is not None else None
             if xfrm is None:
-                warnings.append("group without transform — children skipped")
+                warnings.append("group without transform — children treated as untransformed")
+                shapes.extend(walk_shapes(z, child, ctx, scale=scale, in_group=True, layer=layer))
                 continue
             off, ext = xfrm.find(q("a:off")), xfrm.find(q("a:ext"))
             ch_off, ch_ext = xfrm.find(q("a:chOff")), xfrm.find(q("a:chExt"))
-            gx, gy = int(off.get("x")), int(off.get("y"))
-            cx, cy = int(ext.get("cx")), int(ext.get("cy"))
-            chx, chy = int(ch_off.get("x")), int(ch_off.get("y"))
-            chcx = int(ch_ext.get("cx")) or cx
-            chcy = int(ch_ext.get("cy")) or cy
-            sub_scale = (gx, gy, cx / chcx, cy / chcy, chx, chy)
-            shapes.extend(walk_shapes(z, child, theme, clr_map, layout_ph, master_ph, rels, warnings,
-                                      scale=sub_scale, in_group=True))
+            gx = int(off.get("x")) if off is not None else 0
+            gy = int(off.get("y")) if off is not None else 0
+            cx = int(ext.get("cx")) if ext is not None else 0
+            cy = int(ext.get("cy")) if ext is not None else 0
+            if ch_off is None or ch_ext is None:
+                warnings.append("group missing chOff/chExt — identity child mapping assumed")
+                chx, chy, chcx, chcy = 0, 0, cx or 1, cy or 1
+            else:
+                chx, chy = int(ch_off.get("x")), int(ch_off.get("y"))
+                chcx = int(ch_ext.get("cx")) or cx or 1
+                chcy = int(ch_ext.get("cy")) or cy or 1
+            if scale:  # compose with parent transform
+                pgx, pgy, psx, psy, pchx, pchy = scale
+                gx = pgx + (gx - pchx) * psx
+                gy = pgy + (gy - pchy) * psy
+                sub = (gx, gy, (cx * psx) / chcx, (cy * psy) / chcy, chx, chy)
+            else:
+                sub = (gx, gy, cx / chcx, cy / chcy, chx, chy)
+            if xfrm.get("rot") or xfrm.get("flipH") == "1" or xfrm.get("flipV") == "1":
+                warnings.append("group rot/flip not composed into child coordinates — verify visually")
+            shapes.extend(walk_shapes(z, child, ctx, scale=sub, in_group=True, layer=layer))
+        elif child.tag == q("mc:AlternateContent"):
+            fb = child.find(q("mc:Fallback"))
+            if fb is not None:
+                shapes.extend(walk_shapes(z, fb, ctx, scale=scale, in_group=in_group, layer=layer))
+                warnings.append("AlternateContent: extracted Fallback branch (SmartArt/chart rendered as fallback shapes)")
+            else:
+                warnings.append("AlternateContent without Fallback — content dropped")
+        elif local in ("nvGrpSpPr", "grpSpPr"):
+            continue
+        else:
+            warnings.append(f"unhandled element <{local}> — not extracted")
     return shapes
+
+
+def extract_background(z, slide_root, layout_path, master_path, theme, clr_map, warnings):
+    for part_root, src in ((slide_root, "slide"),):
+        bg = part_root.find(f"{q('p:cSld')}/{q('p:bg')}")
+        if bg is not None:
+            pr = bg.find(q("p:bgPr"))
+            if pr is not None:
+                c = resolve_color(pr.find(q("a:solidFill")), theme, clr_map, warnings)
+                return {"color": c, "from": src} if c else {"color": None, "from": src}
+            if bg.find(q("p:bgRef")) is not None:
+                warnings.append("background uses bgRef (theme fill style) — color not resolved")
+                return {"color": None, "from": src}
+    for part, src in ((layout_path, "layout"), (master_path, "master")):
+        if not part or part not in z.namelist():
+            continue
+        root = ET.fromstring(z.read(part))
+        bg = root.find(f"{q('p:cSld')}/{q('p:bg')}")
+        if bg is not None:
+            pr = bg.find(q("p:bgPr"))
+            if pr is not None:
+                c = resolve_color(pr.find(q("a:solidFill")), theme, clr_map, warnings)
+                return {"color": c, "from": src}
+            warnings.append(f"background bgRef on {src} — color not resolved")
+            return {"color": None, "from": src}
+    return None
+
+
+def non_placeholder_shapes(z, part, ctx, layer):
+    """Decoration shapes (no ph) defined on a layout/master — they render on every slide."""
+    if not part or part not in z.namelist():
+        return []
+    root = ET.fromstring(z.read(part))
+    tree = root.find(f"{q('p:cSld')}/{q('p:spTree')}")
+    if tree is None:
+        return []
+    shapes = walk_shapes(z, tree, ctx, layer=layer)
+    return [s for s in shapes if not s.get("placeholder")]
 
 
 def extract(path):
@@ -291,7 +407,8 @@ def extract(path):
         for sid in lst:
             slide_paths.append(pres_rels.get(sid.get(q("r:id"))))
 
-    out_slides, all_warn = [], []
+    out_slides, fonts_seen = [], set()
+    deco_cache = {}
     for idx, spath in enumerate(slide_paths, 1):
         warnings = []
         rels = parse_rels(z, spath)
@@ -300,35 +417,47 @@ def extract(path):
         master_path = next((t for t in layout_rels.values() if t and "slideMaster" in t), None)
         master_rels = parse_rels(z, master_path) if master_path else {}
         theme_path = next((t for t in master_rels.values() if t and "theme" in t), None)
-        theme = load_theme(z, theme_path)
+        theme, theme_fonts = load_theme(z, theme_path)
         clr_map = {}
         if master_path:
-            mroot = ET.fromstring(z.read(master_path))
-            cm = mroot.find(q("p:clrMap"))
+            cm = ET.fromstring(z.read(master_path)).find(q("p:clrMap"))
             if cm is not None:
                 clr_map = dict(cm.attrib)
-        layout_ph = index_placeholders(z, layout_path)
-        master_ph = index_placeholders(z, master_path)
+        layout_ph = index_placeholders(z, layout_path, warnings)
+        master_ph = index_placeholders(z, master_path, warnings)
         root = ET.fromstring(z.read(spath))
         tree = root.find(f"{q('p:cSld')}/{q('p:spTree')}")
-        shapes = walk_shapes(z, tree, theme, clr_map, layout_ph, master_ph, rels, warnings)
+        ctx = (theme, clr_map, theme_fonts, layout_ph, master_ph, rels, warnings, fonts_seen)
+        shapes = walk_shapes(z, tree, ctx)
+        show_master = root.get("showMasterSp", "1") != "0"
+        decorations = []
+        if show_master:
+            for part, layer in ((layout_path, "layout-deco"), (master_path, "master-deco")):
+                if part:
+                    if part not in deco_cache:
+                        deco_cache[part] = non_placeholder_shapes(z, part, ctx, layer)
+                    decorations.extend(deco_cache[part])
+        bg = extract_background(z, root, layout_path, master_path, theme, clr_map, warnings)
         out_slides.append({
             "index": idx, "part": spath, "layout": layout_path,
-            "shape_count": len(shapes), "shapes": shapes, "warnings": warnings,
+            "background": bg, "show_master_shapes": show_master,
+            "shape_count": len(shapes), "shapes": shapes,
+            "decoration_count": len(decorations), "decorations": decorations,
+            "confidence": "measured" if not warnings else "measured-with-warnings",
+            "warnings": warnings,
         })
-        all_warn.extend(warnings)
 
-    fonts = sorted({s["text"]["first_run"]["font"] for sl in out_slides for s in sl["shapes"]
-                    if s.get("text") and s["text"].get("first_run") and s["text"]["first_run"].get("font")} |
-                   {s["text"]["first_run"]["font_ea"] for sl in out_slides for s in sl["shapes"]
-                    if s.get("text") and s["text"].get("first_run") and s["text"]["first_run"].get("font_ea")})
-    colors = sorted({c for sl in out_slides for s in sl["shapes"]
-                     for c in [s.get("fill"), (s.get("text") or {}).get("first_run", {}).get("color") if s.get("text") else None]
+    all_warn = [w for sl in out_slides for w in sl["warnings"]]
+    colors = sorted({c for sl in out_slides for s in (sl["shapes"] + sl["decorations"])
+                     for c in [s.get("fill"),
+                               (s.get("text") or {}).get("first_run", {}).get("color") if s.get("text") else None]
                      if c and not str(c).startswith("scheme:")})
     return {
         "source": str(path), "slide_size": size, "slide_count": len(out_slides),
-        "fonts_used": [f for f in fonts if f], "colors_used": colors,
+        "fonts_used": sorted(f for f in fonts_seen if f and not f.startswith("+")),
+        "colors_used": colors,
         "confidence": "measured" if not all_warn else "measured-with-warnings",
+        "warning_count": len(all_warn),
         "slides": out_slides,
     }
 
@@ -337,25 +466,24 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("pptx")
     ap.add_argument("-o", "--out", default=None)
-    ap.add_argument("--summary", action="store_true", help="print per-slide shape summary instead of full JSON")
+    ap.add_argument("--summary", action="store_true")
     args = ap.parse_args()
     try:
         spec = extract(args.pptx)
-    except (OSError, zipfile.BadZipFile, ET.ParseError, KeyError) as exc:
+    except Exception as exc:  # noqa: BLE001 — contract: exit 2, never a raw traceback
         print(f"ERROR: cannot extract: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
     if args.out:
         Path(args.out).write_text(json.dumps(spec, ensure_ascii=False, indent=1))
-        print(f"wrote {args.out}: {spec['slide_count']} slides, "
-              f"fonts={spec['fonts_used']}, confidence={spec['confidence']}")
+        print(f"wrote {args.out}: {spec['slide_count']} slides, fonts={spec['fonts_used']}, "
+              f"confidence={spec['confidence']} ({spec['warning_count']} warnings)")
     if args.summary:
         for sl in spec["slides"]:
             kinds = {}
             for s in sl["shapes"]:
                 kinds[s["kind"]] = kinds.get(s["kind"], 0) + 1
-            inh = sum(1 for s in sl["shapes"] if s["geometry_from"] != "slide")
-            print(f"slide {sl['index']:>2}: {sl['shape_count']:>2} shapes {kinds}"
-                  + (f" inherited-geom={inh}" if inh else "")
+            print(f"slide {sl['index']:>2}: {sl['shape_count']:>2} shapes {kinds} "
+                  f"deco={sl['decoration_count']}"
                   + (f" WARN={len(sl['warnings'])}" if sl["warnings"] else ""))
     if not args.out and not args.summary:
         json.dump(spec, sys.stdout, ensure_ascii=False, indent=1)

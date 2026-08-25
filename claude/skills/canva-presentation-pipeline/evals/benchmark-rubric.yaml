@@ -1,18 +1,18 @@
 # Scoring for skill evaluation runs. Each QA condition scores 0/1;
-# a run "passes" at 12/12 plus the completion contract items.
+# a run "passes" only when every condition passes (weights sum 14) plus the completion contract items.
 conditions:
   - {id: 1,  weight: 1, check: brief coverage mapped point-by-slide}
   - {id: 2,  weight: 1, check: check_copy_limits.py exit 0 AND visual truncation scan}
   - {id: 3,  weight: 1, check: no overlapping elements in thumbnails}
   - {id: 4,  weight: 1, check: contrast AA on all text/background pairs}
   - {id: 5,  weight: 1, check: brand-spec conformance (colors/fonts/logo)}
-  - {id: 6,  weight: 1, check: no >2 consecutive identical archetypes}
-  - {id: 7,  weight: 1, check: archetype caps respected + whitespace visible}
+  - {id: 6,  weight: 1, check: repetition within reference-derived cap (template-matching §4)}
+  - {id: 7,  weight: 1, check: template contract copy budgets respected + whitespace matches reference}
   - {id: 8,  weight: 1, check: zero forbidden import elements}
   - {id: 9,  weight: 1, check: all N thumbnails rendered and listed}
   - {id: 10, weight: 1, check: manual-fix list delivered (empty stated as empty)}
-  - {id: 11, weight: 2, check: side-by-side template match vs reference (tolerance ±2pt, deltas reported)}
-  - {id: 12, weight: 2, check: zero non-reference layouts (every slide maps to a reference template)}
+  - {id: 11, weight: 2, check: compare_layout.py exit 0 vs canonical reference slides (±2pt, manifest map)}
+  - {id: 12, weight: 2, check: validate_deck_spec.py --clone-mode exit 0 + derived-template provenance recorded}
 completion_contract:
   - deck-spec validated (validate_deck_spec.py exit 0)
   - Canva edit link OR QA-passed PPTX + import instructions delivered
