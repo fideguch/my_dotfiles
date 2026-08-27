@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# Claude Code statusLine — token quota gauges (2-line, fuel-gauge style)
-#   Line 1: 5-hour window remaining (gauge + reset time + countdown)
-#   Line 2: weekly remaining — overall + model-scoped (e.g. Fable) + cwd/time
+# Claude Code statusLine — token quota gauges (2-line, matches /usage screen)
+#   Line 1: 5-hour window USED % (gauge + reset time + countdown)
+#   Line 2: weekly USED % — overall + model-scoped (e.g. Fable) + cwd/time
+#
+# Semantics match the Claude settings (plan usage) screen: percentages are
+# "used", and gauge blocks FILL as you consume quota — same direction as the
+# bars in the settings screen, so the two never look out of sync.
 #
 # Data sources:
 #   - stdin JSON from Claude Code: rate_limits.five_hour / seven_day (official)
 #   - OAuth usage API for the model-scoped weekly window (not in stdin):
 #     cached 60s at ~/.cache/claude-usage-api.json, refreshed in background
 #
-# Gauge: filled blocks = REMAINING. Colors: green >=50%, yellow >=20%, red <20%.
+# Colors by used%: green <50%, yellow 50-79%, red >=80%.
 
 CACHE_API="$HOME/.cache/claude-usage-api.json"
 LOCK_API="$HOME/.cache/claude-usage-api.lock"
@@ -21,11 +25,11 @@ NOW=$(date +%H:%M)
 command -v jq >/dev/null 2>&1 || { echo "⚡ Claude $NOW"; exit 0; }
 
 # --- stdin fields (single jq call, tab-separated) ---
-IFS=$'\t' read -r FH_REM FH_RESET WK_REM WK_RESET CWD <<< "$(printf '%s' "$INPUT" | jq -r '
-  def rem(x): if x == null then "-" else ((100 - x) | round | tostring) end;
-  [ rem(.rate_limits.five_hour.used_percentage),
+IFS=$'\t' read -r FH_USED FH_RESET WK_USED WK_RESET CWD <<< "$(printf '%s' "$INPUT" | jq -r '
+  def used(x): if x == null then "-" else (x | round | tostring) end;
+  [ used(.rate_limits.five_hour.used_percentage),
     (.rate_limits.five_hour.resets_at // "-" | tostring),
-    rem(.rate_limits.seven_day.used_percentage),
+    used(.rate_limits.seven_day.used_percentage),
     (.rate_limits.seven_day.resets_at // "-" | tostring),
     (.workspace.current_dir // "-") ] | @tsv')"
 
@@ -58,24 +62,24 @@ refresh_api_cache() {
 refresh_api_cache
 
 # --- model-scoped weekly (e.g. Fable) from cache ---
-SC_NAME="" ; SC_REM=""
+SC_NAME="" ; SC_USED=""
 if [[ -f "$CACHE_API" ]]; then
-  IFS=$'\t' read -r SC_NAME SC_REM <<< "$(jq -r '
+  IFS=$'\t' read -r SC_NAME SC_USED <<< "$(jq -r '
     ([.limits[]? | select(.kind == "weekly_scoped")] | first) as $s
     | if $s == null then "\t"
       else [($s.scope.model.display_name // "Model"),
-            ((100 - $s.percent) | round | tostring)] | @tsv end' \
+            ($s.percent | round | tostring)] | @tsv end' \
     "$CACHE_API" 2>/dev/null)"
 fi
 
 # --- helpers ---
 RESET=$'\033[0m'
-color_for() {  # $1: remaining percent
-  if   (( $1 >= 50 )); then printf '\033[32m'
-  elif (( $1 >= 20 )); then printf '\033[33m'
-  else                      printf '\033[31m'; fi
+color_for() {  # $1: used percent
+  if   (( $1 < 50 )); then printf '\033[32m'
+  elif (( $1 < 80 )); then printf '\033[33m'
+  else                     printf '\033[31m'; fi
 }
-gauge() {  # $1: remaining percent -> 10-block fuel gauge
+gauge() {  # $1: used percent -> 10-block bar, fills with consumption
   local filled=$(( ($1 + 5) / 10 )) bar="" i
   (( filled > 10 )) && filled=10 ; (( filled < 0 )) && filled=0
   for (( i=0; i<filled; i++ )); do bar+="▓"; done
@@ -92,24 +96,24 @@ countdown() {  # $1: reset epoch -> human-readable remaining
 }
 
 # --- render ---
-if [[ "$FH_REM" == "-" || -z "$FH_REM" ]]; then
+if [[ "$FH_USED" == "-" || -z "$FH_USED" ]]; then
   # rate_limits absent until the first API response in the session
   echo "⚡ usage計測待ち…  $CWD_DISP  $NOW"
   exit 0
 fi
 
 FH_TIME=$(date -r "$FH_RESET" +%H:%M 2>/dev/null || echo "?")
-FH_C=$(color_for "$FH_REM")
-LINE1="⚡ 5h ${FH_C}$(gauge "$FH_REM")${RESET} 残${FH_REM}% (${FH_TIME} · $(countdown "$FH_RESET"))"
+FH_C=$(color_for "$FH_USED")
+LINE1="⚡ 5h ${FH_C}$(gauge "$FH_USED")${RESET} 使用${FH_USED}% (${FH_TIME} · $(countdown "$FH_RESET"))"
 
-if [[ "$WK_REM" != "-" && -n "$WK_REM" ]]; then
+if [[ "$WK_USED" != "-" && -n "$WK_USED" ]]; then
   WK_M=$(date -r "$WK_RESET" +%m 2>/dev/null); WK_D=$(date -r "$WK_RESET" +%d 2>/dev/null)
   WK_DATE="${WK_M#0}/${WK_D#0}($(wday_jp "$(date -r "$WK_RESET" +%u 2>/dev/null)")) $(date -r "$WK_RESET" +%H:%M 2>/dev/null)"
-  WK_C=$(color_for "$WK_REM")
-  LINE2="🗓 週 全体 ${WK_C}$(gauge "$WK_REM")${RESET} ${WK_REM}%"
-  if [[ -n "$SC_REM" ]]; then
-    SC_C=$(color_for "$SC_REM")
-    LINE2+=" | ${SC_NAME} ${SC_C}$(gauge "$SC_REM")${RESET} ${SC_REM}%"
+  WK_C=$(color_for "$WK_USED")
+  LINE2="🗓 週 全体 ${WK_C}$(gauge "$WK_USED")${RESET} 使用${WK_USED}%"
+  if [[ -n "$SC_USED" ]]; then
+    SC_C=$(color_for "$SC_USED")
+    LINE2+=" | ${SC_NAME} ${SC_C}$(gauge "$SC_USED")${RESET} 使用${SC_USED}%"
   fi
   LINE2+=" (${WK_DATE})  $CWD_DISP  $NOW"
 else
