@@ -44,6 +44,7 @@ $(brew --prefix)/opt/fzf/install          # fzf keybindings (first time only)
 | `poke [args]` | Change wallpaper + show Pokedex info. `poke 150` `poke -n gengar` etc. |
 | `mka <name> <cmd>` | Add alias to .zshrc. `mka gs 'git status'` |
 | `gccw <file>` | `gcc -Wall -Wextra -Werror` wrapper |
+| `ssh-tcc-doctor [--fix]` | Diagnose/guide the macOS TCC `Operation not permitted` failure over SSH |
 
 ## Key Aliases
 

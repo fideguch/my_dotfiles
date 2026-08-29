@@ -45,6 +45,7 @@ $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 | `poke [args]` | 壁紙変更+図鑑情報表示。`poke 150` `poke -n gengar` 等 |
 | `mka <name> <cmd>` | エイリアスを .zshrc に追加。`mka gs 'git status'` |
 | `gccw <file>` | `gcc -Wall -Wextra -Werror` のラッパー |
+| `ssh-tcc-doctor [--fix]` | SSH 越しの `Operation not permitted` (macOS TCC) を診断・修正ガイド |
 
 ## 主なエイリアス
 

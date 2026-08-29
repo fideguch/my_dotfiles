@@ -1,0 +1,180 @@
+#!/usr/bin/env bash
+# ssh-tcc-doctor — SSH ログイン先の macOS で
+#     ls: .: Operation not permitted
+# が出るときの診断＆修正ガイド。
+#
+# 背景:
+#   macOS の TCC（プライバシー保護）は ~/Desktop ~/Documents ~/Downloads 等を保護し、
+#   フルディスクアクセス(FDA)を持たないプロセスからの読み取りを拒否する。
+#   OpenSSH 9.8 以降 sshd はプロセスが分割され、実際にログインシェルを起動するのは
+#   /usr/libexec/sshd-session という「別バイナリ・別の署名 ID」になった。
+#   従来 FDA を付与していた /usr/libexec/sshd-keygen-wrapper の許可は
+#   この新しい署名 ID には引き継がれないため、SSH 越しだけ拒否される。
+#
+# Usage:
+#   ssh-tcc-doctor          # 診断（ローカル・SSH どちらでも可）
+#   ssh-tcc-doctor --fix    # 診断 + システム設定のフルディスクアクセスを開く
+#   ssh-tcc-doctor --help
+set -uo pipefail
+
+TCC_DB="/Library/Application Support/com.apple.TCC/TCC.db"
+SSH_BINS=(
+  /usr/libexec/sshd-keygen-wrapper
+  /usr/sbin/sshd
+  /usr/libexec/sshd-session
+  /usr/libexec/sshd-auth
+)
+# TCC 保護対象のうち、実アクセス検証に使うディレクトリ
+PROTECTED_DIRS=("$HOME/Desktop" "$HOME/Documents" "$HOME/Downloads")
+
+RED=$'\033[31m'; GRN=$'\033[32m'; YEL=$'\033[33m'; DIM=$'\033[2m'; BLD=$'\033[1m'; RST=$'\033[0m'
+NEEDS_FDA=()
+DENIED_DIRS=()
+
+hdr() { printf '\n%s== %s ==%s\n' "$BLD" "$1" "$RST"; }
+note() { printf '%s   %s%s\n' "$DIM" "$1" "$RST"; }
+
+usage() { sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; }
+
+auth_label() {
+  case "${1:-}" in
+    0) printf '%sDENIED%s' "$RED" "$RST" ;;
+    2) printf '%sALLOWED%s' "$GRN" "$RST" ;;
+    3) printf '%sLIMITED%s' "$YEL" "$RST" ;;
+    *) printf '%sNOT SET%s' "$RED" "$RST" ;;
+  esac
+}
+
+diagnose() {
+  hdr "環境"
+  printf '  macOS      : %s (%s)\n' "$(sw_vers -productVersion)" "$(sw_vers -buildVersion)"
+  printf '  OpenSSH    : %s\n' "$(ssh -V 2>&1)"
+  if [[ -n "${SSH_CONNECTION:-}" ]]; then
+    printf '  実行元     : %sSSH セッション%s (%s)\n' "$GRN" "$RST" "${SSH_CONNECTION%% *}"
+  else
+    printf '  実行元     : ローカル端末 %s\n' "${DIM}(SSH 側の再現には ssh 先でも実行すること)${RST}"
+  fi
+
+  hdr "リモートログイン (sshd)"
+  local disabled
+  # キー名にドットが含まれるため plutil -extract のキーパスでは引けない。-p の出力を読む。
+  disabled=$(plutil -p /var/db/com.apple.xpc.launchd/disabled.plist 2>/dev/null \
+    | awk -F'=> ' '/"com.openssh.sshd"/ { gsub(/[ \t]/, "", $2); print $2; exit }')
+  case "$disabled" in
+    false) printf '  Remote Login : %s有効%s\n' "$GRN" "$RST" ;;
+    true)  printf '  Remote Login : %s無効%s（システム設定 > 一般 > 共有 で有効化）\n' "$RED" "$RST" ;;
+    *)     printf '  Remote Login : 不明（launchd override を読めず）\n' ;;
+  esac
+  if netstat -an -p tcp 2>/dev/null | grep -qE '^tcp[46].*\.22 .*LISTEN'; then
+    printf '  ポート 22    : %sLISTEN%s\n' "$GRN" "$RST"
+  else
+    printf '  ポート 22    : %sLISTEN していない%s\n' "$RED" "$RST"
+  fi
+  # Tailscale SSH を使っている場合は sshd ではなく tailscaled が SSH サーバーになる
+  if command -v tailscale >/dev/null 2>&1; then
+    local runssh
+    runssh=$(tailscale debug prefs 2>/dev/null | sed -n 's/.*"RunSSH": *\([a-z]*\).*/\1/p')
+    printf '  Tailscale SSH: %s %s\n' "${runssh:-unknown}" \
+      "${DIM}(false なら SSH サーバーは macOS 標準 sshd。Tailscale は経路のみ)${RST}"
+  fi
+
+  hdr "sshd プロセス分割の状態"
+  if [[ -x /usr/libexec/sshd-session ]]; then
+    printf '  sshd-session : %s存在する%s → ログインシェルはこのバイナリ配下で動く\n' "$YEL" "$RST"
+    note 'OpenSSH 9.8+ の分割モデル。FDA はこの署名 ID に対して必要。'
+  else
+    printf '  sshd-session : 存在しない（OpenSSH 9.7 以前の一体型）\n'
+  fi
+
+  hdr "フルディスクアクセス (FDA) の付与状況"
+  local rows="" readable=1
+  rows=$(sqlite3 "$TCC_DB" \
+    "select client || '|' || auth_value from access
+      where service='kTCCServiceSystemPolicyAllFiles' and client like '%ssh%';" 2>/dev/null) || readable=0
+  if (( readable == 0 )); then
+    printf '  %sTCC.db を読めませんでした%s\n' "$YEL" "$RST"
+    note 'この端末アプリ自体に FDA が無い場合に起こる。付与状況はシステム設定で目視確認すること。'
+  fi
+  local b id val
+  for b in "${SSH_BINS[@]}"; do
+    [[ -e "$b" ]] || continue
+    id=$(codesign -d -r- "$b" 2>&1 | sed -n 's/^designated => identifier "\([^"]*\)".*/\1/p')
+    val=$(printf '%s\n' "$rows" | awk -F'|' -v b="$b" '$1 == b { print $2; exit }')
+    printf '  %-38s %-30s %s\n' "$b" "${id:-?}" "$(auth_label "$val")"
+    if [[ "$val" != "2" ]]; then NEEDS_FDA+=("$b"); fi
+  done
+
+  hdr "保護ディレクトリへの実アクセス"
+  local d
+  for d in "${PROTECTED_DIRS[@]}"; do
+    [[ -d "$d" ]] || continue
+    if ls -1 "$d" >/dev/null 2>&1; then
+      printf '  %-40s %sOK%s\n' "$d" "$GRN" "$RST"
+    else
+      printf '  %-40s %sOperation not permitted%s\n' "$d" "$RED" "$RST"
+      DENIED_DIRS+=("$d")
+    fi
+  done
+}
+
+verdict() {
+  hdr "判定"
+  if (( ${#DENIED_DIRS[@]} == 0 )); then
+    printf '  %s保護ディレクトリは全て読めています。%s\n' "$GRN" "$RST"
+    [[ -z "${SSH_CONNECTION:-}" ]] && note 'ローカルで実行した結果です。SSH 側の再現確認は ssh 先で実行してください。'
+    return 0
+  fi
+
+  printf '  %sTCC により拒否されています。%s\n\n' "$RED" "$RST"
+  printf '  %s対処: 以下のバイナリをフルディスクアクセスに追加する%s\n' "$BLD" "$RST"
+  local b
+  if (( ${#NEEDS_FDA[@]} > 0 )); then
+    for b in "${NEEDS_FDA[@]}"; do printf '    - %s\n' "$b"; done
+  else
+    printf '    - /usr/libexec/sshd-session\n    - /usr/libexec/sshd-keygen-wrapper\n'
+  fi
+  cat <<'STEPS'
+
+  手順:
+    1. システム設定 > プライバシーとセキュリティ > フルディスクアクセス
+    2. [+] をクリック → ファイル選択ダイアログで Command+Shift+G
+    3. 上のパスを貼り付けて追加し、トグルを ON にする
+    4. SSH クライアントから再接続する
+    5. 直らなければ システム設定 > 一般 > 共有 > リモートログイン を OFF → ON
+
+  代替策:
+    作業ディレクトリを ~/Desktop ~/Documents ~/Downloads の外
+    （例: ~/dev/）へ移す。TCC 保護対象外なので FDA 不要で恒久的に安定する。
+
+  注意:
+    macOS のアップデートで /usr/libexec/ 配下が置き換わると設定が無効化される
+    ことがある。再発したら FDA のリストから削除 → 再追加する。
+STEPS
+  return 1
+}
+
+open_settings() {
+  hdr "システム設定を開きます"
+  local target="/usr/libexec/sshd-session"
+  (( ${#NEEDS_FDA[@]} > 0 )) && target="${NEEDS_FDA[0]}"
+  if command -v pbcopy >/dev/null 2>&1 && [[ -z "${SSH_CONNECTION:-}" ]]; then
+    printf '%s' "$target" | pbcopy && printf '  クリップボードにコピー: %s\n' "$target"
+  else
+    printf '  追加するパス: %s\n' "$target"
+  fi
+  open "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles" 2>/dev/null \
+    || printf '  %s設定を自動で開けませんでした（SSH 越しでは開けません）。手動で開いてください。%s\n' "$YEL" "$RST"
+}
+
+main() {
+  case "${1:-}" in
+    -h|--help) usage; return 0 ;;
+  esac
+  diagnose
+  local rc=0
+  verdict || rc=$?
+  if [[ "${1:-}" == "--fix" ]]; then open_settings; fi
+  return "$rc"
+}
+
+main "$@"
