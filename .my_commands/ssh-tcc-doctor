@@ -24,11 +24,15 @@ SSH_BINS=(
   /usr/libexec/sshd-session
   /usr/libexec/sshd-auth
 )
+# FDA を推奨する対象。優先順（sshd-session がログインシェルの親なので最重要）。
+# sshd-auth は認証専用でファイルアクセスに関与しないため推奨対象から外す。
+FDA_TARGETS=(/usr/libexec/sshd-session /usr/libexec/sshd-keygen-wrapper /usr/sbin/sshd)
 # TCC 保護対象のうち、実アクセス検証に使うディレクトリ
 PROTECTED_DIRS=("$HOME/Desktop" "$HOME/Documents" "$HOME/Downloads")
 
 RED=$'\033[31m'; GRN=$'\033[32m'; YEL=$'\033[33m'; DIM=$'\033[2m'; BLD=$'\033[1m'; RST=$'\033[0m'
 NEEDS_FDA=()
+GRANTED=()
 DENIED_DIRS=()
 
 hdr() { printf '\n%s== %s ==%s\n' "$BLD" "$1" "$RST"; }
@@ -101,7 +105,13 @@ diagnose() {
     id=$(codesign -d -r- "$b" 2>&1 | sed -n 's/^designated => identifier "\([^"]*\)".*/\1/p')
     val=$(printf '%s\n' "$rows" | awk -F'|' -v b="$b" '$1 == b { print $2; exit }')
     printf '  %-38s %-30s %s\n' "$b" "${id:-?}" "$(auth_label "$val")"
-    if [[ "$val" != "2" ]]; then NEEDS_FDA+=("$b"); fi
+    [[ "$val" == "2" ]] && GRANTED+=("$b")
+  done
+  # 推奨リストは FDA_TARGETS の優先順で組み立てる
+  local t
+  for t in "${FDA_TARGETS[@]}"; do
+    [[ -e "$t" ]] || continue
+    printf '%s\n' "${GRANTED[@]:-}" | grep -qxF "$t" || NEEDS_FDA+=("$t")
   done
 
   hdr "保護ディレクトリへの実アクセス"
@@ -131,7 +141,7 @@ verdict() {
   if (( ${#NEEDS_FDA[@]} > 0 )); then
     for b in "${NEEDS_FDA[@]}"; do printf '    - %s\n' "$b"; done
   else
-    printf '    - /usr/libexec/sshd-session\n    - /usr/libexec/sshd-keygen-wrapper\n'
+    printf '    - %s（TCC.db を読めなかったため既定の推奨を表示）\n' "${FDA_TARGETS[0]}"
   fi
   cat <<'STEPS'
 
@@ -155,7 +165,7 @@ STEPS
 
 open_settings() {
   hdr "システム設定を開きます"
-  local target="/usr/libexec/sshd-session"
+  local target="${FDA_TARGETS[0]}"
   (( ${#NEEDS_FDA[@]} > 0 )) && target="${NEEDS_FDA[0]}"
   if command -v pbcopy >/dev/null 2>&1 && [[ -z "${SSH_CONNECTION:-}" ]]; then
     printf '%s' "$target" | pbcopy && printf '  クリップボードにコピー: %s\n' "$target"
