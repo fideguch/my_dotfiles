@@ -346,5 +346,38 @@ if [[ -o interactive ]]; then
   TRAPTERM() { _shell_death_log SIGTERM; exit 143 }
 fi
 
+# ── Claude resume hint (window-restoration companion) ───────
+# After a reboot iTerm2 restores each tab/pane in its old cwd, but the
+# Claude process itself is gone. If this directory has a recent Claude
+# session, print a one-line hint so it can be resumed with ccc / ccr.
+if [[ -o interactive && -z "$_CLAUDE_RESUME_HINT_DONE" && -z "$CLAUDECODE" ]]; then
+  typeset -g _CLAUDE_RESUME_HINT_DONE=1
+  _claude_resume_hint() {
+    # Claude Code maps a cwd to its session dir by replacing every
+    # non-alphanumeric character with '-'
+    local proj="$HOME/.claude/projects/${PWD//[^A-Za-z0-9]/-}"
+    [[ -d "$proj" ]] || return 0
+    local -a sessions
+    sessions=("$proj"/*.jsonl(Nom))   # N=nullglob, om=newest first
+    (( ${#sessions} )) || return 0
+    zmodload -F zsh/stat b:zstat 2>/dev/null || return 0
+    local newest now age when
+    newest=$(zstat +mtime -- "${sessions[1]}" 2>/dev/null) || return 0
+    now=$(date +%s)
+    age=$(( now - newest ))
+    (( age < 7 * 24 * 3600 )) || return 0   # ignore sessions older than 7 days
+    if (( age < 3600 )); then
+      when="$(( age / 60 ))分前"
+    elif (( age < 86400 )); then
+      when="$(( age / 3600 ))時間前"
+    else
+      when="$(( age / 86400 ))日前"
+    fi
+    print -P "%F{cyan}♻️  Claudeセッション ${#sessions}件（最新: ${when}）→ ccc で最新を再開 / ccr で選択%f"
+  }
+  _claude_resume_hint
+  unfunction _claude_resume_hint 2>/dev/null
+fi
+
 # mobile-dev-bridge: auto-attach tmux on SSH login
 if [[ -n $SSH_CONNECTION && -z $TMUX ]]; then tmux new -A -s main; fi
