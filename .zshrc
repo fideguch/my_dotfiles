@@ -379,5 +379,12 @@ if [[ -o interactive && -z "$_CLAUDE_RESUME_HINT_DONE" && -z "$CLAUDECODE" ]]; t
   unfunction _claude_resume_hint 2>/dev/null
 fi
 
+# ── lidwork warning ─────────────────────────────────────────
+# `lidwork on` (pmset disablesleep 1) survives reboots, so surface the
+# state in every new shell until it is turned off again.
+if [[ -o interactive ]] && pmset -g 2>/dev/null | grep -q "SleepDisabled[[:space:]]*1"; then
+  print -P "%F{yellow}⚠️  lidwork ON — スリープ無効化中（終わったら lidwork off）%f"
+fi
+
 # mobile-dev-bridge: auto-attach tmux on SSH login
 if [[ -n $SSH_CONNECTION && -z $TMUX ]]; then tmux new -A -s main; fi

@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# lidwork — keep the Mac awake with the lid closed so local Claude
+# sessions keep running.
+#
+# Background:
+#   macOS force-sleeps on lid close unless an external display is
+#   attached (clamshell mode). caffeinate cannot prevent lid-close
+#   sleep; the only native override without a display is
+#   `pmset disablesleep 1` (root required, decided by powerd).
+#   The flag persists across reboots, so a startup warning in .zshrc
+#   surfaces the state until it is turned off again.
+#
+# Usage:
+#   lidwork on      # disable sleep entirely (survives lid close)
+#   lidwork off     # restore normal sleep behavior
+#   lidwork         # show current state
+set -uo pipefail
+
+state_on() {
+  pmset -g 2>/dev/null | grep -q "SleepDisabled[[:space:]]*1"
+}
+
+on_ac_power() {
+  pmset -g batt 2>/dev/null | grep -q "AC Power"
+}
+
+case "${1:-status}" in
+  on)
+    if ! on_ac_power; then
+      printf '⚠️  バッテリー駆動中です。蓋を閉じても放電し続けます。\n'
+      read -r -p "それでも有効にしますか? (y/N) " ans
+      [[ "$ans" == [yY]* ]] || exit 1
+    fi
+    sudo pmset disablesleep 1 || exit 1
+    if state_on; then
+      printf '✅ lidwork ON — 蓋を閉じてもスリープしません\n'
+      printf '   ・カバンに入れない（放熱できず危険）\n'
+      printf '   ・AC電源につないだままにする\n'
+      printf '   ・終わったら lidwork off\n'
+    else
+      printf '❌ 有効化に失敗しました（pmset -g で SleepDisabled を確認してください）\n'
+      exit 1
+    fi
+    ;;
+  off)
+    sudo pmset disablesleep 0 || exit 1
+    if state_on; then
+      printf '❌ 無効化に失敗しました（pmset -g で SleepDisabled を確認してください）\n'
+      exit 1
+    fi
+    printf '✅ lidwork OFF — 通常のスリープ動作に戻しました\n'
+    ;;
+  status)
+    if state_on; then
+      printf 'lidwork: ON — 蓋を閉じてもスリープしません（戻すには lidwork off）\n'
+    else
+      printf 'lidwork: OFF — 通常動作（有効化は lidwork on）\n'
+    fi
+    ;;
+  -h|--help|help)
+    printf 'Usage: lidwork [on|off|status]\n'
+    printf '  on      蓋を閉じてもスリープしない（sudo が必要）\n'
+    printf '  off     通常のスリープ動作に戻す（sudo が必要）\n'
+    printf '  status  現在の状態を表示（デフォルト）\n'
+    ;;
+  *)
+    printf 'Usage: lidwork [on|off|status]\n' >&2
+    exit 2
+    ;;
+esac
