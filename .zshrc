@@ -286,7 +286,9 @@ fi
 if [[ -o interactive && -z "$_POKE_MOTD_DONE" ]] \
    && [[ "$TERM_PROGRAM" == "iTerm.app" || "$TERM_PROGRAM" == "ghostty" ]] \
    && [[ -f "$HOME/my_dotfiles/pokemon-terminal/motd.sh" ]]; then
-  source "$HOME/my_dotfiles/pokemon-terminal/motd.sh"
+  # Run as a child process, never `source`: motd.sh is a bash script whose
+  # `set -e` / `exit` would leak into this shell and kill it on any failed command.
+  bash "$HOME/my_dotfiles/pokemon-terminal/motd.sh"
   typeset -g _POKE_MOTD_DONE=1
 fi
 
