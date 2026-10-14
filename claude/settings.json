@@ -1,5 +1,5 @@
 {
-  "model": "claude-fable-5",
+  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
@@ -250,7 +250,18 @@
     "discord@claude-plugins-official": false,
     "swift-lsp@claude-plugins-official": true
   },
-  "effortLevel": "xhigh",
+  "effortLevel": "high",
+  "modelSettings": {
+    "claude-fable-5": {
+      "effortLevel": "xhigh"
+    },
+    "claude-opus-5": {
+      "effortLevel": "xhigh"
+    },
+    "claude-fable-5-1": {
+      "effortLevel": "high"
+    }
+  },
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
