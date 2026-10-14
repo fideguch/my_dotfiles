@@ -15,7 +15,8 @@ claude/
 │   └── mcp-servers.json
 ├── skills-manifest.json   # 全スキルの一覧マニフェスト
 ├── scripts/hooks/         # フックスクリプト（settings.json から参照）
-├── rules/                 # コーディング規約（common/ + 言語別）
+├── rules/                 # 毎回読まれる指示（common/ の paths なし 2 本）＋ paths つきの規約（コード・言語別）
+├── docs/                  # ルールから外した参考資料（読み込まれない）
 ├── skills/                # スキル定義（SKILL.md ベース）
 ├── agents/                # サブエージェント定義
 ├── commands/              # スラッシュコマンド定義
@@ -51,47 +52,25 @@ claude/
 
 | 種別 | 管理方法 | 例 |
 |------|---------|-----|
-| **自作スキル（Git リポジトリあり）** | 個別リポジトリが本体。`~/.claude/skills/` に clone | bochi, my_pm_tools, forge_ace, figma-refine 等 |
-| **自作スキル（Git リポジトリなし）** | dotfiles 配下で管理 | aidesigner-frontend |
+| **自作スキル（Git リポジトリあり）** | 個別リポジトリが本体。`~/.claude/skills/` に clone、またはホーム直下の clone へリンク | bochi, my_pm_tools, figma-refine, model-director 等 |
+| **自作スキル（Git リポジトリなし）** | dotfiles 配下で管理 | forge_ace, gatekeeper, aidesigner-frontend, claude-agenda 等 |
 | **ECC 由来スキル** | dotfiles 配下で管理 | coding-standards, tdd-workflow 等 |
+| **npx スキル** | `~/.agents/skills/` に入り、`~/.claude/skills/` からリンク | pm-*, superpowers 系 |
+| **会社用スキル** | ここには置かない（公開リポジトリのため）。各社の保管庫側で管理 | — |
+
+一覧の正は `skills-manifest.json`（2026-10-14 再生成）。使わないスキルは `settings.json` の `skillOverrides` で `name-only` にし、説明文の一覧（コンテキストの 1%）を空けている。
 
 ## フック体系
 
-`settings.json` の `hooks` キーに全13エントリを集約。
-Claude Code はこのキーからのみフックを読み込む。
+`settings.json` の `hooks` キーに全 22 エントリを集約（2026-10-14 時点）。
 
-### PreToolUse（5個）
-
-| Hook | Matcher | 目的 |
-|------|---------|------|
-| block-no-verify | Bash | `git --no-verify` をブロック |
-| pm-pipeline-guard | Write | designs/ なしで plan.md 作成をブロック |
-| forge-ace-dispatch-guard | Agent | forge_ace エージェント順序強制 |
-| gatekeeper-pre-edit-guard | Edit\|Write | HG-1 未通過で src/ 編集ブロック |
-| bochi-s3-pull-on-read | Read\|Grep | bochi データの S3 同期（読み取り前） |
-
-### SessionStart（2個）
-
-| Hook | Matcher | 目的 |
-|------|---------|------|
-| bochi-s3-pull | * | bochi データの S3 同期（セッション起動時） |
-| skill-health-check | * | スキル/symlink の健全性チェック |
-
-### PostToolUse（2個）
-
-| Hook | Matcher | 目的 |
-|------|---------|------|
-| bochi-feedback-capture | Write\|Edit | ユーザーフィードバック記録 |
-| bochi-s3-push | Write\|Edit | bochi データの S3 同期（書き込み後） |
-
-### Stop（4個）
-
-| Hook | Matcher | 目的 |
-|------|---------|------|
-| **claude-stop-notify** | * | **macOS 通知バナー + Glass 音（terminal-notifier）** |
-| forge-ace-session-complete | * | forge_ace セッション完了確認 |
-| gatekeeper-stop-check | * | gatekeeper HG-5 verdict 未報告警告 |
-| gatekeeper-session-rotate | * | gatekeeper セッション履歴ローテーション |
+| イベント | フック |
+|---|---|
+| PreToolUse（6） | block-no-verify・pm-pipeline-guard・forge-ace-dispatch-guard・gatekeeper-pre-edit-guard・bochi-s3-pull-on-read・tg-record（token-guard） |
+| SessionStart（6） | bochi-s3-pull・skill-health-check・session-start・pokechamp-ensure-schedule・fable-for-opus（`.fable/` があるときだけ）・token-guard |
+| PostToolUse（3） | bochi-feedback-capture・bochi-s3-push・fable-post-edit |
+| Stop（6） | claude-stop-notify・forge-ace-session-complete・gatekeeper-stop-check・gatekeeper-session-rotate・fable-stop-gate・token-guard |
+| UserPromptSubmit（1） | token-guard |
 
 ## 自作スキル
 
@@ -102,7 +81,7 @@ Claude Code はこのキーからのみフックを読み込む。
 | 起動 | `/forge_ace` |
 | 目的 | コード修正の品質保証。Writer → Guardian → Overseer → PM-Admin → Designer の5エージェントゲート |
 | Tier | Standard（コードのみ）/ Full（UI あり） |
-| リポジトリ | GitHub（個別管理） |
+| 管理 | dotfiles 配下（`claude/skills/forge_ace`） |
 
 ### gatekeeper — 実装品質ゲート
 
@@ -179,38 +158,21 @@ Claude Code はこのキーからのみフックを読み込む。
 # 1. dotfiles を clone
 git clone git@github.com:fideguch/my_dotfiles.git ~/my_dotfiles
 
-# 2. Claude Code 設定をシンボリックリンクで接続
-ln -sf ~/my_dotfiles/claude/settings.json ~/.claude/settings.json
-ln -sf ~/my_dotfiles/claude/CLAUDE.md ~/.claude/CLAUDE.md
-ln -sf ~/my_dotfiles/claude/README.md ~/.claude/README.md
-ln -sf ~/my_dotfiles/claude/AGENTS.md ~/.claude/AGENTS.md
-ln -sf ~/my_dotfiles/claude/.gitignore ~/.claude/.gitignore
-ln -sf ~/my_dotfiles/claude/scripts ~/.claude/scripts
-ln -sf ~/my_dotfiles/claude/rules ~/.claude/rules
-ln -sf ~/my_dotfiles/claude/agents ~/.claude/agents
-ln -sf ~/my_dotfiles/claude/commands ~/.claude/commands
+# 2. リンク・自作スキルの clone・npx スキルのリンクをまとめて行う
+bash ~/my_dotfiles/set_up.sh
+#    AGENTS.md はリンクしない（CLAUDE.md のないフォルダで読まれてしまうため）
+#    templates/ は set_up.sh が扱わないので手でリンクする
 ln -sf ~/my_dotfiles/claude/templates ~/.claude/templates
-ln -sf ~/my_dotfiles/claude/mcp-configs ~/.claude/mcp-configs
-ln -sf ~/my_dotfiles/claude/skills-manifest.json ~/.claude/skills-manifest.json
 
-# 3. dotfiles 管理のスキルをシンボリックリンク
-for skill in ~/my_dotfiles/claude/skills/*/; do
-  name=$(basename "$skill")
-  ln -sf "$skill" ~/.claude/skills/"$name"
-done
+# 3. npx スキルを入れ直す（一覧は ~/.agents/.skill-lock.json と skills-manifest.json）
 
-# 4. 自作スキル（個別リポジトリ）を clone して symlink
-for repo in bochi my_pm_tools forge_ace figma-refine speckit-bridge pm-data-analysis pm-ad-analysis requirements_designer; do
-  git clone "git@github.com:fideguch/${repo}.git" ~/.claude/skills/"$repo" 2>/dev/null || true
-done
-
-# 5. settings.local.json をテンプレートからコピー（マシン固有設定）
+# 4. settings.local.json をテンプレートからコピー（マシン固有設定）
 cp ~/my_dotfiles/claude/settings.local.template.json ~/.claude/settings.local.json
 
-# 6. mcp-configs の実キーを設定（プレースホルダーを置き換え）
+# 5. mcp-configs の実キーを設定（プレースホルダーを置き換え）
 # ~/.claude/mcp-configs/mcp-servers.json の YOUR_*_HERE を実際の値に編集
 
-# 7. terminal-notifier をインストール（Stop hook 通知用）
+# 6. terminal-notifier をインストール（Stop hook 通知用）
 brew install terminal-notifier
 ```
 

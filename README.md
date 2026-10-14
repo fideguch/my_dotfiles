@@ -170,9 +170,9 @@ ECC (Everything Claude Code) 由来スキル、rules、agents、commands、hooks
 
 > 注: `pm-ad-operations` は `pm-ad-analysis` に統合済み。単独スキルとしては存在しない。
 
-**Layer 3: 外部スキル** -- 手動インストール (`INSTALL_SKILLS.md` 参照)
+**Layer 3: 外部スキル** -- 手動インストール（一覧は `~/.agents/.skill-lock.json`）
 
-`npx skills add` でインストールする PM スキル群 (45+)、Vercel Labs スキル、公式プラグイン (skill-creator, discord) 等。詳細は `claude/INSTALL_SKILLS.md` を参照。
+`npx skills add` でインストールする PM スキル群 (45+)、Vercel Labs スキル、公式プラグイン (skill-creator, discord) 等。一覧は `~/.agents/.skill-lock.json`。
 
 ### 配置方式
 

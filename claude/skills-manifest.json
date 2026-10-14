@@ -1,69 +1,95 @@
 {
   "version": 1,
   "description": "Declarative manifest of all Claude Code skills. Source of truth for full-system recovery.",
-  "generated": "2026-03-30",
+  "generated": "2026-10-14",
   "types": {
     "dotfiles": {
       "description": "Skills managed in ~/my_dotfiles/claude/skills/",
       "link_strategy": "symlink_each",
       "skills": [
         "ai-regression-testing",
-        "android-clean-architecture",
+        "aidesigner-frontend",
+        "analytics-mcp-setup",
         "api-design",
         "backend-patterns",
+        "canva-presentation-pipeline",
+        "claude-agenda",
         "coding-standards",
-        "compose-multiplatform-patterns",
-        "configure-ecc",
-        "continuous-learning",
-        "continuous-learning-v2",
-        "cpp-coding-standards",
-        "cpp-testing",
-        "django-patterns",
-        "django-tdd",
-        "django-verification",
         "e2e-testing",
         "eval-harness",
         "forge_ace",
         "frontend-patterns",
         "frontend-slides",
-        "golang-patterns",
-        "golang-testing",
+        "gatekeeper",
         "health",
+        "ios-web-inspect",
         "iterative-retrieval",
-        "java-coding-standards",
-        "kotlin-coroutines-flows",
-        "kotlin-exposed-patterns",
-        "kotlin-ktor-patterns",
-        "kotlin-patterns",
-        "kotlin-testing",
-        "laravel-patterns",
-        "laravel-tdd",
-        "laravel-verification",
+        "lidwork",
+        "macos-ssh-tcc",
         "mcp-server-patterns",
-        "perl-patterns",
-        "perl-testing",
         "plankton-code-quality",
         "playwright-skill",
-        "project-guidelines-example",
         "python-patterns",
         "python-testing",
+        "quality-review",
         "refactor-planner",
-        "rust-patterns",
-        "rust-testing",
         "save-session",
         "skill-stocktake",
-        "springboot-patterns",
-        "springboot-tdd",
-        "springboot-verification",
         "strategic-compact",
         "tdd-workflow",
-        "verification-loop"
+        "terminal-pokemon",
+        "verification-loop",
+        "wifi-doctor"
       ]
     },
     "npx": {
       "description": "Skills installed via npx skills add -> ~/.agents/skills/",
       "link_strategy": "symlink_relative",
       "packages": [
+        {
+          "source": "affaan-m/everything-claude-code",
+          "skills": [
+            "investor-materials"
+          ]
+        },
+        {
+          "source": "aj-geddes/useful-ai-prompts",
+          "skills": [
+            "funnel-analysis"
+          ]
+        },
+        {
+          "source": "anthropics/skills",
+          "skills": [
+            "brainstorming",
+            "brand-guidelines",
+            "canvas-design",
+            "dispatching-parallel-agents",
+            "doc-coauthoring",
+            "executing-plans",
+            "finishing-a-development-branch",
+            "frontend-design",
+            "pdf",
+            "pptx",
+            "receiving-code-review",
+            "requesting-code-review",
+            "skill-creator",
+            "subagent-driven-development",
+            "systematic-debugging",
+            "test-driven-development",
+            "using-git-worktrees",
+            "using-superpowers",
+            "verification-before-completion",
+            "writing-plans",
+            "writing-skills"
+          ]
+        },
+        {
+          "source": "claude-office-skills/skills",
+          "skills": [
+            "proposal-writer"
+          ]
+        },
         {
           "source": "deanpeters/product-manager-prompts",
           "skills": [
@@ -112,14 +138,25 @@
             "pm-user-story-mapping-workshop",
             "pm-user-story-splitting",
             "pm-vp-cpo-readiness-advisor",
-            "pm-workshop-facilitation",
-            "requirements_designer"
+            "pm-workshop-facilitation"
           ]
         },
         {
-          "source": "vercel-labs/skills",
+          "source": "kimny1143/claude-code-template",
           "skills": [
-            "find-skills"
+            "ui-ux-pro-max"
+          ]
+        },
+        {
+          "source": "nibzard/marp-slide-quality",
+          "skills": [
+            "marp-slide-quality"
+          ]
+        },
+        {
+          "source": "remotion-dev/skills",
+          "skills": [
+            "remotion-best-practices"
           ]
         },
         {
@@ -130,50 +167,21 @@
           ]
         },
         {
-          "source": "anthropics/skills",
+          "source": "vercel-labs/skills",
           "skills": [
-            "brainstorming",
-            "dispatching-parallel-agents",
-            "doc-coauthoring",
-            "executing-plans",
-            "finishing-a-development-branch",
-            "frontend-design",
-            "receiving-code-review",
-            "requesting-code-review",
-            "skill-creator",
-            "subagent-driven-development",
-            "systematic-debugging",
-            "test-driven-development",
-            "using-git-worktrees",
-            "using-superpowers",
-            "verification-before-completion",
-            "wifi-doctor",
-            "writing-plans",
-            "writing-skills"
-          ]
-        },
-        {
-          "source": "kimny1143/claude-code-template",
-          "skills": [
-            "ui-ux-pro-max"
-          ]
-        },
-        {
-          "source": "remotion-dev/skills",
-          "skills": [
-            "remotion-best-practices"
-          ]
-        },
-        {
-          "source": "aj-geddes/useful-ai-prompts",
-          "skills": [
-            "funnel-analysis"
+            "find-skills"
           ]
         },
         {
           "source": "wondelai/skills",
           "skills": [
             "cro-methodology"
+          ]
+        },
+        {
+          "source": "zl190/md-slides",
+          "skills": [
+            "md-slides"
           ]
         }
       ]
@@ -183,23 +191,35 @@
       "skills": [
         {
           "name": "bochi",
-          "repo": "fideguch/bochi",
-          "clone_to": "~/.claude/skills/bochi"
+          "repo": "git@github.com:fideguch/bochi.git"
         },
         {
-          "name": "pm-data-analysis",
-          "repo": "fideguch/pm_data_analysis",
-          "clone_to": "~/.claude/skills/pm-data-analysis"
+          "name": "claude-to-codex",
+          "repo": "git@github.com:fideguch/claude-to-codex.git"
         },
         {
-          "name": "speckit-bridge",
-          "repo": "fideguch/speckit-bridge",
-          "clone_to": "~/.claude/skills/speckit-bridge"
+          "name": "fable-for-opus",
+          "repo": "git@github.com:fideguch/fable-for-opus.git"
+        },
+        {
+          "name": "figma-refine",
+          "repo": "git@github.com:fideguch/figma-refine.git"
+        },
+        {
+          "name": "model-director",
+          "repo": "git@github.com:fideguch/model-director.git"
         },
         {
           "name": "my_pm_tools",
-          "repo": "fideguch/my_pm_tools",
-          "clone_to": "~/.claude/skills/my_pm_tools"
+          "repo": "git@github.com:fideguch/my_pm_tools.git"
+        },
+        {
+          "name": "pm-data-analysis",
+          "repo": "git@github.com:fideguch/pm-data-analysis.git"
+        },
+        {
+          "name": "speckit-bridge",
+          "repo": "git@github.com:fideguch/speckit-bridge.git"
         }
       ]
     },
@@ -207,16 +227,32 @@
       "description": "GitHub repos cloned outside ~/.claude, then symlinked in",
       "skills": [
         {
-          "name": "pm-ad-analysis",
-          "repo": "fideguch/pm_ad_analysis",
-          "clone_to": "~/pm_ad_analysis",
-          "link_as": "~/.claude/skills/pm-ad-analysis"
+          "name": "google-workspace",
+          "path": "~/google_mcps/google-workspace"
         },
         {
-          "name": "google-workspace",
-          "repo": "fideguch/google-workspace",
-          "clone_to": "~/google_mcps",
-          "link_as": "~/.claude/skills/google-workspace"
+          "name": "mobile-dev-bridge",
+          "path": "~/mobile-dev-bridge"
+        },
+        {
+          "name": "pm-ad-analysis",
+          "path": "~/pm_ad_analysis"
+        },
+        {
+          "name": "pokemon-champions",
+          "path": "~/ai-pokemen"
+        },
+        {
+          "name": "requirements_designer",
+          "path": "~/requirements_designer"
+        },
+        {
+          "name": "specs-evals",
+          "path": "~/specs-evals"
+        },
+        {
+          "name": "token-guard",
+          "path": "~/token-guard"
         }
       ]
     },
