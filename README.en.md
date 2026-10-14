@@ -33,6 +33,10 @@ $(brew --prefix)/opt/fzf/install          # fzf keybindings (first time only)
 | `ghostty/` | Ghostty/cmux config (Japanesque theme, font, keybindings) |
 | `cmux/` | cmux macOS defaults script |
 | `iterm2/` | iTerm2 Pokemon profile |
+| `LaunchAgents/` | macOS launchd plists (bochi S3 safety net & weekly health check) |
+| `pokemon-terminal/` | Pokemon Terminal skin (starship / MOTD / LazyVim / Claude Code), see [pokemon-terminal/README.md](pokemon-terminal/README.md) |
+| `claude/` | Full Claude Code config (symlinked into `~/.claude/`) |
+| `codex/` | Codex CLI config (`config.template.toml` → `~/.codex/config.toml`) |
 | `set_up.sh` | Setup script |
 
 ## Custom Commands (.my_commands/)
@@ -45,6 +49,28 @@ $(brew --prefix)/opt/fzf/install          # fzf keybindings (first time only)
 | `mka <name> <cmd>` | Add alias to .zshrc. `mka gs 'git status'` |
 | `gccw <file>` | `gcc -Wall -Wextra -Werror` wrapper |
 | `ssh-tcc-doctor [--fix]` | Diagnose/guide the macOS TCC `Operation not permitted` failure over SSH |
+| `lidwork [on\|off\|status]` | Keep the MacBook awake with the lid closed (see [below](#lid-closed-mode-lidwork)) |
+| `design-md [list\|<brand>\|update]` | Fetch a brand's `DESIGN.md` from [awesome-design-md](https://github.com/VoltAgent/awesome-design-md) into the current directory |
+
+## Lid-Closed Mode (lidwork)
+
+Without an external display, macOS force-sleeps on lid close, and `caffeinate` cannot prevent it. `lidwork` is a safe wrapper around `sudo pmset disablesleep 1|0`, so local Claude Code work keeps running with the lid closed.
+
+```bash
+lidwork on       # Do not sleep on lid close (sudo; asks first when on battery)
+lidwork off      # Restore normal sleep behavior
+lidwork          # Show the current state
+```
+
+| Component | Location |
+|---|---|
+| Command | `.my_commands/lidwork` (on PATH via `.zshrc`) |
+| Startup warning | `.zshrc` — new shells print "⚠️ lidwork ON" while it is still enabled |
+| Claude Code skill | `claude/skills/lidwork/` (triggers on "lidwork", "keep awake", "lid close", etc.) |
+
+- The setting **survives reboots**. Always run `lidwork off` when done
+- While ON, **do not put the Mac in a bag** (it cannot shed heat) and **keep it on AC power**
+- Claude's shell has no TTY, so it cannot type the sudo password. To let Claude toggle it directly, set up `/etc/sudoers.d/lidwork` yourself with NOPASSWD limited to `pmset disablesleep 1|0` (steps in `claude/skills/lidwork/SKILL.md`)
 
 ## Key Aliases
 
@@ -114,11 +140,11 @@ Full Claude Code configuration. `set_up.sh` creates symlinks to `~/.claude/`.
 | Directory | Description |
 |---|---|
 | `claude/CLAUDE.md` | Global config (language, stack, workflow) |
-| `claude/rules/` | Coding standards (common + 10 languages) |
-| `claude/agents/` | Specialized sub-agents (28) |
-| `claude/skills/` | Task-specific references (48) |
-| `claude/hooks/` | Automation hooks (pre/post-tool) |
-| `claude/commands/` | Custom commands |
+| `claude/rules/` | Coding standards (common + python / swift / typescript) |
+| `claude/agents/` | Specialized sub-agents (17) |
+| `claude/skills/` | Task-specific skills (34) |
+| `claude/scripts/` | Automation hooks (`scripts/hooks/`) and the npx skill sync script |
+| `claude/commands/` | Custom slash commands |
 
 > Sensitive files (`settings.local.json`, `mcp-configs/`) are excluded via `.gitignore`.
 > See `claude/settings.local.template.json` for the template.
@@ -129,7 +155,7 @@ The Claude Code environment is managed across 3 layers. On a new machine, run `s
 
 **Layer 1: dotfiles (this repo)** -- symlinked by `set_up.sh`
 
-Contains ECC (Everything Claude Code) skills, rules, agents, commands, and hooks. This repository directly includes 28 agents and 48 skills.
+Contains ECC (Everything Claude Code) skills, small self-made skills (lidwork, etc.), rules, agents, commands, and hooks. This repository directly includes 17 agents and 34 skills.
 
 **Layer 2: Self-made GitHub repos** -- auto-cloned by `set_up.sh`
 
@@ -138,17 +164,25 @@ Contains ECC (Everything Claude Code) skills, rules, agents, commands, and hooks
 | Skill | Repository | Location |
 |-------|-----------|----------|
 | bochi | fideguch/bochi | `~/.claude/skills/bochi` (direct clone) |
-| pm-data-analysis | fideguch/pm_data_analysis | `~/.claude/skills/pm-data-analysis` (direct clone) |
-| pm-ad-analysis | fideguch/pm_ad_analysis | `~/pm_ad_analysis` → symlink |
+| pm-data-analysis | fideguch/pm-data-analysis | `~/.claude/skills/pm-data-analysis` (direct clone) |
 | speckit-bridge | fideguch/speckit-bridge | `~/.claude/skills/speckit-bridge` (direct clone) |
-| requirements_designer | fideguch/requirements_designer | `~/.agents/skills/` → via npx skills |
-| google-workspace | fideguch/google-workspace | `~/google_mcps` → symlink |
+| my_pm_tools | fideguch/my_pm_tools | `~/.claude/skills/my_pm_tools` (direct clone) |
+| figma-refine | fideguch/figma-refine | `~/.claude/skills/figma-refine` (direct clone) |
+| claude-to-codex | fideguch/claude-to-codex | `~/.claude/skills/claude-to-codex` (direct clone) |
+| fable-for-opus | fideguch/fable-for-opus | `~/.claude/skills/fable-for-opus` (direct clone) |
+| model-director | fideguch/model-director | `~/.claude/skills/model-director` (direct clone) |
+| pm-ad-analysis | fideguch/pm_ad_analysis | `~/pm_ad_analysis` → symlink |
+| google-workspace | fideguch/google-workspace | `~/google_mcps/google-workspace` → symlink |
+| pokemon-champions | fideguch/ai-pokemen | `~/ai-pokemen` → symlink |
+| mobile-dev-bridge | fideguch/mobile-dev-bridge | `~/mobile-dev-bridge` → symlink |
+| specs-evals | fideguch/specs-evals | `~/specs-evals` → symlink |
+| requirements_designer | fideguch/requirements_designer | `~/.agents/skills/` → via npx skills (same as Layer 3) |
 
 > Note: `pm-ad-operations` has been merged into `pm-ad-analysis` and no longer exists as a separate skill.
 
-**Layer 3: External skills** -- manual install (see `INSTALL_SKILLS.md`)
+**Layer 3: External skills** -- manual install (list in `~/.agents/.skill-lock.json`)
 
-Installed via `npx skills add`: PM skills (45+), Vercel Labs skills, official plugins (skill-creator, discord), etc. See `claude/INSTALL_SKILLS.md` for full details.
+Installed via `npx skills add`: PM skills (45+), Vercel Labs skills, official plugins (skill-creator, discord), etc. The full list lives in `~/.agents/.skill-lock.json`.
 
 ### Deployment Strategy
 
@@ -157,7 +191,7 @@ Installed via `npx skills add`: PM skills (45+), Vercel Labs skills, official pl
 | Target | Method | Reason |
 |------|------|------|
 | `CLAUDE.md`, `settings.json` etc. | Per-file symlinks | Individual management |
-| `rules/`, `agents/`, `hooks/`, `commands/` | Per-directory symlinks | Bulk management |
+| `rules/`, `agents/`, `commands/`, `scripts/` | Per-directory symlinks | Bulk management |
 | `skills/` | **Per-skill merge** | Avoid breaking Layer 2/3 skills |
 
 ## bochi-data Bidirectional Sync (Mac ↔ S3 ↔ Discord/Lightsail)
@@ -166,17 +200,18 @@ Bidirectionally syncs the bochi skill's generated memos, topics, and newspapers 
 
 ### Sync script layout
 
-Five scripts under `claude/scripts/hooks/bochi-s3-*.sh`:
+Six scripts under `claude/scripts/hooks/bochi-s3-*.sh` plus two launchd agents:
 
 | Script | Role | Trigger |
 |--------|------|---------|
-| `bochi-s3-push.sh` | Push bochi-data Write/Edit to S3 immediately (async) | PostToolUse(Write\|Edit) hook |
+| `bochi-s3-push.sh` | Push bochi-data Write/Edit to S3 immediately (async). Logs failures; macOS notification at 3+/h | PostToolUse(Write\|Edit) hook |
 | `bochi-s3-pull.sh` | Pull from S3 on session start | SessionStart hook |
 | `bochi-s3-pull-on-read.sh` | Pull from S3 before Read/Grep (5s debounce) | PreToolUse(Read\|Grep) hook |
-| `bochi-s3-safety-push.sh` | Redundant 5-min cron push (covers hook failure) | cron `*/5 * * * *` |
+| `bochi-s3-safety-push.sh` | Redundant 10-min push (covers hook bypass such as bash redirects) | launchd `StartInterval=600` |
 | `bochi-s3-safety-pull.sh` | Redundant 5-min cron pull (1-min offset) | cron `1-56/5 * * * *` |
+| `bochi-s3-healthcheck.sh` | Monday 09:00 JST round-trip test over SSH to Lightsail | launchd `StartCalendarInterval` |
 
-All hook bindings are consolidated in `claude/settings.json` under the `hooks` key.
+All hook bindings are consolidated in `claude/settings.json` under the `hooks` key. launchd plists live in `LaunchAgents/com.fideguch.bochi-*.plist`; enable them with `launchctl load -w` (details in `claude/scripts/hooks/README-launchd.md`).
 
 ### Write Ownership
 
@@ -203,6 +238,9 @@ To avoid push conflicts, the scripts split directory ownership by `uname`:
 - **Directories**: `mkdir -p` does nothing if already exists
 - **vim-plug**: Checks existence before installing
 - **Neovim/LazyVim**: Symlinks `nvim/` directory, runs headless `Lazy! sync` (failure doesn't abort script)
+- **Claude Code self-made skills / awesome-design-md**: Skips the clone if the destination already exists
+- **Codex CLI**: Generates `codex/config.toml` from the template only when missing, then links it to `~/.codex/config.toml`
+- **Ghostty/cmux**: Config is copied; the background is seed-copied (runtime state); cmux defaults script is run
 - **iTerm2**: Checks app existence before setup
 
 Re-run after `git pull` to safely apply configuration updates.

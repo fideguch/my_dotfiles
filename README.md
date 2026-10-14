@@ -34,6 +34,9 @@ $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 | `cmux/` | cmux macOS defaults スクリプト |
 | `iterm2/` | iTerm2 Pokemon プロファイル |
 | `LaunchAgents/` | macOS launchd plist（bochi S3 セーフティネット & 週次ヘルスチェック） |
+| `pokemon-terminal/` | Pokemon Terminal スキン（starship / MOTD / LazyVim / Claude Code 統合） |
+| `claude/` | Claude Code 設定一式（`~/.claude/` へシンボリックリンク） |
+| `codex/` | Codex CLI 設定（`config.template.toml` → `~/.codex/config.toml`） |
 | `set_up.sh` | セットアップスクリプト |
 
 ## 自作コマンド (.my_commands/)
@@ -46,6 +49,28 @@ $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 | `mka <name> <cmd>` | エイリアスを .zshrc に追加。`mka gs 'git status'` |
 | `gccw <file>` | `gcc -Wall -Wextra -Werror` のラッパー |
 | `ssh-tcc-doctor [--fix]` | SSH 越しの `Operation not permitted` (macOS TCC) を診断・修正ガイド |
+| `lidwork [on\|off\|status]` | MacBook の蓋を閉じてもスリープさせない（[後述](#蓋閉じ継続モード-lidwork)） |
+| `design-md [list\|<brand>\|update]` | [awesome-design-md](https://github.com/VoltAgent/awesome-design-md) からブランドの `DESIGN.md` をカレントに取得 |
+
+## 蓋閉じ継続モード (lidwork)
+
+外部ディスプレイなしで蓋を閉じると macOS は強制スリープし、`caffeinate` では防げない。`lidwork` は `sudo pmset disablesleep 1|0` を安全に包んだラッパーで、蓋を閉じてもローカルの Claude Code 処理を走らせ続けられる。
+
+```bash
+lidwork on       # 蓋を閉じてもスリープしない（sudo。バッテリー駆動中は確認あり）
+lidwork off      # 通常のスリープ動作に戻す
+lidwork          # 現在の状態を表示
+```
+
+| 構成要素 | 場所 |
+|---|---|
+| コマンド本体 | `.my_commands/lidwork`（`.zshrc` で PATH に追加） |
+| 起動時の警告 | `.zshrc` — ON のままなら新しいシェルで「⚠️ lidwork ON」を表示 |
+| Claude Code スキル | `claude/skills/lidwork/`（「蓋閉じモード」「スリープさせないで」等で起動） |
+
+- 設定は**再起動後も残る**。使い終わったら必ず `lidwork off`
+- ON の間は**カバンに入れない**（放熱できない）・**AC 電源につないだまま**にする
+- Claude のシェルには TTY がなく sudo のパスワードを打てない。Claude から直接切り替えたいときは、`pmset disablesleep 1|0` だけを NOPASSWD にする `/etc/sudoers.d/lidwork` を自分で設定する（手順は `claude/skills/lidwork/SKILL.md`）
 
 ## 主なエイリアス
 
@@ -138,11 +163,11 @@ Claude Code の設定一式。`set_up.sh` で `~/.claude/` にシンボリック
 | ディレクトリ | 説明 |
 |---|---|
 | `claude/CLAUDE.md` | グローバル設定（言語・スタック・ワークフロー） |
-| `claude/rules/` | コーディング規約（共通 + 10言語） |
-| `claude/agents/` | 専門サブエージェント (28個) |
-| `claude/skills/` | タスク別リファレンス (48個) |
-| `claude/hooks/` | 自動化フック (pre/post-tool) |
-| `claude/commands/` | カスタムコマンド |
+| `claude/rules/` | コーディング規約（common + python / swift / typescript） |
+| `claude/agents/` | 専門サブエージェント (17個) |
+| `claude/skills/` | タスク別スキル (34個) |
+| `claude/scripts/` | 自動化フック (`scripts/hooks/`)・npx スキル同期スクリプト |
+| `claude/commands/` | カスタムスラッシュコマンド |
 
 > 機密ファイル (`settings.local.json`, `mcp-configs/`) は `.gitignore` で除外済み。
 > テンプレートは `claude/settings.local.template.json` を参照。
@@ -153,7 +178,7 @@ Claude Code 環境は以下の3層で管理される。新しいマシンでは 
 
 **Layer 1: dotfiles (このリポジトリ)** -- `set_up.sh` でシンボリックリンク
 
-ECC (Everything Claude Code) 由来スキル、rules、agents、commands、hooks を含む。このリポジトリには 28 agents と 48 skills が直接含まれている。
+ECC (Everything Claude Code) 由来スキル・自作の小さなスキル（lidwork 等）、rules、agents、commands、hooks を含む。このリポジトリには 17 agents と 34 skills が直接含まれている。
 
 **Layer 2: 自作 GitHub リポジトリ** -- `set_up.sh` で自動 clone
 
@@ -162,11 +187,19 @@ ECC (Everything Claude Code) 由来スキル、rules、agents、commands、hooks
 | スキル | リポジトリ | 配置先 |
 |--------|-----------|--------|
 | bochi | fideguch/bochi | `~/.claude/skills/bochi` (直接 clone) |
-| pm-data-analysis | fideguch/pm_data_analysis | `~/.claude/skills/pm-data-analysis` (直接 clone) |
-| pm-ad-analysis | fideguch/pm_ad_analysis | `~/pm_ad_analysis` → symlink |
+| pm-data-analysis | fideguch/pm-data-analysis | `~/.claude/skills/pm-data-analysis` (直接 clone) |
 | speckit-bridge | fideguch/speckit-bridge | `~/.claude/skills/speckit-bridge` (直接 clone) |
-| requirements_designer | fideguch/requirements_designer | `~/.agents/skills/` → npx skills 経由 |
-| google-workspace | fideguch/google-workspace | `~/google_mcps` → symlink |
+| my_pm_tools | fideguch/my_pm_tools | `~/.claude/skills/my_pm_tools` (直接 clone) |
+| figma-refine | fideguch/figma-refine | `~/.claude/skills/figma-refine` (直接 clone) |
+| claude-to-codex | fideguch/claude-to-codex | `~/.claude/skills/claude-to-codex` (直接 clone) |
+| fable-for-opus | fideguch/fable-for-opus | `~/.claude/skills/fable-for-opus` (直接 clone) |
+| model-director | fideguch/model-director | `~/.claude/skills/model-director` (直接 clone) |
+| pm-ad-analysis | fideguch/pm_ad_analysis | `~/pm_ad_analysis` → symlink |
+| google-workspace | fideguch/google-workspace | `~/google_mcps/google-workspace` → symlink |
+| pokemon-champions | fideguch/ai-pokemen | `~/ai-pokemen` → symlink |
+| mobile-dev-bridge | fideguch/mobile-dev-bridge | `~/mobile-dev-bridge` → symlink |
+| specs-evals | fideguch/specs-evals | `~/specs-evals` → symlink |
+| requirements_designer | fideguch/requirements_designer | `~/.agents/skills/` → npx skills 経由（Layer 3 と同じ手順） |
 
 > 注: `pm-ad-operations` は `pm-ad-analysis` に統合済み。単独スキルとしては存在しない。
 
@@ -181,7 +214,7 @@ ECC (Everything Claude Code) 由来スキル、rules、agents、commands、hooks
 | 対象 | 方式 | 理由 |
 |------|------|------|
 | `CLAUDE.md`, `settings.json` 等 | ファイル単位シンボリックリンク | 個別管理 |
-| `rules/`, `agents/`, `hooks/`, `commands/` | ディレクトリ単位シンボリックリンク | 一括管理 |
+| `rules/`, `agents/`, `commands/`, `scripts/` | ディレクトリ単位シンボリックリンク | 一括管理 |
 | `skills/` | **スキル単位でマージ** | Layer 2/3 のスキルを壊さない |
 
 ## bochi-data 双方向同期 (Mac ↔ S3 ↔ Discord/Lightsail)
@@ -246,6 +279,8 @@ launchctl list | grep com.fideguch.bochi   # 2行表示されれば成功
 - **ディレクトリ**: `mkdir -p` で既存なら何もしない
 - **vim-plug**: 存在チェック後にインストール
 - **Neovim/LazyVim**: `nvim/` をシンボリックリンク、ヘッドレスで `Lazy! sync` 実行（失敗してもスクリプト中断なし）
+- **Claude Code 自作スキル / awesome-design-md**: clone 先が既にあればスキップ
+- **Codex CLI**: `codex/config.toml` が無いときだけテンプレートから生成し、`~/.codex/config.toml` へリンク
 - **Ghostty/cmux**: config はコピー、background はシードコピー（ランタイム状態）、cmux defaults はスクリプト実行
 - **iTerm2**: アプリ存在チェック後にセットアップ
 
