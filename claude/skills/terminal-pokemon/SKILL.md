@@ -1,3 +1,8 @@
+---
+name: terminal-pokemon
+description: ターミナルの背景のポケモンを変える・消すとき（poke コマンド、iTerm2・cmux/Ghostty）。背景が出ない・サイズが合わないときの仕組みと制約
+---
+
 # Terminal Pokemon Background
 
 ## Command

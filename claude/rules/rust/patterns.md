@@ -4,8 +4,6 @@ paths:
 ---
 # Rust Patterns
 
-> This file extends [common/patterns.md](../common/patterns.md) with Rust-specific content.
-
 ## Repository Pattern with Traits
 
 Encapsulate data access behind a trait:

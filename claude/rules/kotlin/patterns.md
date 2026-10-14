@@ -5,8 +5,6 @@ paths:
 ---
 # Kotlin Patterns
 
-> This file extends [common/patterns.md](../common/patterns.md) with Kotlin and Android/KMP-specific content.
-
 ## Dependency Injection
 
 Prefer constructor injection. Use Koin (KMP) or Hilt (Android-only):

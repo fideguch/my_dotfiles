@@ -1,7 +1,12 @@
+---
+paths:
+  - "**/designs/**"
+  - "**/specs/**"
+---
+
 # Team Development Pipeline
 
-> Extracted from global CLAUDE.md to keep identity config concise.
-> This file is auto-loaded as a rule and applies to all product development work.
+> Loaded when Claude reads or writes files under `designs/` or `specs/` (product development repos).
 
 ## Skill Maintenance
 
@@ -77,7 +82,7 @@ specify tasks → tasks.md（依存関係付きタスクリスト）
 ## MCP Selection by Project Type
 
 プロジェクト単位で必要な MCP のみ有効化する（常時10個以下を推奨）。
-詳細は [mcp-selection.md](./mcp-selection.md) を参照。
+導入手順はスキル `analytics-mcp-setup`。
 
 | Project Type | Recommended MCPs |
 |-------------|-----------------|

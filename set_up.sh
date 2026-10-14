@@ -88,7 +88,7 @@ if [[ -d "$CLAUDE_SRC" ]]; then
   mkdir -p "$CLAUDE_DST"
 
   # ファイル単位でシンボリックリンク（既存の動的ファイルを壊さない）
-  for item in CLAUDE.md AGENTS.md settings.json plugin.json marketplace.json \
+  for item in CLAUDE.md settings.json plugin.json marketplace.json \
               README.md PLUGIN_SCHEMA_NOTES.md .gitignore; do
     if [[ -f "$CLAUDE_SRC/$item" ]]; then
       link_file "$CLAUDE_SRC/$item" "$CLAUDE_DST/$item"

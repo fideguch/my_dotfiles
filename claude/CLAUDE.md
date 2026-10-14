@@ -1,41 +1,21 @@
 # Claude Code — Global Configuration
 
-## Communication
-- **Default language**: 日本語（説明・質問・回答すべて）
-- **Code artifacts**: English only（変数名、コメント、コミットメッセージ、PR本文）
-- **Generated content**: 日本語（ファイル出力の見出し・本文・レポート等）— 詳細は `rules/common/output-language.md`
-- 説明とコードを切り替える際は言語も切り替える
-
-## Primary Stack
-TypeScript/JavaScript（メイン）。
-プロジェクト固有の CLAUDE.md がない場合は `rules/typescript/` を優先適用。
-
-## Configuration Map
-
-| Layer | Location | Purpose |
-|-------|----------|---------|
-| Rules | `~/.claude/rules/` | コーディング、テスト、セキュリティ、Git の規約 |
-| Skills | `~/.claude/skills/` | タスク別の詳細リファレンス |
-| Agents | `~/.claude/agents/` | 専門サブエージェント |
-| Hooks | `~/.claude/settings.json` (`hooks` key) | 自動化ワークフロー（pre/post-tool） |
+## Language
+- 説明・質問・回答は日本語。コード（変数名・コメント）・コミットメッセージ・PR 本文は英語
+- ユーザー向けに生成するファイル（レポート・メモ・要件定義・Notion のページ）は見出し・本文とも日本語。スキルの英語テンプレートは、出力時に見出しを日本語にして使う（テンプレートファイルは直さない）
+- 原語のまま：フレームワーク名・評価指標名（SCAMPER・E-E-A-T など）、機械が読む表のヘッダー、JSON・YAML のキー、CLI・パス
 
 ## Git
-- コミットメッセージは英語、Conventional Commits 形式（詳細は `rules/common/git-workflow.md`）
+- Conventional Commits：`<type>: <description>`（feat・fix・refactor・docs・test・chore・perf・ci）
+- PR は全コミット（`git diff <base>...HEAD`）を見て要約とテスト計画を書く。新しいブランチは `-u` で push
 
-## Workflow Defaults
-- 既存プロジェクトでコード変更開始前 → プロジェクトの `.claude/rules/` を読み、既存パターンを把握してから着手
-- マルチファイルタスク → まず **planner** エージェントで計画
-- コード記述後 → 指示なしで **code-reviewer** エージェントを実行
-- Figma URL → Figma MCP (`get_design_context`) でデザイン取得してからUI実装
-- Notion → `rules/common/notion.md` に従ってから書き込み
-- プロダクト開発パイプライン → `rules/common/team-pipeline.md` に従う
-
-## Quality
-- コードレビュー・品質評価 → `rules/common/quality-review.md`（全評価時に必読）
-- スキル改善・パイプライン・Stage Gate → `rules/common/team-pipeline.md`
-- Figma MCP 操作後 → DESIGN.md「HEAL」セクションに従う
+## コードを変える作業（資料・ノートだけの作業には適用しない）
+- 主に TypeScript/JavaScript
+- 既存プロジェクトでは、変更前にプロジェクトの `.claude/rules/` を読み、既存パターンに合わせる
+- 複数ファイルにまたがる変更は、まず planner エージェントで計画。コードを書いたら code-reviewer エージェント
+- 既存コードの変更は forge_ace、新規コードは TDD（詳細は `rules/common/development-workflow.md`。コードを読んだときに読まれる）
+- Figma の URL → Figma MCP（`get_design_context`）でデザインを取ってから実装。Figma を操作したら DESIGN.md の「HEAL」節に従う
+- 品質評価（review・evaluation・assessment、GAFA 6 軸・8 軸）を頼まれたら `quality-review` スキル
 
 ## Project Health
-- SessionStart 時にプロジェクト健全性を自動チェック（CLAUDE.md, .claude/, .mcp.json の有無）
-- 欠落がある場合は `/health` でスキャフォールド可能
-- MCP 選定基準 → `rules/common/mcp-selection.md`
+- SessionStart で CLAUDE.md・`.claude/`・`.mcp.json` の有無を点検する。`/health` で雛形を作るのは Git リポジトリのときだけ（Git 管理しないフォルダ、例えば Obsidian の保管庫には作らない）

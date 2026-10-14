@@ -8,8 +8,6 @@ paths:
 ---
 # Perl Patterns
 
-> This file extends [common/patterns.md](../common/patterns.md) with Perl-specific content.
-
 ## Repository Pattern
 
 Use **DBI** or **DBIx::Class** behind an interface:

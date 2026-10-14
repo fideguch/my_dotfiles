@@ -4,8 +4,6 @@ paths:
 ---
 # Java Patterns
 
-> This file extends [common/patterns.md](../common/patterns.md) with Java-specific content.
-
 ## Repository Pattern
 
 Encapsulate data access behind an interface:

@@ -6,8 +6,6 @@ paths:
 ---
 # Go Patterns
 
-> This file extends [common/patterns.md](../common/patterns.md) with Go specific content.
-
 ## Functional Options
 
 ```go
