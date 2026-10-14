@@ -25,8 +25,10 @@ colors
 typeset -gU PATH path
 
 # Homebrew (Apple Silicon)
+# `cd /` inside the subshell: brew refuses to run when $PWD is unreadable
+# (e.g. macOS TCC denies ~/Desktop), which would leave starship off PATH.
 if [[ -f /opt/homebrew/bin/brew ]]; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
+  eval "$(cd -q / && /opt/homebrew/bin/brew shellenv)"
 fi
 
 # pyenv
