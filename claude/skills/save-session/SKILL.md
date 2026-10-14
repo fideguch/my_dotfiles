@@ -165,7 +165,7 @@ finalize 後、以下を**そのままコピペできる形**で会話末尾に�
 ## Related
 
 - 恒久メモリ: `~/.claude/projects/<project-slug>/memory/MEMORY.md` + topic files
-- 言語ポリシー: `~/.claude/rules/common/output-language.md`（JA 本文 / EN コード・ID）
+- 言語ポリシー: `~/.claude/CLAUDE.md` の Language 節（JA 本文 / EN コード・ID）
 - 並行作業規律: `~/.claude/rules/common/planning-verification.md`（Stale Context Divergence 回避）
 
 > 出典統合（2024-2026 リサーチ）: Cline memory-bank の activeContext/progress 二層 · robertguss 9-section handoff · Continuous-Claude の YAML frontmatter + status table · agent-toolkit の typed-state 品質ゲート · ai-memory の "where you left off" prepend · 「why / do-not / next-step / file-map を必ず捕捉」という業界共通則。

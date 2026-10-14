@@ -1,3 +1,8 @@
+---
+name: macos-ssh-tcc
+description: SSH 越しや Bash で ~/Desktop・~/Documents・~/Downloads が "Operation not permitted" になるとき（macOS TCC・フルディスクアクセス）。ssh-tcc-doctor で診断し、sshd-session への FDA 付与手順を示す
+---
+
 # macOS SSH — TCC による "Operation not permitted"
 
 > 横断ルール。iPhone の Termius 等から Mac に SSH したとき、

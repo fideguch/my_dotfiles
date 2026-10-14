@@ -1,6 +1,9 @@
-# Development Workflow
+---
+paths:
+  - "**/*.{ts,tsx,js,jsx,mjs,cjs,py,go,rs,java,kt,kts,swift,php,rb,c,cc,cpp,h,hpp,cs,sh,sql}"
+---
 
-> This file extends [common/git-workflow.md](./git-workflow.md) with the full feature development process that happens before git operations.
+# Development Workflow
 
 The Feature Implementation Workflow describes the development pipeline: research, planning, TDD, code review, and then committing to git.
 
@@ -48,4 +51,4 @@ The Feature Implementation Workflow describes the development pipeline: research
 4. **Commit & Push**
    - Detailed commit messages
    - Follow conventional commits format
-   - See [git-workflow.md](./git-workflow.md) for commit message format and PR process
+   - Commit format and PR process: the Git section of `~/.claude/CLAUDE.md`

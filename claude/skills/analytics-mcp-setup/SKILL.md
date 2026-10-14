@@ -1,10 +1,9 @@
+---
+name: analytics-mcp-setup
+description: GA4・Google Ads・Meta Ads・BigQuery の MCP サーバーを導入・選定するとき。認証の準備、.mcp.json の設定例、プロジェクト種別ごとの推奨、つながらないときの対処
+---
+
 # MCP Selection Guide for Analytics Tools
-
-## General Rule
-
-Keep total active MCP servers under 10 at any time.
-Too many MCPs degrade context quality, increase latency, and cause tool-name collisions.
-Enable only the MCPs your current project actually needs.
 
 ## Available Analytics MCP Servers
 

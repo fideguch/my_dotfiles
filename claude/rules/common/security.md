@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.{ts,tsx,js,jsx,mjs,cjs,py,go,rs,java,kt,kts,swift,php,rb,c,cc,cpp,h,hpp,cs,sh,sql}"
+---
+
 # Security Guidelines
 
 ## Mandatory Security Checks

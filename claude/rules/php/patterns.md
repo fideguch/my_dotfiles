@@ -5,8 +5,6 @@ paths:
 ---
 # PHP Patterns
 
-> This file extends [common/patterns.md](../common/patterns.md) with PHP specific content.
-
 ## Thin Controllers, Explicit Services
 
 - Keep controllers focused on transport: auth, validation, serialization, status codes.

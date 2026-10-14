@@ -10,8 +10,6 @@ paths:
 ---
 # C++ Patterns
 
-> This file extends [common/patterns.md](../common/patterns.md) with C++ specific content.
-
 ## RAII (Resource Acquisition Is Initialization)
 
 Tie resource lifetime to object lifetime:

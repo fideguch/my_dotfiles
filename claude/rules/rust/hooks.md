@@ -5,8 +5,6 @@ paths:
 ---
 # Rust Hooks
 
-> This file extends [common/hooks.md](../common/hooks.md) with Rust-specific content.
-
 ## PostToolUse Hooks
 
 Configure in `~/.claude/settings.json`:

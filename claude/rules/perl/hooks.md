@@ -8,8 +8,6 @@ paths:
 ---
 # Perl Hooks
 
-> This file extends [common/hooks.md](../common/hooks.md) with Perl-specific content.
-
 ## PostToolUse Hooks
 
 Configure in `~/.claude/settings.json`:
