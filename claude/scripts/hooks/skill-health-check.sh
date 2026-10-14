@@ -33,6 +33,8 @@ done
 # 4. Git-unmanaged skills warning (Type D)
 for skill_dir in "$SKILLS_DIR"/*/; do
   name=$(basename "$skill_dir")
+  # synced: managed by claude.ai sync, not git
+  [[ "$name" == "synced" ]] && continue
   if [[ ! -L "${skill_dir%/}" ]] && [[ ! -d "$skill_dir/.git" ]]; then
     ISSUES+=("NO_GIT: ~/.claude/skills/$name is not symlinked and has no .git")
   fi

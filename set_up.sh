@@ -173,7 +173,7 @@ if [[ -d "$HOME/specs-evals" ]]; then
 fi
 
 # requirements_designer は npx skills add 経由でインストール
-# 詳細は claude/INSTALL_SKILLS.md を参照
+# 一覧は ~/.agents/.skill-lock.json（npx skills add で入れ直す）
 
 info "自作スキル clone 完了"
 
@@ -258,7 +258,7 @@ echo "  1. ターミナルを再起動するか: source ~/.zshrc"
 echo "  2. Vimを開いて :PlugInstall を実行 (旧Vim用)"
 echo "  2b. nvim を起動して LazyVim が自動セットアップされることを確認"
 echo "  3. iTerm2 で Pokemon プロファイルをデフォルトに設定"
-echo "  4. Claude Code 外部スキルをインストール: cat ~/my_dotfiles/claude/INSTALL_SKILLS.md"
+echo "  4. Claude Code 外部スキルをインストール: npx skills add で ~/.agents/.skill-lock.json のスキルを入れ直す"
 echo "  5. settings.local.json のプレースホルダーを実際の値に置換"
 echo ""
 
