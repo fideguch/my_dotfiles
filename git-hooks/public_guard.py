@@ -63,10 +63,12 @@ class Change(NamedTuple):
 
 
 class Patterns(NamedTuple):
-    quick: Optional["re.Pattern[str]"]     # every term, casefolded, no boundaries: finds candidate lines fast
-    combined: Optional["re.Pattern[str]"]  # every term with its boundaries: the real check
-    names: dict  # group name -> term
+    quick: Optional["re.Pattern[str]"]     # every term, casefolded, no boundaries: finds candidate positions fast
+    combined: Optional["re.Pattern[str]"]  # every term with its boundaries (fallback for a whole line)
+    names: dict                            # group name -> term
     hidden: List["re.Pattern[str]"]
+    by_fold: dict                          # casefolded term -> [(term, pattern with boundaries)]
+    lengths: Tuple[int, ...]               # lengths of the casefolded terms, longest first
 
 
 def flag(name: str) -> bool:
@@ -157,25 +159,42 @@ def trie_regex(words: Sequence[str]) -> str:
 
 
 def compile_terms(terms: Sequence[str], allowed: Sequence[str]) -> Patterns:
-    names, parts = {}, []
+    names, parts, by_fold = {}, [], {}
     for index, term in enumerate(terms):
         group = f"t{index}"
         names[group] = term
-        parts.append(f"(?P<{group}>{edge(term[0], 'left')}(?i:{re.escape(term)}){edge(term[-1], 'right')})")
+        bounded = f"{edge(term[0], 'left')}(?i:{re.escape(term)}){edge(term[-1], 'right')}"
+        parts.append(f"(?P<{group}>{bounded})")
+        by_fold.setdefault(term.casefold(), []).append((term, re.compile(bounded)))
     combined = re.compile("|".join(parts)) if parts else None
     quick = re.compile(trie_regex([term.casefold() for term in terms])) if terms else None
     hidden = [re.compile(f"(?i:{re.escape(phrase)})") for phrase in sorted(allowed, key=len, reverse=True)]
-    return Patterns(quick, combined, names, hidden)
+    lengths = tuple(sorted({len(key) for key in by_fold}, reverse=True))
+    return Patterns(quick, combined, names, hidden, by_fold, lengths)
 
 
-def strict_terms(line: str, patterns: Patterns) -> List[str]:
+def strict_matches(line: str, folded: str, hits: Sequence[Tuple[int, str]], patterns: Patterns):
+    """(term, match) pairs with word boundaries. Only the terms that can start at a fast-pass hit are tried
+    there; when casefolding changed the line's length, the whole line is checked instead."""
+    if len(folded) != len(line):
+        for match in patterns.combined.finditer(line):
+            yield patterns.names[match.lastgroup], match
+        return
+    for offset, text in hits:
+        for length in patterns.lengths:
+            for term, pattern in patterns.by_fold.get(text[:length], ()) if length <= len(text) else ():
+                match = pattern.match(line, offset)
+                if match:
+                    yield term, match
+
+
+def strict_terms(line: str, folded: str, hits: Sequence[Tuple[int, str]], patterns: Patterns) -> List[str]:
     """Terms in one normalized line; a match that lies wholly inside an allowlisted phrase is not counted."""
     hidden = [(m.start(), m.end()) for regex in patterns.hidden for m in regex.finditer(line)]
     found: List[str] = []
-    for match in patterns.combined.finditer(line):
+    for term, match in strict_matches(line, folded, hits, patterns):
         if any(start <= match.start() and match.end() <= end for start, end in hidden):
             continue
-        term = patterns.names[match.lastgroup]
         if term not in found:
             found.append(term)
     return found
@@ -191,9 +210,16 @@ def scan_entries(entries: Sequence[Tuple[str, str]], patterns: Patterns) -> List
     for line in folded:
         starts.append(offset)
         offset += len(line) + 1
-    candidates = {bisect.bisect_right(starts, m.start()) - 1 for m in patterns.quick.finditer("\n".join(folded))}
-    return [Finding(entries[index][0], term) for index in sorted(candidates)
-            for term in strict_terms(lines[index], patterns)]
+    joined, position, hits = "\n".join(folded), 0, {}
+    while True:  # overlapping search: a term may start inside another term's hit
+        match = patterns.quick.search(joined, position)
+        if not match:
+            break
+        index = bisect.bisect_right(starts, match.start()) - 1
+        hits.setdefault(index, []).append((match.start() - starts[index], match.group()))
+        position = match.start() + 1
+    return [Finding(entries[index][0], term) for index in sorted(hits)
+            for term in strict_terms(lines[index], folded[index], hits[index], patterns)]
 
 
 def scan_text(where: str, text: str, patterns: Patterns) -> List[Finding]:
@@ -212,7 +238,7 @@ def run_git(*args: str, binary: bool = False):
     if result.returncode != 0:
         message = result.stderr.decode("utf-8", errors="replace").strip()
         raise RuntimeError(message or f"git {' '.join(args)} failed")
-    return result.stdout if binary else result.stdout.decode("utf-8", errors="replace")
+    return result.stdout if binary else result.stdout.decode("utf-8", errors="surrogateescape")
 
 
 def parse_raw(raw: str) -> List[Change]:
@@ -260,6 +286,25 @@ def blob_kind(data: bytes) -> str:
     return "binary" if b"\0" in data[:SNIFF_BYTES] else "text"
 
 
+def text_encodings(data: bytes) -> List[str]:
+    """Encodings to read a text blob with: UTF-8, plus every Japanese legacy encoding that decodes it when the
+    blob is not valid UTF-8 (a UTF-8 text with one stray byte is still read as UTF-8)."""
+    for encoding in ("utf-8",):
+        try:
+            data.decode(encoding)
+            return [encoding]
+        except UnicodeDecodeError:
+            pass
+    legacy = []
+    for encoding in ("cp932", "euc_jp"):
+        try:
+            data.decode(encoding)
+            legacy.append(encoding)
+        except UnicodeDecodeError:
+            pass
+    return ["utf-8"] + legacy
+
+
 def change_findings(change: Change, base: Sequence[str], label: str, patterns: Patterns) -> List[Finding]:
     """Name and added content of one changed file; `base` selects the diff (staged or between commits)."""
     findings = scan_text(f"{label}{change.path} (file name)", change.path, patterns)
@@ -272,9 +317,12 @@ def change_findings(change: Change, base: Sequence[str], label: str, patterns: P
     if kind == "binary":
         return findings
     paths = [f":(literal){path}" for path in (change.old_path, change.path) if path]
-    diff = run_git("diff", *DIFF_OPTIONS, *base, "--", *paths)
-    entries = [(f"{label}{change.path}:{number}", line) for number, line in added_lines(diff)]
-    return findings + scan_entries(entries, patterns)
+    diff = run_git("diff", *DIFF_OPTIONS, *base, "--", *paths, binary=True)
+    for encoding in text_encodings(data):
+        text = diff.decode(encoding, errors="replace")
+        entries = [(f"{label}{change.path}:{number}", line) for number, line in added_lines(text)]
+        findings += [finding for finding in scan_entries(entries, patterns) if finding not in findings]
+    return findings
 
 
 def diff_findings(base: Sequence[str], label: str, patterns: Patterns) -> List[Finding]:
@@ -326,6 +374,9 @@ def pushed(stdin_lines: Iterable[str], remote: str, patterns: Patterns) -> Tuple
                 raise RuntimeError(f"the remote commit {remote_sha[:7]} is not known here — run `git fetch` first")
             spec = [f"{remote_sha}..{local}"]
         ranges.append(" ".join(spec))
+        if run_git("cat-file", "-t", local).strip() == "tag":
+            body = run_git("cat-file", "tag", local).split("\n\n", 1)[-1]
+            findings += message_findings(body, f"{local_ref} (tag message)", patterns, strip_comments=False)
         for sha in run_git("rev-list", *spec).split():
             commits.setdefault(sha, None)
     return list(commits), ranges, findings
@@ -357,7 +408,9 @@ def file_findings(patterns: Patterns) -> List[Finding]:
         if kind == "utf16":
             findings += scan_lines(path, data.decode("utf-16", errors="replace"), patterns)
         elif kind == "text":
-            findings += scan_lines(path, data.decode("utf-8", errors="replace"), patterns)
+            for encoding in text_encodings(data):
+                findings += [finding for finding in scan_lines(path, data.decode(encoding, errors="replace"), patterns)
+                             if finding not in findings]
     return findings
 
 
@@ -382,7 +435,8 @@ def report(findings: Sequence[Finding]) -> int:
         return 0
     print("public-guard: this repository is public — client or internal names found:", file=sys.stderr)
     for finding in findings[:MAX_REPORT]:
-        print(f"  {finding.where}: \"{finding.term}\"", file=sys.stderr)
+        where = finding.where.encode("utf-8", "surrogateescape").decode("utf-8", "replace")
+        print(f"  {where}: \"{finding.term}\"", file=sys.stderr)
     if len(findings) > MAX_REPORT:
         print(f"  … and {len(findings) - MAX_REPORT} more", file=sys.stderr)
     print("Write generic text instead. A generic word belongs in "

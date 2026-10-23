@@ -151,6 +151,23 @@ class MatchingTest(GuardCase):
         self.assertEqual(result.returncode, 0, result.stderr[-500:])
         self.assertLess(time.time() - start, 20)
 
+    def test_many_short_terms_on_many_candidate_lines_stay_fast(self):
+        import itertools
+        import time
+        terms = ["".join(pair) + "x" for pair in itertools.islice(itertools.product("abcdefghijklmnopqrst", repeat=2), 300)]
+        self.write_config("denylist.txt", "\n".join(terms) + "\n")
+        line = "aax" * 40  # every line is a candidate, nothing is a whole word
+        self.write("big.txt", "\n".join(line for _ in range(20000)) + "\n")
+        self.stage()
+        start = time.time()
+        result = self.guard("staged")
+        self.assertEqual(result.returncode, 0, result.stderr[-300:])
+        self.assertLess(time.time() - start, 20)
+
+    def test_a_shorter_term_still_matches_where_a_longer_one_fails(self):
+        self.write_config("denylist.txt", "acme\nacme-x\n")
+        self.assertEqual(self.staged("acme-x1\n").returncode, 1)
+
     def test_report_is_capped(self):
         result = self.staged("Acme\n" * 70)
         self.assertEqual(result.returncode, 1)
@@ -198,6 +215,29 @@ class DiffParsingTest(GuardCase):
         self.write(".gitattributes", "*.md -diff\n")
         self.commit()
         self.assertEqual(self.staged("Acme\n").returncode, 1)
+
+    def test_shift_jis_and_euc_jp_text_is_scanned(self):
+        for encoding in ("cp932", "euc_jp"):
+            self.write("table.csv", "id,name\n1,アクメ商事\n".encode(encoding), mode="wb")
+            self.stage()
+            self.assertEqual(self.guard("staged").returncode, 1, encoding)
+            git(self.repo, "reset", "-q")
+
+    def test_utf8_with_a_stray_byte_is_still_read_as_utf8(self):
+        # one invalid byte makes the text decodable as CP932 only; the UTF-8 reading must still be scanned
+        self.write_config("denylist.txt", "アクメ\n")
+        self.write("notes.md", b"\x80" + "アクメの件\n".encode("utf-8"), mode="wb")
+        self.stage()
+        self.assertEqual(self.guard("staged").returncode, 1)
+
+    def test_content_of_a_file_with_a_non_utf8_name_is_scanned(self):
+        blob = git(self.repo, "hash-object", "-w", "--stdin", stdin="Acme\n").strip()
+        name = b"caf\xe9.md"
+        subprocess.run([b"git", b"-C", self.repo.encode(), b"update-index", b"--add", b"--cacheinfo",
+                        b"100644," + blob.encode() + b"," + name], check=True, capture_output=True)
+        result = self.guard("staged")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(":1", result.stderr)
 
     def test_utf16_text_is_scanned(self):
         self.write("u16.txt", "﻿Acme notes\n".encode("utf-16-le"), mode="wb")
@@ -312,6 +352,16 @@ class MessageAndPushTest(GuardCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("ref name", result.stderr)
 
+    def test_pre_push_checks_annotated_tag_messages(self):
+        self.write("a.md", "generic\n")
+        head = self.commit("first")
+        git(self.repo, "tag", "-a", "v1", "-m", "release for Acme")
+        tag = git(self.repo, "rev-parse", "v1").strip()
+        result = self.push(tag, "0" * 40, local_ref="refs/tags/v1", remote_ref="refs/tags/v1")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("tag message", result.stderr)
+        self.assertNotEqual(head, tag)
+
     def test_pre_push_deleting_a_branch_passes(self):
         self.write("a.md", "x\n")
         head = self.commit("x")
@@ -389,8 +439,43 @@ class InstallTest(unittest.TestCase):
         self.assertEqual(self.install(repo).returncode, 0)
         self.assertEqual(os.path.realpath(self.hooks_path(repo)), os.path.realpath(HOOKS_DIR))
 
+    def test_replaces_a_stale_public_guard_path(self):
+        repo = self.repo("moved")
+        git(repo, "config", "--local", "core.hooksPath", os.path.join(self.tmp, "old-place", "git-hooks"))
+        self.assertEqual(self.install("--check", repo).returncode, 1)
+        result = self.install(repo)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(os.path.realpath(self.hooks_path(repo)), os.path.realpath(HOOKS_DIR))
+        old_copy = os.path.join(self.tmp, "copy-of-hooks")
+        os.makedirs(old_copy)
+        open(os.path.join(old_copy, "public_guard.py"), "w").close()
+        git(repo, "config", "--local", "core.hooksPath", old_copy)
+        self.assertEqual(self.install(repo).returncode, 0)
+        self.assertEqual(os.path.realpath(self.hooks_path(repo)), os.path.realpath(HOOKS_DIR))
+
+    def test_a_missing_foreign_hooks_path_is_left_alone(self):
+        repo = self.repo("husky-later")
+        git(repo, "config", "--local", "core.hooksPath", ".husky/_")  # husky creates it on install
+        result = self.install(repo)
+        self.assertIn("skip (has its own core.hooksPath", result.stderr)
+        self.assertEqual(self.hooks_path(repo), ".husky/_")
+
+    def test_relative_hooks_path_is_judged_from_the_top_of_the_repository(self):
+        repo = self.repo("nested")
+        os.makedirs(os.path.join(repo, "hooks-dir"))
+        with open(os.path.join(repo, "hooks-dir", "pre-commit"), "w", encoding="utf-8") as handle:
+            handle.write("#!/bin/sh\nexit 0\n")
+        os.makedirs(os.path.join(repo, "sub", "deeper"))
+        git(repo, "config", "--local", "core.hooksPath", "hooks-dir")
+        result = self.install(os.path.join(repo, "sub", "deeper"))
+        self.assertIn("skip (has its own core.hooksPath", result.stderr)
+        self.assertEqual(self.hooks_path(repo), "hooks-dir")
+
     def test_leaves_another_hooks_path_alone(self):
         repo = self.repo("husky")
+        os.makedirs(os.path.join(repo, ".husky"))
+        with open(os.path.join(repo, ".husky", "pre-commit"), "w", encoding="utf-8") as handle:
+            handle.write("#!/bin/sh\nexit 0\n")
         git(repo, "config", "--local", "core.hooksPath", ".husky")
         result = self.install(repo)
         self.assertIn("skip (has its own core.hooksPath", result.stderr)

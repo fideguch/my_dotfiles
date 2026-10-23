@@ -24,13 +24,26 @@ resolve() {
 }
 
 # The hooks folder git uses, resolved; empty when core.hooksPath is unset or points at the default folder.
+# A relative core.hooksPath is relative to the top of the working tree; `~` is expanded as git does.
 current_hooks() {
-  local repo="$1" common current
+  local repo="$1" common top current
   common="$(resolve "$repo" "$(git -C "$repo" rev-parse --git-common-dir)")"
+  top="$(git -C "$repo" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$repo")"
   current="$(git -C "$repo" config --get core.hooksPath || true)"
-  [ -n "$current" ] && current="$(resolve "$repo" "$current")"
-  [ "$current" = "$(resolve "$repo" "$common/hooks")" ] && current=""
+  current="${current/#\~/$HOME}"
+  [ -n "$current" ] && current="$(resolve "$top" "$current")"
+  [ "$current" = "$(resolve "$top" "$common/hooks")" ] && current=""
   printf '%s\n' "$current"
+}
+
+# A public-guard folder that moved: another copy of these hooks, or a missing folder named git-hooks.
+stale_guard_path() {
+  local path="$1"
+  [ -f "$path/public_guard.py" ] && return 0
+  case "$path" in
+    */git-hooks) [ ! -d "$path" ] ;;
+    *) return 1 ;;
+  esac
 }
 
 install_one() {
@@ -38,8 +51,12 @@ install_one() {
   common="$(resolve "$repo" "$(git -C "$repo" rev-parse --git-common-dir)")"
   current="$(current_hooks "$repo")"
   if [ -n "$current" ] && [ "$current" != "$HOOKS" ]; then
-    echo "skip (has its own core.hooksPath $current): $repo" >&2
-    return 0
+    if stale_guard_path "$current"; then
+      echo "replacing a stale public-guard path ($current): $repo" >&2
+    else
+      echo "skip (has its own core.hooksPath $current): $repo" >&2
+      return 0
+    fi
   fi
   if [ -d "$common/hooks" ]; then
     own="$(find "$common/hooks" -maxdepth 1 -type f ! -name '*.sample' 2>/dev/null | head -1 || true)"
