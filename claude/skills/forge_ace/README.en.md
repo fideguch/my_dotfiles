@@ -252,8 +252,8 @@ Each transition is recorded with a timestamp. A dispatch hook prevents invalid s
 |   `-- cross-document-integrity.md <- Guardian Phase 2 Type B
 |
 |-- tests/
-|   |-- test-dispatch-guard.sh    <- Dispatch guard hook tests (14 cases)
-|   `-- test-state-machine.sh     <- State machine tests (12 cases)
+|   |-- test-dispatch-guard.sh    <- Dispatch guard hook tests (22 cases)
+|   `-- test-state-machine.sh     <- State machine tests (29 cases)
 |
 `-- test-scenarios/
     |-- scenario-s-small-change.md        <- S: Doc fix (Standard)

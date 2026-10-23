@@ -4,12 +4,32 @@ set -euo pipefail
 # test-state-machine.sh — Tests for forge_ace session JSON structure,
 # state transitions, and session-complete hook.
 
-SESSION_FILE="/tmp/.forge-ace-session.json"
 COMPLETE_HOOK="/Users/fumito_ideguchi/my_dotfiles/claude/scripts/hooks/forge-ace-session-complete.js"
-OUTCOMES_FILE="$HOME/.claude/bochi-data/forge-ace-outcomes/outcomes.jsonl"
+# Never touch a live run or the real outcome log: everything lives in one temp folder,
+# and the hook reads FORGE_ACE_SESSION_FILE / FORGE_ACE_OUTCOMES_DIR / FORGE_ACE_FALLBACK_DIR.
+WORK="$(mktemp -d /tmp/forge-ace-test.XXXXXX)"
+TILDE_RUN_NAME="test-$(basename "$WORK")"
+TILDE_RUN="$HOME/.claude/forge-ace/runs/$TILDE_RUN_NAME"
+trap 'rm -rf "$WORK" "$TILDE_RUN"' EXIT
+SESSION_FILE="$WORK/session.json"
+RUN_DIR="$WORK/run"
+mkdir -p "$RUN_DIR"
+export FORGE_ACE_SESSION_FILE="$SESSION_FILE"
+export FORGE_ACE_OUTCOMES_DIR="$WORK/outcomes"
+export FORGE_ACE_FALLBACK_DIR="$WORK/fallback"
+unset FORGE_ACE_STALE_HOURS
+OUTCOMES_FILE="$FORGE_ACE_OUTCOMES_DIR/outcomes.jsonl"
+EXPECTED=29
 PASSED=0
 FAILED=0
-TOTAL=12
+
+# A hook that ignores the overrides would write to the live run and the real log: stop here.
+if ! grep -q "process.env.FORGE_ACE_SESSION_FILE" "$COMPLETE_HOOK" \
+  || ! grep -q "process.env.FORGE_ACE_OUTCOMES_DIR" "$COMPLETE_HOOK" \
+  || ! grep -q "process.env.FORGE_ACE_FALLBACK_DIR" "$COMPLETE_HOOK"; then
+  echo "ABORT: $COMPLETE_HOOK ignores FORGE_ACE_SESSION_FILE / FORGE_ACE_OUTCOMES_DIR / FORGE_ACE_FALLBACK_DIR"
+  exit 1
+fi
 
 # Prereq check
 if ! which node >/dev/null 2>&1; then
@@ -18,8 +38,18 @@ if ! which node >/dev/null 2>&1; then
 fi
 
 cleanup() {
-  rm -f "$SESSION_FILE"
+  rm -f "$SESSION_FILE" "$SESSION_FILE".corrupt*
 }
+
+iso_hours_ago() {
+  python3 -c "
+from datetime import datetime, timedelta, timezone
+import sys
+print((datetime.now(timezone.utc) - timedelta(hours=float(sys.argv[1]))).strftime('%Y-%m-%dT%H:%M:%SZ'))
+" "$1"
+}
+
+age_file() { python3 -c "import os,sys,time; t=time.time()-float(sys.argv[2])*3600; os.utime(sys.argv[1],(t,t))" "$1" "$2"; }
 
 assert_pass() {
   local test_name="$1"
@@ -170,14 +200,7 @@ UC=$(python3 -c "import json; d=json.load(open('$SESSION_FILE')); print(d['user_
 assert_pass "8. checkpoint_and_user_confirmed_flags" "$([ "$CF" = "True" ] && [ "$UC" = "True" ] && echo true || echo false)"
 cleanup
 
-# ===== C) Session-complete hook (4 tests) =====
-
-# Backup outcomes file
-BACKUP=""
-if [ -f "$OUTCOMES_FILE" ]; then
-  BACKUP="/tmp/.forge-ace-outcomes-backup-$$"
-  cp "$OUTCOMES_FILE" "$BACKUP"
-fi
+# ===== C) Session-complete hook (21 tests: 9-29) =====
 
 count_outcomes() {
   if [ -f "$OUTCOMES_FILE" ]; then
@@ -218,15 +241,16 @@ SESSION_EXISTS=$([ -f "$SESSION_FILE" ] && echo "true" || echo "false")
 assert_pass "11. recent_incomplete_no_action" "$([ "$BEFORE" = "$AFTER" ] && [ "$SESSION_EXISTS" = "true" ] && echo true || echo false)"
 cleanup
 
-# Test 12: Stale incomplete (created=3h ago) → new JSONL line with completed:false, session deleted
+# Test 12: Stale incomplete (no update for 30h: created and file mtime 30h ago) → completed:false line, session deleted
 STALE_TIME=$(python3 -c "
 from datetime import datetime, timedelta, timezone
-t = datetime.now(timezone.utc) - timedelta(hours=3)
+t = datetime.now(timezone.utc) - timedelta(hours=30)
 print(t.strftime('%Y-%m-%dT%H:%M:%SZ'))
 " 2>/dev/null)
 cat > "$SESSION_FILE" <<SESS
 {"version":"4.0","created":"$STALE_TIME","tier":"Standard","type":"A","state":"GUARDIAN_DISPATCHED","agents":{},"transitions":[]}
 SESS
+age_file "$SESSION_FILE" 30
 BEFORE=$(count_outcomes)
 node "$COMPLETE_HOOK" 2>/dev/null || true
 AFTER=$(count_outcomes)
@@ -236,13 +260,177 @@ SESSION_DELETED=$([ ! -f "$SESSION_FILE" ] && echo "true" || echo "false")
 LINES_ADDED=$(( AFTER - BEFORE ))
 assert_pass "12. stale_incomplete_writes_false_and_deletes" "$([ "$LINES_ADDED" = "1" ] && [ "$HAS_COMPLETED_FALSE" = "true" ] && [ "$SESSION_DELETED" = "true" ] && echo true || echo false)"
 
-# Restore outcomes file
-if [ -n "$BACKUP" ]; then
-  cp "$BACKUP" "$OUTCOMES_FILE"
-  rm -f "$BACKUP"
-fi
+# Test 13: Long but active run (created 3h ago, updated just now) → preserved (2026-10-21: a live run was deleted after 2h)
+OLD_TIME=$(python3 -c "
+from datetime import datetime, timedelta, timezone
+print((datetime.now(timezone.utc) - timedelta(hours=3)).strftime('%Y-%m-%dT%H:%M:%SZ'))
+" 2>/dev/null)
+cat > "$SESSION_FILE" <<SESS
+{"version":"4.0","created":"$OLD_TIME","tier":"Standard","type":"A","state":"WRITER_DISPATCHED","agents":{},"transitions":[]}
+SESS
+BEFORE=$(count_outcomes)
+node "$COMPLETE_HOOK" 2>/dev/null || true
+AFTER=$(count_outcomes)
+SESSION_EXISTS=$([ -f "$SESSION_FILE" ] && echo "true" || echo "false")
+assert_pass "13. active_long_run_preserved" "$([ "$BEFORE" = "$AFTER" ] && [ "$SESSION_EXISTS" = "true" ] && echo true || echo false)"
+cleanup
+
+# Test 14: Stale run with run_dir → state archived to run_dir/state-stale.json before deletion
+cat > "$SESSION_FILE" <<SESS
+{"version":"4.0","created":"$STALE_TIME","tier":"Standard","type":"A","state":"GUARDIAN_DISPATCHED","run_dir":"$RUN_DIR","agents":{},"transitions":[]}
+SESS
+age_file "$SESSION_FILE" 30
+node "$COMPLETE_HOOK" 2>/dev/null || true
+ARCHIVED=$(python3 -c "import json,sys; print('true' if json.load(open(sys.argv[1])).get('state')=='GUARDIAN_DISPATCHED' else 'false')" "$RUN_DIR/state-stale.json" 2>/dev/null || echo "false")
+SESSION_DELETED=$([ ! -f "$SESSION_FILE" ] && echo "true" || echo "false")
+assert_pass "14. stale_run_archived_to_run_dir" "$([ "$ARCHIVED" = "true" ] && [ "$SESSION_DELETED" = "true" ] && echo true || echo false)"
+
+# Test 15: COMPLETE run with run_dir → state archived to run_dir/state-final.json
+cat > "$SESSION_FILE" <<SESS
+{"version":"4.0","created":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","tier":"Standard","type":"A","state":"COMPLETE","run_dir":"$RUN_DIR","agents":{},"transitions":[]}
+SESS
+node "$COMPLETE_HOOK" 2>/dev/null || true
+FINAL=$(python3 -c "import json,sys; print('true' if json.load(open(sys.argv[1])).get('state')=='COMPLETE' else 'false')" "$RUN_DIR/state-final.json" 2>/dev/null || echo "false")
+assert_pass "15. complete_run_archived_to_run_dir" "$FINAL"
+cleanup
+
+# Test 16: created and mtime 30h ago but `updated` just now → preserved (`updated` counts as activity)
+cat > "$SESSION_FILE" <<SESS
+{"version":"4.0","created":"$(iso_hours_ago 30)","updated":"$(iso_hours_ago 0)","state":"WRITER_DONE","agents":{},"transitions":[]}
+SESS
+age_file "$SESSION_FILE" 30
+node "$COMPLETE_HOOK" 2>/dev/null || true
+assert_pass "16. recent_updated_field_preserves" "$([ -f "$SESSION_FILE" ] && echo true || echo false)"
+cleanup
+
+# Test 17: invalid `created`, fresh file → preserved (mtime decides)
+cat > "$SESSION_FILE" <<'SESS'
+{"version":"4.0","created":"not-a-date","state":"WRITER_DONE","agents":{},"transitions":[]}
+SESS
+node "$COMPLETE_HOOK" 2>/dev/null || true
+assert_pass "17. invalid_created_uses_mtime" "$([ -f "$SESSION_FILE" ] && echo true || echo false)"
+cleanup
+
+# Test 18: FORGE_ACE_STALE_HOURS=1 → a run idle for 2h is cleaned up
+cat > "$SESSION_FILE" <<SESS
+{"version":"4.0","created":"$(iso_hours_ago 2)","state":"WRITER_DONE","agents":{},"transitions":[]}
+SESS
+age_file "$SESSION_FILE" 2
+FORGE_ACE_STALE_HOURS=1 node "$COMPLETE_HOOK" 2>/dev/null || true
+assert_pass "18. stale_hours_override" "$([ ! -f "$SESSION_FILE" ] && echo true || echo false)"
+cleanup
+
+# Test 19: empty file just written (a writer truncated it) → preserved
+: > "$SESSION_FILE"
+node "$COMPLETE_HOOK" 2>/dev/null || true
+assert_pass "19. empty_recent_file_preserved" "$([ -f "$SESSION_FILE" ] && echo true || echo false)"
+cleanup
+
+# Test 20: broken JSON idle for 30h → moved aside to .corrupt (kept as evidence)
+printf '{"state":"WRITER_' > "$SESSION_FILE"
+age_file "$SESSION_FILE" 30
+node "$COMPLETE_HOOK" 2>/dev/null || true
+assert_pass "20. stale_corrupt_moved_aside" "$([ ! -f "$SESSION_FILE" ] && ls "$SESSION_FILE".corrupt-* >/dev/null 2>&1 && echo true || echo false)"
+cleanup
+
+# Test 21: run_dir written with ~ → expanded, state archived there
+mkdir -p "$TILDE_RUN"
+cat > "$SESSION_FILE" <<SESS
+{"version":"4.0","created":"$(iso_hours_ago 30)","state":"GUARDIAN_DISPATCHED","run_dir":"~/.claude/forge-ace/runs/$TILDE_RUN_NAME","agents":{},"transitions":[]}
+SESS
+age_file "$SESSION_FILE" 30
+node "$COMPLETE_HOOK" 2>/dev/null || true
+assert_pass "21. tilde_run_dir_expanded" "$([ -f "$TILDE_RUN/state-stale.json" ] && [ ! -f "$SESSION_FILE" ] && echo true || echo false)"
+cleanup
+
+# Test 22: relative run_dir cannot be trusted → state kept in the local fallback folder before deletion
+cat > "$SESSION_FILE" <<SESS
+{"version":"4.0","created":"$(iso_hours_ago 30)","state":"GUARDIAN_DISPATCHED","run_dir":"relative/run","agents":{},"transitions":[]}
+SESS
+age_file "$SESSION_FILE" 30
+node "$COMPLETE_HOOK" 2>/dev/null || true
+FALLBACK=$(ls "$FORGE_ACE_FALLBACK_DIR"/state-*.json 2>/dev/null | head -1 || true)
+LEAKED=$(ls "$FORGE_ACE_OUTCOMES_DIR"/state-*.json 2>/dev/null | head -1 || true)
+assert_pass "22. unusable_run_dir_falls_back_locally" "$([ -n "$FALLBACK" ] && [ -z "$LEAKED" ] && [ ! -f "$SESSION_FILE" ] && echo true || echo false)"
+cleanup
+
+# Test 23: dates in the future are ignored (mtime 30h ago decides) → cleaned up
+cat > "$SESSION_FILE" <<'SESS'
+{"version":"4.0","created":"2099-01-01T00:00:00Z","updated":"2099-01-01T00:00:00Z","state":"WRITER_DONE","agents":{},"transitions":[]}
+SESS
+age_file "$SESSION_FILE" 30
+node "$COMPLETE_HOOK" 2>/dev/null || true
+assert_pass "23. future_dates_ignored" "$([ ! -f "$SESSION_FILE" ] && echo true || echo false)"
+cleanup
+
+# Test 24: archiving never writes through a symlink planted at run_dir/state-stale.json
+printf 'untouched' > "$WORK/target"
+rm -f "$RUN_DIR/state-stale.json"
+ln -s "$WORK/target" "$RUN_DIR/state-stale.json"
+cat > "$SESSION_FILE" <<SESS
+{"version":"4.0","created":"$(iso_hours_ago 30)","state":"GUARDIAN_DISPATCHED","run_dir":"$RUN_DIR","agents":{},"transitions":[]}
+SESS
+age_file "$SESSION_FILE" 30
+node "$COMPLETE_HOOK" 2>/dev/null || true
+assert_pass "24. archive_does_not_follow_symlink" "$([ "$(cat "$WORK/target")" = "untouched" ] && [ ! -L "$RUN_DIR/state-stale.json" ] && echo true || echo false)"
+cleanup
+
+# Test 25: nothing could be saved (relative run_dir, fallback folder read-only) → state kept, no outcome line, twice
+mkdir -p "$FORGE_ACE_FALLBACK_DIR"
+chmod 555 "$FORGE_ACE_FALLBACK_DIR"
+cat > "$SESSION_FILE" <<SESS
+{"version":"4.0","created":"$(iso_hours_ago 30)","state":"GUARDIAN_DISPATCHED","run_dir":"relative/run","agents":{},"transitions":[]}
+SESS
+age_file "$SESSION_FILE" 30
+BEFORE=$(count_outcomes)
+node "$COMPLETE_HOOK" 2>/dev/null || true
+node "$COMPLETE_HOOK" 2>/dev/null || true
+AFTER=$(count_outcomes)
+chmod 755 "$FORGE_ACE_FALLBACK_DIR"
+assert_pass "25. unsaved_state_kept_without_duplicate_outcomes" "$([ -f "$SESSION_FILE" ] && [ "$BEFORE" = "$AFTER" ] && echo true || echo false)"
+cleanup
+
+# Test 26: stale non-object JSON (null) → moved aside like a broken file
+printf 'null' > "$SESSION_FILE"
+age_file "$SESSION_FILE" 30
+node "$COMPLETE_HOOK" 2>/dev/null || true
+assert_pass "26. stale_non_object_moved_aside" "$([ ! -f "$SESSION_FILE" ] && ls "$SESSION_FILE".corrupt-* >/dev/null 2>&1 && echo true || echo false)"
+cleanup
+
+# Test 27: an earlier .corrupt file is never overwritten
+printf 'earlier evidence' > "$SESSION_FILE.corrupt-1"
+printf '{"broken' > "$SESSION_FILE"
+age_file "$SESSION_FILE" 30
+node "$COMPLETE_HOOK" 2>/dev/null || true
+CORRUPTS=$(ls "$SESSION_FILE".corrupt-* 2>/dev/null | wc -l | tr -d ' ')
+assert_pass "27. earlier_corrupt_kept" "$([ "$(cat "$SESSION_FILE.corrupt-1")" = "earlier evidence" ] && [ "$CORRUPTS" = "2" ] && echo true || echo false)"
+cleanup
+
+# Test 28: a failed rename leaves no temp file in run_dir (state-stale.json is a directory) → fallback used
+rm -rf "$RUN_DIR/state-stale.json"
+mkdir -p "$RUN_DIR/state-stale.json"
+rm -rf "$FORGE_ACE_FALLBACK_DIR"
+cat > "$SESSION_FILE" <<SESS
+{"version":"4.0","created":"$(iso_hours_ago 30)","state":"GUARDIAN_DISPATCHED","run_dir":"$RUN_DIR","agents":{},"transitions":[]}
+SESS
+age_file "$SESSION_FILE" 30
+node "$COMPLETE_HOOK" 2>/dev/null || true
+TMPS=$(ls "$RUN_DIR" | grep -c '\.tmp-' || true)
+assert_pass "28. no_temp_file_left_after_failed_rename" "$([ "$TMPS" = "0" ] && ls "$FORGE_ACE_FALLBACK_DIR"/state-*.json >/dev/null 2>&1 && [ ! -f "$SESSION_FILE" ] && echo true || echo false)"
+rm -rf "$RUN_DIR/state-stale.json"
+cleanup
+
+# Test 29: invalid `created` and an old file → cleaned up (mtime decides both ways)
+cat > "$SESSION_FILE" <<'SESS'
+{"version":"4.0","created":"not-a-date","state":"WRITER_DONE","agents":{},"transitions":[]}
+SESS
+age_file "$SESSION_FILE" 30
+node "$COMPLETE_HOOK" 2>/dev/null || true
+assert_pass "29. invalid_created_old_file_cleaned" "$([ ! -f "$SESSION_FILE" ] && echo true || echo false)"
 
 cleanup
 
+TOTAL=$((PASSED + FAILED))
 echo ""
-echo "$PASSED/$TOTAL PASSED"
+echo "$PASSED/$TOTAL PASSED (expected $EXPECTED)"
+[ "$FAILED" -eq 0 ] && [ "$TOTAL" -eq "$EXPECTED" ]

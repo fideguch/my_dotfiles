@@ -14,6 +14,7 @@
 - 既存プロジェクトでは、変更前にプロジェクトの `.claude/rules/` を読み、既存パターンに合わせる
 - 複数ファイルにまたがる変更は、まず planner エージェントで計画。コードを書いたら code-reviewer エージェント
 - 既存コードの変更は forge_ace、新規コードは TDD（詳細は `rules/common/development-workflow.md`。コードを読んだときに読まれる）
+- forge_ace は最初に実行フォルダ（brief・報告・NEXT。`~/.claude/forge-ace/runs/`）を作り、Standard 以上はターミナル（tmux）で回す。Claudian など他のアプリの中のセッションは、そのアプリと一緒に止まる（forge_ace の Step 0）
 - Figma の URL → Figma MCP（`get_design_context`）でデザインを取ってから実装。Figma を操作したら DESIGN.md の「HEAL」節に従う
 - 品質評価（review・evaluation・assessment、GAFA 6 軸・8 軸）を頼まれたら `quality-review` スキル
 

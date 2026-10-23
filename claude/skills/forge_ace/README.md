@@ -252,8 +252,8 @@ INIT -> CLASSIFIED -> CHECKPOINT_FILLED -> USER_CONFIRMED
 |   `-- cross-document-integrity.md <- Guardian Phase 2 Type B
 |
 |-- tests/
-|   |-- test-dispatch-guard.sh    <- ディスパッチガードフックテスト (14ケース)
-|   `-- test-state-machine.sh     <- ステートマシンテスト (12ケース)
+|   |-- test-dispatch-guard.sh    <- ディスパッチガードフックテスト (22ケース)
+|   `-- test-state-machine.sh     <- ステートマシンテスト (29ケース)
 |
 `-- test-scenarios/
     |-- scenario-s-small-change.md        <- S: ドキュメント修正 (Standard)

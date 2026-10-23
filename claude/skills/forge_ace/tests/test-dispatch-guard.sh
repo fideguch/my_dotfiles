@@ -5,10 +5,20 @@ set -euo pipefail
 # Verifies agent dispatch sequencing enforcement via session state.
 
 HOOK_PATH="/Users/fumito_ideguchi/my_dotfiles/claude/scripts/hooks/forge-ace-dispatch-guard.js"
-SESSION_FILE="/tmp/.forge-ace-session.json"
+# Never touch a live run: everything lives in one temp folder; the hook reads FORGE_ACE_SESSION_FILE.
+WORK="$(mktemp -d /tmp/forge-ace-test.XXXXXX)"
+trap 'rm -rf "$WORK"' EXIT
+SESSION_FILE="$WORK/session.json"
+export FORGE_ACE_SESSION_FILE="$SESSION_FILE"
+unset FORGE_ACE_STALE_HOURS
+EXPECTED=22
 PASSED=0
 FAILED=0
-TOTAL=14
+
+if ! grep -q "process.env.FORGE_ACE_SESSION_FILE" "$HOOK_PATH"; then
+  echo "ABORT: $HOOK_PATH ignores FORGE_ACE_SESSION_FILE"
+  exit 1
+fi
 
 # Prereq check
 if ! which node >/dev/null 2>&1; then
@@ -27,7 +37,8 @@ cleanup() {
 
 run_hook() {
   local tool_input="$1"
-  TOOL_INPUT="$tool_input" node "$HOOK_PATH" 2>/dev/null || true
+  # The hook reads the Claude Code payload ({tool_name, tool_input}) from stdin (not a TOOL_INPUT env var).
+  printf '{"tool_name":"Agent","tool_input":%s}' "$tool_input" | node "$HOOK_PATH" 2>/dev/null || true
 }
 
 assert_allow() {
@@ -147,5 +158,75 @@ OUTPUT=$(run_hook '{"description":"Writer: re-implement after rejection"}')
 assert_allow "14. rejection_recovery_writer" "$OUTPUT"
 cleanup
 
+# --- Test 15: stale run (no update for 30h) no longer gates Agent calls ---
+write_session "INIT"
+python3 -c "import os,sys,time; t=time.time()-30*3600; os.utime(sys.argv[1],(t,t))" "$SESSION_FILE"
+python3 - "$SESSION_FILE" <<'PYEOF'
+import json, sys
+from datetime import datetime, timedelta, timezone
+p = sys.argv[1]; d = json.load(open(p))
+d["created"] = (datetime.now(timezone.utc) - timedelta(hours=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+json.dump(d, open(p, "w"))
+PYEOF
+python3 -c "import os,sys,time; t=time.time()-30*3600; os.utime(sys.argv[1],(t,t))" "$SESSION_FILE"
+OUTPUT=$(run_hook '{"description":"Designer: unrelated project"}')
+assert_allow "15. stale_run_does_not_gate" "$OUTPUT"
+cleanup
+
+# --- Test 16: a block explains how to clear an abandoned run ---
+write_session "INIT"
+OUTPUT=$(run_hook '{"description":"Guardian: verify"}')
+assert_pass_contains() { if echo "$2" | grep -q "$3"; then echo "PASS: $1"; PASSED=$((PASSED + 1)); else echo "FAIL: $1"; FAILED=$((FAILED + 1)); fi; }
+assert_pass_contains "16. block_reason_tells_how_to_clear" "$OUTPUT" "forge-ace-session.json"
+cleanup
+
+age_session() { python3 -c "import os,sys,time; t=time.time()-float(sys.argv[2])*3600; os.utime(sys.argv[1],(t,t))" "$SESSION_FILE" "$1"; }
+
+# --- Test 17: `updated` just now keeps an old-looking run gating ---
+cat > "$SESSION_FILE" <<SESS
+{"version":"4.0","created":"2020-01-01T00:00:00Z","updated":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","state":"INIT","agents":{}}
+SESS
+age_session 30
+OUTPUT=$(run_hook '{"description":"Guardian: verify"}')
+assert_block "17. recent_updated_still_gates" "$OUTPUT"
+cleanup
+
+# --- Test 18: FORGE_ACE_STALE_HOURS=1 → a run idle for 2h no longer gates ---
+cat > "$SESSION_FILE" <<SESS
+{"version":"4.0","created":"2020-01-01T00:00:00Z","state":"INIT","agents":{}}
+SESS
+age_session 2
+OUTPUT=$(FORGE_ACE_STALE_HOURS=1 run_hook '{"description":"Guardian: verify"}')
+assert_allow "18. stale_hours_override" "$OUTPUT"
+cleanup
+
+# --- Test 19: broken JSON → allow (fail-open) ---
+printf '{"state":"IN' > "$SESSION_FILE"
+OUTPUT=$(run_hook '{"description":"Guardian: verify"}')
+assert_allow "19. broken_json_allows" "$OUTPUT"
+cleanup
+
+# --- Test 20: non-object JSON → allow (fail-open) ---
+printf '[]' > "$SESSION_FILE"
+OUTPUT=$(run_hook '{"description":"Guardian: verify"}')
+assert_allow "20. non_object_json_allows" "$OUTPUT"
+cleanup
+
+# --- Test 21: the block points at the run folder and asks for the user's confirmation ---
+cat > "$SESSION_FILE" <<SESS
+{"version":"4.0","created":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","state":"INIT","run_dir":"/tmp/some-run-folder","agents":{}}
+SESS
+OUTPUT=$(run_hook '{"description":"Guardian: verify"}')
+assert_pass_contains "21. block_points_at_run_dir_and_user" "$OUTPUT" "/tmp/some-run-folder/NEXT.md"
+cleanup
+
+# --- Test 22: a payload that arrives late on stdin is still read (a busy machine) ---
+write_session "INIT"
+OUTPUT=$( (sleep 0.5; printf '{"tool_name":"Agent","tool_input":{"description":"Guardian: verify"}}') | node "$HOOK_PATH" 2>/dev/null || true)
+assert_block "22. late_stdin_still_gates" "$OUTPUT"
+cleanup
+
+TOTAL=$((PASSED + FAILED))
 echo ""
-echo "$PASSED/$TOTAL PASSED"
+echo "$PASSED/$TOTAL PASSED (expected $EXPECTED)"
+[ "$FAILED" -eq 0 ] && [ "$TOTAL" -eq "$EXPECTED" ]

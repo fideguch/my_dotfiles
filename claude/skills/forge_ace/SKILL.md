@@ -9,13 +9,51 @@
 - PM-level scope delegation ("全部任せる" / "ここまで作って" / "設計だけ見て")
 - Code-only without UI: Standard tier (Writer + Guardian + Overseer-std + PM-Admin-std)
 
+## Step 0: Run Folder and Where to Run
+
+<step id="run-folder">
+
+Long runs get interrupted (the host session ends, background agents stop, the /tmp state file is cleaned up).
+Keep everything a new session needs in a durable run folder, so catching up means reading files, not rebuilding prompts.
+
+1. Create `~/.claude/forge-ace/runs/<YYYYMMDD-HHMM>-<slug>/` with `reports/`, a `brief.md` from `templates/brief.md`
+   (requirement verbatim, scope, constraints, test commands, environment notes) and a `NEXT.md` from `templates/NEXT.md`.
+   `~/.claude/forge-ace/` is local (not in the dotfiles repository): client details may go there.
+2. Put `"run_dir": "<absolute path, ~ expanded>"` into the session JSON (Step 1) and set `"updated"` on every state change.
+   Write the session JSON to a temp file and `mv` it over `/tmp/.forge-ace-session.json` (never truncate it in place),
+   then copy it to `<run_dir>/state.json` with `command cp -f` (a plain `cp` may be aliased to `cp -i` and silently refuse).
+3. Every agent prompt starts with: "Read `<run_dir>/brief.md` and the reports in `<run_dir>/reports/` first.
+   When done, write your full report to `<run_dir>/reports/<NN>-<agent>-r<round>.md` and return a summary of 30 lines or less."
+   Keep the inline prompt to what is new for this agent (findings to fix, round number).
+4. After each gate, rewrite `NEXT.md` (state, done, next agent, open questions, resume prompt).
+
+**Where to run.** Standard and Full runs belong in a terminal Claude Code session (for example inside `tmux`), started in the
+project root. A session embedded in another app (for example Claudian inside Obsidian) ends when that app hangs or restarts,
+and its background agents stop with it. If a run starts there, finish Step 0, then hand over: `tmux new -s forge-<slug> -c <root> claude`
+and paste the resume prompt from `NEXT.md`.
+
+**Resume.** Read `NEXT.md`. If `/tmp/.forge-ace-session.json` is missing, restore it from the newest of `<run_dir>/state.json`,
+`<run_dir>/state-stale.json` and (when the run folder has no copy) `~/.claude/forge-ace/unarchived/state-*.json`, using
+`command cp -f` without `-p` (the restored file must look recently active), and set `updated` to now.
+For an agent that was running when the session ended, look for its report file first; if it is missing, resume the agent
+(SendMessage) or re-dispatch it with the brief — do not re-explain from scratch.
+
+The Stop hook keeps an incomplete session until it has had no update for 24 hours (`FORGE_ACE_STALE_HOURS`; activity = newest of
+file mtime, `updated`, `created`), copies the state into `run_dir` (`state-final.json` / `state-stale.json`; else into the local-only
+`~/.claude/forge-ace/unarchived/`, never the synced `bochi-data`) before it logs the outcome and removes the /tmp file, and leaves a
+state it could not copy untouched. An empty, broken or non-object state file is kept while recent and moved to `.corrupt-<time>`
+once stale. The dispatch guard ignores a stale session. Tests set `FORGE_ACE_SESSION_FILE`, `FORGE_ACE_OUTCOMES_DIR` and
+`FORGE_ACE_FALLBACK_DIR` so they never touch a live run, the real outcome log or the fallback folder.
+
+</step>
+
 ## Step 1: Session Initialize
 
 <step id="init">
 
 1. Write `/tmp/.forge-ace-session.json`:
    ```json
-   {"version":"4.1","created":"[ISO]","tier":null,"type":null,"state":"INIT","checkpoint_filled":false,"user_confirmed":false,"qa_questions":[],"qa_answers":[],"agents":{"writer":{"status":"pending","verdict":null},"guardian":{"status":"pending","verdict":null},"overseer":{"status":"pending","verdict":null},"pm_admin":{"status":"pending","verdict":null},"designer":{"status":"pending","verdict":null}},"transitions":[]}
+   {"version":"4.1","created":"[ISO]","updated":"[ISO]","run_dir":"[run folder from Step 0]","tier":null,"type":null,"state":"INIT","checkpoint_filled":false,"user_confirmed":false,"qa_questions":[],"qa_answers":[],"agents":{"writer":{"status":"pending","verdict":null},"guardian":{"status":"pending","verdict":null},"overseer":{"status":"pending","verdict":null},"pm_admin":{"status":"pending","verdict":null},"designer":{"status":"pending","verdict":null}},"transitions":[]}
    ```
 2. Classify change target: Type A (all code) or Type B (any spec/prompt/config)
    - Reference: `references/type-b-gates.md`
@@ -282,9 +320,12 @@ Reference: See `anti-patterns.md` for the full 12-pattern card.
 │   ├── ai-defect-scan.md     <- Guardian Phase 2.5
 │   ├── connectivity-check.md <- Guardian Phase 2.7
 │   └── cross-document-integrity.md <- Guardian Phase 2 Type B
+├── templates/
+│   ├── brief.md              <- Run folder brief (Step 0)
+│   └── NEXT.md               <- Run folder next step + resume prompt (Step 0)
 ├── tests/
-│   ├── test-dispatch-guard.sh    <- Dispatch guard hook tests (14 cases)
-│   └── test-state-machine.sh     <- State machine + session-complete tests (12 cases)
+│   ├── test-dispatch-guard.sh    <- Dispatch guard hook tests (22 cases)
+│   └── test-state-machine.sh     <- State machine + session-complete tests (29 cases)
 └── test-scenarios/
     ├── scenario-s-small-change.md
     ├── scenario-m-api-change.md
