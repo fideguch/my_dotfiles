@@ -1,0 +1,3 @@
+#!/bin/sh
+# public-guard: check every commit about to be pushed (file contents, file names, commit messages).
+exec python3 -I -B "$(dirname "$0")/public_guard.py" pre-push "$@"

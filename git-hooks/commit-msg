@@ -1,0 +1,3 @@
+#!/bin/sh
+# public-guard: check the commit message (comment lines and the part below the scissors line are ignored).
+exec python3 -I -B "$(dirname "$0")/public_guard.py" message "$1"

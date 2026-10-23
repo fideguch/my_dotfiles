@@ -1,0 +1,3 @@
+#!/bin/sh
+# public-guard: stop client names and secrets before they are committed to a public repository.
+exec python3 -I -B "$(dirname "$0")/public_guard.py" staged

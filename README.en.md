@@ -37,6 +37,7 @@ $(brew --prefix)/opt/fzf/install          # fzf keybindings (first time only)
 | `pokemon-terminal/` | Pokemon Terminal skin (starship / MOTD / LazyVim / Claude Code), see [pokemon-terminal/README.md](pokemon-terminal/README.md) |
 | `claude/` | Full Claude Code config (symlinked into `~/.claude/`) |
 | `codex/` | Codex CLI config (`config.template.toml` → `~/.codex/config.toml`) |
+| `git-hooks/` | public-guard: stops client/company names and secrets before commit and push in public repositories (`git-hooks/README.md`) |
 | `set_up.sh` | Setup script |
 
 ## Custom Commands (.my_commands/)

@@ -8,6 +8,7 @@
 ## Git
 - Conventional Commits：`<type>: <description>`（feat・fix・refactor・docs・test・chore・perf・ci）
 - PR は全コミット（`git diff <base>...HEAD`）を見て要約とテスト計画を書く。新しいブランチは `-u` で push
+- 公開リポジトリ（my_dotfiles・自作スキルの repo）には、会社・案件・部署・人の固有名、保管庫のパス、秘密情報を書かない（コミットメッセージ・PR 本文も）。コミットと push は public-guard（`git-hooks/`）が止める。止まったら固有名を一般的な言葉に書き換える。迂回（`PUBLIC_GUARD_SKIP`）はユーザーの了承があるときだけ
 
 ## コードを変える作業（資料・ノートだけの作業には適用しない）
 - 主に TypeScript/JavaScript

@@ -177,6 +177,17 @@ fi
 
 info "自作スキル clone 完了"
 
+# ── 5b-2. 公開リポジトリの漏れ防止（public-guard）──────────
+# 会社・案件の固有名と秘密情報を、コミット・push の前に止める。止める語の一覧は
+# ~/.config/public-guard/（ローカルだけ。git-hooks/README.md）。自前の hook を持つリポジトリは飛ばす
+echo "public-guard を公開リポジトリに入れます..."
+guard_repos=("$DOTPATH")
+for repo in "$CLAUDE_DST"/skills/{bochi,pm-data-analysis,speckit-bridge,my_pm_tools,figma-refine,claude-to-codex,fable-for-opus,model-director} \
+            "$HOME/pm_ad_analysis" "$HOME/google_mcps" "$HOME/ai-pokemen" "$HOME/mobile-dev-bridge" "$HOME/specs-evals"; do
+  [[ -d "$repo/.git" ]] && guard_repos+=("$repo")
+done
+"$DOTPATH/git-hooks/install.sh" "${guard_repos[@]}" || warn "public-guard の導入に失敗しました（git-hooks/install.sh を手動で実行）"
+
 # ── 5c. npx スキルの symlink 同期 ────────────────────────
 if [[ -f "$DOTPATH/claude/scripts/sync-npx-skills.sh" ]]; then
   echo "npx スキルの symlink を同期します..."

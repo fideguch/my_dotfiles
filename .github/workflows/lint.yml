@@ -39,18 +39,23 @@ jobs:
           for f in $(find claude/scripts/hooks -name '*.sh' -type f); do
             shellcheck --severity=error "$f"
           done
+          shellcheck --severity=warning git-hooks/install.sh git-hooks/pre-commit git-hooks/commit-msg git-hooks/pre-push
 
-      # 3. JSON validation
-      - name: Validate hooks.json
-        run: jq . claude/hooks/hooks.json > /dev/null
+      # 2b. public-guard tests (the secret tests are skipped without gitleaks)
+      - name: public-guard tests
+        run: python3 -B -m unittest discover -s git-hooks/tests -v
 
-      # 4. hooks.json reference integrity
-      #    Extracts all script paths from hooks.json and verifies each exists under claude/
+      # 3. JSON validation (hooks live in settings.json since hooks.json was removed)
+      - name: Validate settings.json
+        run: jq . claude/settings.json > /dev/null
+
+      # 4. hook reference integrity
+      #    Extracts all script paths from the hooks in settings.json and verifies each exists under claude/
       #    Covers: ${CLAUDE_PLUGIN_ROOT}/, ~/.claude/, and run-with-flags secondary args
       - name: Verify hook script references
         run: |
           fail=0
-          all_cmds=$(jq -r '.. | .command? // empty' claude/hooks/hooks.json)
+          all_cmds=$(jq -r '.hooks | .. | .command? // empty' claude/settings.json)
 
           # Pattern A: ${CLAUDE_PLUGIN_ROOT}/path/to/script
           plugin_paths=$(echo "$all_cmds" \

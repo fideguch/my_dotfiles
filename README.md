@@ -37,6 +37,7 @@ $(brew --prefix)/opt/fzf/install          # fzfキーバインド (初回のみ)
 | `pokemon-terminal/` | Pokemon Terminal スキン（starship / MOTD / LazyVim / Claude Code 統合） |
 | `claude/` | Claude Code 設定一式（`~/.claude/` へシンボリックリンク） |
 | `codex/` | Codex CLI 設定（`config.template.toml` → `~/.codex/config.toml`） |
+| `git-hooks/` | 公開リポジトリの漏れ防止（public-guard）。会社・案件の固有名と秘密情報をコミット・push の前に止める（`git-hooks/README.md`） |
 | `set_up.sh` | セットアップスクリプト |
 
 ## 自作コマンド (.my_commands/)
